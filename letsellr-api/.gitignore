@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+env/
+
+# Poetry
+poetry.lock
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Tests
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Alembic
+migrations/versions/*.py
+!migrations/versions/.gitkeep
+
+# Build
+dist/
+build/
+*.egg-info/
+
+# Logs
+*.log
+logs/
