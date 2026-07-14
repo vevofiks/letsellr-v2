@@ -68,18 +68,17 @@ async def _verify_firebase_token(token: str) -> str:
 
 async def _verify_supabase_token(token: str) -> str:
     """Verify a Supabase JWT and return the user UID."""
-    from jose import jwt, JWTError
+    import asyncio
+    from app.core.supabase import get_supabase_client
 
     try:
-        # Some Supabase instances might return different algs, but HS256 is default
-        payload = jwt.decode(
-            token,
-            settings.SUPABASE_JWT_SECRET,
-            algorithms=["HS256"],
-            audience="authenticated",
-        )
-        return payload["sub"]
-    except JWTError as e:
+        client = get_supabase_client()
+        # Verify the token using the Supabase client (makes a network call)
+        res = await asyncio.to_thread(client.auth.get_user, token)
+        if not res.user:
+            raise ValueError("No user returned")
+        return res.user.id
+    except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=f"Invalid Supabase token: {e}",

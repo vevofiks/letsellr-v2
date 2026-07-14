@@ -115,6 +115,7 @@ class AuthService:
                         "phone": payload.phone,
                         "role": "user",
                         "location": payload.location,
+                        "preference_type": payload.preference_type,
                     }
                 }
             })
@@ -187,7 +188,7 @@ class AuthService:
                 email=pending_user.email,
                 email_verified=True,
                 phone=pending_user.phone,
-                preference_type=[],
+                preference_type=pending_user.preference_type,
                 location_city=pending_user.location,
                 location_area="N/A",
                 verification_status="pending",

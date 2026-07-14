@@ -41,9 +41,9 @@ class User(UUIDMixin, TimestampMixin, Base):
     email: Mapped[str] = mapped_column(String(256), unique=True, nullable=False, index=True)
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     phone: Mapped[str] = mapped_column(String(20), nullable=False)
-    preference_type: Mapped[list[str]] = mapped_column(
-        ARRAY(String), nullable=False, default=list,
-        comment="e.g. ['residential', 'commercial']",
+    preference_type: Mapped[str] = mapped_column(
+        String(255), nullable=False,
+        comment="e.g. 'residential'",
     )
     location_city: Mapped[str] = mapped_column(String(100), nullable=False)
     location_area: Mapped[str] = mapped_column(String(200), nullable=False)

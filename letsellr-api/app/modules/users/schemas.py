@@ -22,7 +22,7 @@ class UserProfileResponse(BaseModel):
     name: str
     email: EmailStr
     phone: str
-    preference_type: list[str]
+    preference_type: str
     location_city: str
     location_area: str
     verification_status: str

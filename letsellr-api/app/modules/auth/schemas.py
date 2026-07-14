@@ -16,6 +16,7 @@ class UserRegisterRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=200)
     email: EmailStr
     phone: str = Field(..., min_length=7, max_length=20)
+    preference_type: str = Field(..., min_length=1)
     location: str = Field(..., min_length=2, max_length=200)
 
 
@@ -25,7 +26,7 @@ class RegisterRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=200)
     email: EmailStr
     phone: str = Field(..., min_length=7, max_length=20)
-    preference_type: list[str] = Field(..., min_length=1)
+    preference_type: str = Field(..., min_length=1)
     location_city: str = Field(..., min_length=2, max_length=100)
     location_area: str = Field(..., min_length=2, max_length=200)
 
@@ -74,7 +75,7 @@ class UserPublic(BaseModel):
     email: str
     email_verified: bool
     phone: str
-    preference_type: list[str]
+    preference_type: str
     location_city: str
     location_area: str
     verification_status: str
