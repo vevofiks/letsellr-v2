@@ -29,3 +29,10 @@ class UserProfileResponse(BaseModel):
     status: str
     agency_profile: AgencyProfileResponse | None = None
     model_config = {"from_attributes": True}
+
+
+class UserUpdateRequest(BaseModel):
+    name: str | None = None
+    location_city: str | None = None
+    preference_type: str | None = None
+

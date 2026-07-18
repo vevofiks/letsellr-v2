@@ -1,41 +1,46 @@
-# Python
+# Python bytecode and caches
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-.venv/
+
+# Virtual environments
 venv/
+.venv/
 env/
+ENV/
+lib/
+lib64/
 
-# Poetry
-poetry.lock
-
-# Environment
+# Local configuration and secret files
 .env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
 .env.*.local
 
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
+# SQLite databases
+*.db
+*.sqlite3
 
-# Tests
+# Test and coverage caches
 .pytest_cache/
 .coverage
 htmlcov/
+.noserc
+.tox/
 
-# Alembic
-migrations/versions/*.py
-!migrations/versions/.gitkeep
-
-# Build
+# Package builds and distribution
 dist/
 build/
 *.egg-info/
+.eggs/
 
-# Logs
-*.log
-logs/
+# IDE and OS configurations
+.vscode/
+.idea/
+.DS_Store
+*.swp
+*.swo

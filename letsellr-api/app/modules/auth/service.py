@@ -31,6 +31,7 @@ from app.modules.auth.schemas import (
     UserPublic,
     VerifyLoginRequest,
     VerifyRegistrationRequest,
+    RefreshTokenRequest,
 )
 from app.modules.users.models import AgencyProfile, User
 from app.modules.users.repository import UserRepository
@@ -66,8 +67,9 @@ class AuthService:
 
         supabase = get_supabase_client()
         try:
-            supabase.auth.sign_in_with_otp({
+            supabase.auth.sign_up({
                 "email": payload.email,
+                "password": payload.password,
                 "options": {
                     "data": {
                         "name": payload.name,
@@ -80,7 +82,7 @@ class AuthService:
                 }
             })
         except Exception as e:
-            logger.error("Supabase sign_in_with_otp error: %s", e)
+            logger.error("Supabase sign_up error: %s", e)
             error_str = str(e).lower()
             if "rate limit" in error_str or "too many requests" in error_str:
                 raise HTTPException(
@@ -89,10 +91,10 @@ class AuthService:
                 ) from e
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to send OTP. Please try again later.",
+                detail="Failed to initiate registration. Please try again later.",
             ) from e
 
-        logger.info("Supabase Registration OTP sent to %s", payload.email)
+        logger.info("Supabase Registration initiated for %s", payload.email)
         return RegisterResponse(email=payload.email)
 
     async def register_user(self, payload: UserRegisterRequest) -> RegisterResponse:
@@ -107,8 +109,9 @@ class AuthService:
 
         supabase = get_supabase_client()
         try:
-            supabase.auth.sign_in_with_otp({
+            supabase.auth.sign_up({
                 "email": payload.email,
+                "password": payload.password,
                 "options": {
                     "data": {
                         "name": payload.name,
@@ -120,7 +123,7 @@ class AuthService:
                 }
             })
         except Exception as e:
-            logger.error("Supabase user sign_in_with_otp error: %s", e)
+            logger.error("Supabase user sign_up error: %s", e)
             error_str = str(e).lower()
             if "rate limit" in error_str or "too many requests" in error_str:
                 raise HTTPException(
@@ -129,10 +132,10 @@ class AuthService:
                 ) from e
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to send OTP. Please try again later.",
+                detail="Failed to initiate registration. Please try again later.",
             ) from e
 
-        logger.info("Supabase User Registration OTP sent to %s", payload.email)
+        logger.info("Supabase User Registration initiated for %s", payload.email)
         return RegisterResponse(email=payload.email)
 
 
@@ -151,17 +154,22 @@ class AuthService:
         supabase = get_supabase_client()
         try:
             res = supabase.auth.verify_otp(
-                {"email": payload.email, "token": payload.otp, "type": "email"}
+                {"email": payload.email, "token": payload.otp, "type": "signup"}
             )
         except Exception as e:
-            if pending:
-                _pending_registrations[payload.email] = pending
-            if pending_user:
-                _pending_user_registrations[payload.email] = pending_user
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid OTP or expired.",
-            ) from e
+            try:
+                res = supabase.auth.verify_otp(
+                    {"email": payload.email, "token": payload.otp, "type": "email"}
+                )
+            except Exception:
+                if pending:
+                    _pending_registrations[payload.email] = pending
+                if pending_user:
+                    _pending_user_registrations[payload.email] = pending_user
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid OTP or expired.",
+                ) from e
 
         if not res.user or not res.session:
             if pending:
@@ -233,7 +241,7 @@ class AuthService:
 
     # ── Login ─────────────────────────────────────────────────────────────────
 
-    async def login(self, payload: LoginRequest) -> MessageResponse:
+    async def login(self, payload: LoginRequest) -> TokenResponse:
         user = await self.repo.get_by_email(payload.email)
         if not user:
             raise HTTPException(
@@ -249,22 +257,35 @@ class AuthService:
 
         supabase = get_supabase_client()
         try:
-            supabase.auth.sign_in_with_otp({"email": payload.email})
+            res = supabase.auth.sign_in_with_password({
+                "email": payload.email,
+                "password": payload.password
+            })
         except Exception as e:
-            logger.error("Supabase login sign_in_with_otp error: %s", e)
-            error_str = str(e).lower()
-            if "rate limit" in error_str or "too many requests" in error_str:
-                raise HTTPException(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail="Email rate limit exceeded. Please wait a moment before trying again.",
-                ) from e
+            logger.error("Supabase login sign_in_with_password error: %s", e)
             raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to send OTP. Please try again later.",
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid email or password.",
             ) from e
 
-        logger.info("Supabase Login OTP sent to %s", payload.email)
-        return MessageResponse(message="OTP sent to your email. Valid for 10 minutes.")
+        if not res.user or not res.session:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to retrieve user session from Supabase.",
+            )
+
+        # Sync provider uid if missing or mismatched
+        if not user.auth_provider_uid or user.auth_provider_uid != res.user.id:
+            user.auth_provider_uid = res.user.id
+            await self.db.commit()
+
+        logger.info("User logged in via Supabase: %s", user.email)
+        
+        return TokenResponse(
+            access_token=res.session.access_token,
+            refresh_token=res.session.refresh_token,
+            user=UserPublic.model_validate(user),
+        )
 
     async def verify_login(self, payload: VerifyLoginRequest) -> TokenResponse:
         supabase = get_supabase_client()
@@ -338,3 +359,47 @@ class AuthService:
             ) from e
             
         return MessageResponse(message="A new OTP has been sent to your email.")
+
+    # ── Token Refresh ─────────────────────────────────────────────────────────
+
+    async def refresh_token(
+        self, payload: RefreshTokenRequest
+    ) -> TokenResponse:
+        """Verify refresh token against Supabase and return fresh access/refresh tokens."""
+        supabase = get_supabase_client()
+        try:
+            # refresh_session is synchronous in supabase-py
+            res = supabase.auth.refresh_session(payload.refresh_token)
+        except Exception as e:
+            logger.error("Supabase refresh_token error: %s", e)
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid or expired refresh token. Please log in again.",
+            ) from e
+
+        if not res.user or not res.session:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Failed to refresh session from Supabase.",
+            )
+
+        user = await self.repo.get_by_provider_uid(res.user.id)
+        if not user:
+            user = await self.repo.get_by_email(res.user.email)
+            if not user:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Account not found in local database.",
+                )
+            
+            user.auth_provider_uid = res.user.id
+            await self.db.commit()
+
+        logger.info("User session refreshed via Supabase: %s", user.email)
+        
+        return TokenResponse(
+            access_token=res.session.access_token,
+            refresh_token=res.session.refresh_token,
+            user=UserPublic.model_validate(user),
+        )
+

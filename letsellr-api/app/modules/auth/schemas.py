@@ -18,6 +18,7 @@ class UserRegisterRequest(BaseModel):
     phone: str = Field(..., min_length=7, max_length=20)
     preference_type: str = Field(..., min_length=1)
     location: str = Field(..., min_length=2, max_length=200)
+    password: str = Field(..., min_length=6, max_length=100)
 
 
 class RegisterRequest(BaseModel):
@@ -29,6 +30,7 @@ class RegisterRequest(BaseModel):
     preference_type: str = Field(..., min_length=1)
     location_city: str = Field(..., min_length=2, max_length=100)
     location_area: str = Field(..., min_length=2, max_length=200)
+    password: str = Field(..., min_length=6, max_length=100)
 
     # Agency-only (optional for owners)
     agency_display_name: str | None = None
@@ -44,8 +46,9 @@ class VerifyRegistrationRequest(BaseModel):
 # ── Login ─────────────────────────────────────────────────────────────────────
 
 class LoginRequest(BaseModel):
-    """Step 1 of login: send OTP to the given email."""
+    """Sign in using email and password."""
     email: EmailStr
+    password: str = Field(..., min_length=1)
 
 
 class VerifyLoginRequest(BaseModel):
@@ -101,3 +104,9 @@ class ResendOTPRequest(BaseModel):
     """Resend an OTP for login or registration."""
     email: EmailStr
     purpose: Literal["login", "registration"] = "login"
+
+
+class RefreshTokenRequest(BaseModel):
+    """Payload to exchange a refresh token for new access+refresh tokens."""
+    refresh_token: str
+

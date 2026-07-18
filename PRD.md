@@ -129,6 +129,59 @@ Server must reject an agency attempting to create a `pg` or `hostel` listing wit
 | **Subscription Management** | View and manage subscription plans and active subscriptions (built now, enabled later). |
 | **Testimonials** | Approve, edit, or remove testimonials shown on the marketing/home pages. |
 
+### 4.7 Platform Pages Overview
+
+This section outlines all the pages and screens across different roles that need to be created for the platform, as defined in `platform_page_breakdown.root.html`.
+
+#### 4.7.1 Public Pages
+*No login required — external and discovery pages.*
+
+| Page / Screen | Description |
+| --- | --- |
+| **Landing / Marketing** | Next.js separate domain. Explains platform value and lets users start browsing. |
+| **Browse & Search** | Map + list view. Filter by rent/buy/lease/agencies, category, and location. |
+| **Property Detail** | Photos, amenities, price, and "Enquire" CTA (triggers WhatsApp). |
+| **Agency Profile** | Public page showing the agency's about info and all their active listings. |
+| **Login / Register** | Role-aware sign-in (client vs owner/agency) with OTP verification. |
+
+#### 4.7.2 Client Pages
+*Logged-in property seekers managing enquiries.*
+
+| Page / Screen | Description |
+| --- | --- |
+| **Home (Post-Login)** | Browse feed plus enquiry-count widget and active-lead nudges. |
+| **My Enquiries / Leads** | List of all leads with status (qualifying, visit scheduled, visited, closed, lost). |
+| **Lead Detail** | Single enquiry status, visit time/address, and read-only chat thread ref. |
+| **Subscribe / Upgrade** | Triggered when 3-enquiry limit is hit, or accessible anytime to upgrade plan. |
+| **Profile & Settings** | Manage name, phone, and location preferences. |
+
+#### 4.7.3 Owner / Agency Pages
+*Property managers handling listings and closing deals.*
+
+| Page / Screen | Description |
+| --- | --- |
+| **Dashboard** | Listings summary, upcoming visits, and quick stats overview. |
+| **My Properties** | List with status tracking (draft, pending_review, live, rejected, expired). |
+| **Add / Edit Property** | Listing form. Category locked to PG/Hostel for self-listing owners. |
+| **Property Detail (Owner)** | View the listing alongside specific leads received on this property. |
+| **Leads & Visits** | All incoming leads across properties, filterable by lead status. |
+| **Lead Detail (Owner)** | Client info (revealed post-visit-booking) and "Mark Deal Closed" action. |
+| **Deal Closed Form** | Capture agreed price and trigger the platform commission workflow. |
+| **Agency Settings** | Manage display name, about info, logo, and areas served (Agency only). |
+| **Profile & Settings** | Shared with client version, but includes specific owner fields. |
+
+#### 4.7.4 Admin Pages
+*Platform management, approvals, and dispute resolution.*
+
+| Page / Screen | Description |
+| --- | --- |
+| **Admin Dashboard** | Pending reviews count, open disputes, and global platform stats. |
+| **Property Review Queue** | Approve or reject new/edited property listings with reasons. |
+| **User Management** | List, search, and suspend users across all platform roles. |
+| **Limit Overrides** | Search clients by phone and manually bump enquiry limits after payment. |
+| **Commission Queue** | Verify reported closed deals and mark commissions as settled. |
+| **Reports & Flags** | Handle reports of fake listings, rogue brokers, or unavailable properties. |
+
 ---
 
 ## 5. Core Flows
