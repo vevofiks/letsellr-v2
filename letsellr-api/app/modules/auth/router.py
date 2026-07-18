@@ -30,6 +30,7 @@ from app.modules.auth.schemas import (
     UserPublic,
     VerifyLoginRequest,
     VerifyRegistrationRequest,
+    RefreshTokenRequest,
 )
 from app.modules.auth.service import AuthService
 
@@ -97,14 +98,14 @@ async def verify_registration(
 
 @router.post(
     "/login",
-    response_model=MessageResponse,
-    summary="Start login — sends OTP to email",
+    response_model=TokenResponse,
+    summary="Sign in with email and password",
 )
-async def login(payload: LoginRequest, db: DbSession) -> MessageResponse:
+async def login(payload: LoginRequest, db: DbSession) -> TokenResponse:
     """
-    **Step 1 of login.**
+    **Login with email and password.**
 
-    Checks the email exists, then sends a 6-digit OTP to it.
+    Validates user credentials against Supabase and returns session JWT tokens.
     """
     service = AuthService(db)
     return await service.login(payload)
@@ -137,6 +138,18 @@ async def resend_otp(payload: ResendOTPRequest, db: DbSession) -> MessageRespons
     service = AuthService(db)
     return await service.resend_otp(payload)
 
+
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    summary="Refresh access token",
+)
+async def refresh_token(payload: RefreshTokenRequest, db: DbSession) -> TokenResponse:
+    """Exchange a refresh token for new access+refresh tokens."""
+    service = AuthService(db)
+    return await service.refresh_token(payload)
+
+
 @router.get(
     "/me",
     response_model=UserPublic,
@@ -145,3 +158,4 @@ async def resend_otp(payload: ResendOTPRequest, db: DbSession) -> MessageRespons
 async def get_me(current_user: CurrentUser) -> UserPublic:
     """Return the currently authenticated user's profile. Requires a valid JWT."""
     return UserPublic.model_validate(current_user)
+

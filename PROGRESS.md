@@ -1,0 +1,26 @@
+# PROGRESS
+
+## [2026-07-18]
+
+- **Backend**: Added Pydantic schema `UserUpdateRequest` and endpoint `PUT /api/users/me` allowing authenticated users to update their profile details (name, preferred city, and preference type).
+- **Backend**: Fixed a latent async SQLAlchemy bug — added `lazy="selectin"` to the `User.agency_profile` relationship in `models.py` to prevent `MissingGreenlet` errors when Pydantic serialises the ORM object outside an active async session.
+- **Backend**: Created `tests/test_users.py` with 16 tests covering `GET /api/users/me`, `PUT /api/users/me`, schema correctness, partial-update behaviour, unauthenticated rejection, read-only field enforcement (email, phone), and cross-user isolation. All 37 tests (health + properties + users) pass.
+- **Frontend**: Created high-fidelity `ProfileModal` component with custom backdrop blur and animated modal transitions.
+- **Frontend**: Added inline profile edit mode inside the modal allowing modification of user name, preferred location, and interest type.
+- **Frontend**: Enforced read-only status and locked styles for sensitive fields (Email, Phone) in profile edits.
+- **Frontend**: Added live input validation (real-time error alerts for empty values, minimum length, and character validation).
+- **Frontend**: Integrated profile picture and banner image uploads using `FileReader` to encode assets as Base64 data URLs, persisted in local storage per user.
+- **Frontend**: Implemented real-time geolocation auto-detection on the location field in the profile editor and the dashboard search bar.
+- **Frontend**: Connected the OpenStreetMap Nominatim reverse-geocoding API to resolve coordinates to a readable `"City, State"` string, replacing coordinates on both the profile and dashboard badges.
+- **Frontend**: Cleaned up the profile modal footer in view mode, using the top-right `X` close button as the main close trigger.
+
+## [2026-07-15]
+
+- **Backend**: Added `POST /api/auth/refresh` endpoint allowing secure Supabase JWT session refreshment.
+- **Frontend**: Setup shadcn/ui and themed components (`#308178` primary teal theme on a white base) integrated with Tailwind CSS v4.
+- **Frontend**: Configured typescript paths alias `@/*` resolution.
+- **Frontend**: Implemented full passwordless authentication pages (`Welcome` role picker, `RegisterOwnerAgency`, `RegisterClient` seeker, `Login`, `VerifyOTP`).
+- **Frontend**: Built `AuthContext` to coordinate token states, profile requests, and login/registration flows.
+- **Frontend**: Built an Axios API client interceptor to handle automated token refresh on `401 Unauthorized` responses and request queuing.
+- **Frontend**: Setup role-guarded page routes (`/dashboard`, `/owner/dashboard`, `/admin`, `/profile`).
+- **Frontend**: Verified frontend compilation and build outputs successfully via Vite production bundler.

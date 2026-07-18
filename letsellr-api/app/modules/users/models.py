@@ -64,6 +64,7 @@ class User(UUIDMixin, TimestampMixin, Base):
     # ── Relationships ─────────────────────────────────────────────────────────
     agency_profile: Mapped["AgencyProfile | None"] = relationship(
         "AgencyProfile", back_populates="user", uselist=False, cascade="all, delete-orphan",
+        lazy="selectin",
     )
     properties: Mapped[list["Property"]] = relationship(
         "Property",

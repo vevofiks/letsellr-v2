@@ -18,11 +18,24 @@ async def list_properties(
     intent: Optional[str] = None,
     category: Optional[str] = None,
     city: Optional[str] = None,
+    lat: Optional[float] = Query(None, ge=-90.0, le=90.0, description="Latitude range: -90 to 90"),
+    lng: Optional[float] = Query(None, ge=-180.0, le=180.0, description="Longitude range: -180 to 180"),
+    radius: Optional[float] = Query(20.0, ge=0.0, description="Radius in kilometers"),
     page: int = Query(1, ge=1),
+    limit: int = Query(20, ge=1, le=100),
 ):
     """Public property browse."""
     service = PropertyService(db)
-    return await service.list_public_properties(intent=intent, category=category, city=city, page=page)
+    return await service.list_public_properties(
+        intent=intent,
+        category=category,
+        city=city,
+        lat=lat,
+        lng=lng,
+        radius=radius,
+        page=page,
+        limit=limit,
+    )
 
 
 @router.post("", response_model=PropertyResponse, status_code=status.HTTP_201_CREATED)

@@ -1,7 +1,8 @@
 import uuid
+import math
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
 from app.db.session import AsyncSession
@@ -40,7 +41,15 @@ class PropertyRepository:
         await self.db.delete(db_obj)
         await self.db.flush()
 
-    async def list_public(self, filters: Dict[str, Any], limit: int = 20, offset: int = 0) -> List[Property]:
+    async def list_public(
+        self,
+        filters: Dict[str, Any],
+        limit: int = 20,
+        offset: int = 0,
+        lat: Optional[float] = None,
+        lng: Optional[float] = None,
+        radius: Optional[float] = 20.0
+    ) -> List[Property]:
         stmt = select(Property).where(Property.status == "live")
         
         if "category" in filters:
@@ -49,6 +58,43 @@ class PropertyRepository:
             stmt = stmt.where(Property.intent == filters["intent"])
         if "city" in filters:
             stmt = stmt.where(Property.location_city.ilike(f"%{filters['city']}%"))
+            
+        if lat is not None and lng is not None:
+            # Prevent DivisionByZero or invalid input if lat/lng is null
+            stmt = stmt.where(Property.latitude.isnot(None)).where(Property.longitude.isnot(None))
+            
+            # 1. Cheap bounding box pre-filtering
+            # 1 degree of latitude is ~111 km
+            d_lat = radius / 111.0
+            
+            # 1 degree of longitude is ~111 * cos(rad(lat)) km
+            cos_lat = math.cos(math.radians(lat))
+            if cos_lat > 0.01:
+                d_lng = radius / (111.0 * cos_lat)
+            else:
+                d_lng = 360.0
+                
+            stmt = stmt.where(
+                Property.latitude >= lat - d_lat,
+                Property.latitude <= lat + d_lat,
+                Property.longitude >= lng - d_lng,
+                Property.longitude <= lng + d_lng
+            )
+            
+            # 2. Clamped Haversine distance formula filtering & ordering
+            rad_lat = func.radians(lat)
+            rad_lng = func.radians(lng)
+            
+            inner_expr = (
+                func.cos(rad_lat) * func.cos(func.radians(Property.latitude)) * 
+                func.cos(func.radians(Property.longitude) - rad_lng) + 
+                func.sin(rad_lat) * func.sin(func.radians(Property.latitude))
+            )
+            clamped_inner = func.greatest(-1.0, func.least(1.0, inner_expr))
+            distance_expr = 6371.0 * func.acos(clamped_inner)
+            
+            stmt = stmt.where(distance_expr <= radius)
+            stmt = stmt.order_by(distance_expr.asc())
             
         stmt = stmt.limit(limit).offset(offset)
         result = await self.db.execute(stmt)

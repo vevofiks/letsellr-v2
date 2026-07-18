@@ -105,15 +105,31 @@ class PropertyService:
         wa_link = f"https://wa.me/{phone}?text=Hi%20I'm%20interested%20in%20your%20property%20{ref}"
         return {"link": wa_link}
 
-    async def list_public_properties(self, intent: Optional[str] = None, category: Optional[str] = None, city: Optional[str] = None, page: int = 1) -> List[Property]:
+    async def list_public_properties(
+        self,
+        intent: Optional[str] = None,
+        category: Optional[str] = None,
+        city: Optional[str] = None,
+        lat: Optional[float] = None,
+        lng: Optional[float] = None,
+        radius: Optional[float] = 20.0,
+        page: int = 1,
+        limit: int = 20,
+    ) -> List[Property]:
         filters = {}
         if intent: filters["intent"] = intent
         if category: filters["category"] = category
         if city: filters["city"] = city
         
-        limit = 20
         offset = (page - 1) * limit
-        return await self.repo.list_public(filters, limit=limit, offset=offset)
+        return await self.repo.list_public(
+            filters,
+            limit=limit,
+            offset=offset,
+            lat=lat,
+            lng=lng,
+            radius=radius,
+        )
 
     async def list_owner_properties(self, owner_id: uuid.UUID) -> List[Property]:
         return await self.repo.list_by_owner(owner_id)
