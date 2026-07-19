@@ -46,55 +46,48 @@ def _otp_html(otp: str, purpose: str, expires_minutes: int) -> str:
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
-    <body style="margin:0;padding:0;background:#0f0f0f;font-family:'Segoe UI',Arial,sans-serif;">
-      <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f0f;padding:40px 20px;">
+    <body style="margin:0;padding:0;background:#f9fafb;font-family:'Segoe UI',Arial,sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;padding:40px 20px;">
         <tr>
           <td align="center">
             <table width="520" cellpadding="0" cellspacing="0"
-                   style="background:#1a1a1a;border-radius:16px;border:1px solid #2a2a2a;overflow:hidden;">
+                   style="background:#ffffff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;">
               <!-- Header -->
               <tr>
-                <td style="background:linear-gradient(135deg,#6C63FF,#a78bfa);padding:32px 40px;text-align:center;">
-                  <h1 style="margin:0;color:#fff;font-size:26px;font-weight:700;letter-spacing:-0.5px;">
+                <td style="background:#014645;padding:32px 40px;text-align:center;">
+                  <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.5px;">
                     Letsellr
                   </h1>
-                  <p style="margin:6px 0 0;color:rgba(255,255,255,0.8);font-size:13px;">
-                    Your trusted property platform
-                  </p>
                 </td>
               </tr>
               <!-- Body -->
               <tr>
                 <td style="padding:40px;">
-                  <p style="color:#d1d5db;font-size:15px;margin:0 0 24px;">
-                    Hi there! Use the code below to {action}:
+                  <p style="color:#374151;font-size:15px;margin:0 0 24px;line-height:1.6;">
+                    Hi there, <br><br>Use the secure code below to {action}:
                   </p>
                   <!-- OTP Box -->
-                  <div style="background:#111827;border:2px solid #6C63FF;border-radius:12px;
+                  <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;
                               padding:28px;text-align:center;margin:0 0 28px;">
-                    <p style="margin:0 0 8px;color:#9ca3af;font-size:12px;
-                               text-transform:uppercase;letter-spacing:2px;">
-                      Your OTP Code
-                    </p>
-                    <p style="margin:0;font-size:44px;font-weight:800;letter-spacing:10px;
-                               color:#a78bfa;font-family:'Courier New',monospace;">
+                    <p style="margin:0;font-size:40px;font-weight:800;letter-spacing:10px;
+                               color:#014645;font-family:'Courier New',monospace;">
                       {otp}
                     </p>
                   </div>
-                  <p style="color:#6b7280;font-size:13px;margin:0 0 8px;">
-                    ⏱ This code expires in <strong style="color:#d1d5db;">{expires_minutes} minutes</strong>.
+                  <p style="color:#64748b;font-size:14px;margin:0 0 8px;">
+                    ⏱ This code expires in <strong style="color:#334155;">{expires_minutes} minutes</strong>.
                   </p>
-                  <p style="color:#6b7280;font-size:13px;margin:0;">
+                  <p style="color:#64748b;font-size:14px;margin:0;">
                     🔒 Never share this code with anyone. Letsellr staff will never ask for it.
                   </p>
                 </td>
               </tr>
               <!-- Footer -->
               <tr>
-                <td style="background:#111;padding:20px 40px;border-top:1px solid #2a2a2a;">
-                  <p style="margin:0;color:#4b5563;font-size:12px;text-align:center;">
+                <td style="background:#ffffff;padding:24px 40px;border-top:1px solid #f1f5f9;">
+                  <p style="margin:0;color:#94a3b8;font-size:13px;text-align:center;">
                     If you didn't request this, you can safely ignore this email.
-                    <br>© 2024 Letsellr. All rights reserved.
+                    <br><br>© 2024 Letsellr. All rights reserved.
                   </p>
                 </td>
               </tr>

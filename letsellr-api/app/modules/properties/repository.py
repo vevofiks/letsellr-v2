@@ -48,8 +48,9 @@ class PropertyRepository:
         offset: int = 0,
         lat: Optional[float] = None,
         lng: Optional[float] = None,
-        radius: Optional[float] = 20.0
-    ) -> List[Property]:
+        radius: Optional[float] = 20.0,
+        sort_by: Optional[str] = None
+    ) -> tuple[List[Property], int]:
         stmt = select(Property).where(Property.status == "live")
         
         if "category" in filters:
@@ -58,8 +59,13 @@ class PropertyRepository:
             stmt = stmt.where(Property.intent == filters["intent"])
         if "city" in filters:
             stmt = stmt.where(Property.location_city.ilike(f"%{filters['city']}%"))
+        if "min_price" in filters:
+            stmt = stmt.where(Property.price >= filters["min_price"])
+        if "max_price" in filters:
+            stmt = stmt.where(Property.price <= filters["max_price"])
             
         if lat is not None and lng is not None:
+            radius = radius or 20.0
             # Prevent DivisionByZero or invalid input if lat/lng is null
             stmt = stmt.where(Property.latitude.isnot(None)).where(Property.longitude.isnot(None))
             
@@ -94,13 +100,36 @@ class PropertyRepository:
             distance_expr = 6371.0 * func.acos(clamped_inner)
             
             stmt = stmt.where(distance_expr <= radius)
-            stmt = stmt.order_by(distance_expr.asc())
             
+            if sort_by == "price_asc":
+                stmt = stmt.order_by(Property.price.asc())
+            elif sort_by == "price_desc":
+                stmt = stmt.order_by(Property.price.desc())
+            else:
+                stmt = stmt.order_by(distance_expr.asc())
+        else:
+            if sort_by == "price_asc":
+                stmt = stmt.order_by(Property.price.asc())
+            elif sort_by == "price_desc":
+                stmt = stmt.order_by(Property.price.desc())
+            else:
+                stmt = stmt.order_by(Property.created_at.desc())
+
+        # Count total
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = await self.db.scalar(count_stmt) or 0
+
         stmt = stmt.limit(limit).offset(offset)
         result = await self.db.execute(stmt)
-        return list(result.scalars().all())
+        items = list(result.scalars().all())
+
+        return items, total
 
     async def list_by_owner(self, owner_id: uuid.UUID) -> List[Property]:
-        stmt = select(Property).where(Property.owner_id == owner_id)
+        stmt = (
+            select(Property)
+            .where(Property.owner_id == owner_id)
+            .order_by(Property.created_at.desc())
+        )
         result = await self.db.execute(stmt)
         return list(result.scalars().all())

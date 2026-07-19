@@ -18,14 +18,10 @@ function App() {
         <div className="flex-1 w-full bg-slate-50 min-h-screen">
           <Routes>
             {/* Public Auth Routes */}
-            <Route path="/" element={<Navigate to="/register/type" replace />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route
               path="/register/type"
-              element={
-                <PublicRoute>
-                  <Welcome />
-                </PublicRoute>
-              }
+              element={<Welcome />}
             />
             <Route
               path="/register/owner-agency"
@@ -60,14 +56,10 @@ function App() {
               }
             />
 
-            {/* Protected Client Dashboard Route */}
+            {/* Public Client Dashboard Route */}
             <Route
               path="/dashboard"
-              element={
-                <ProtectedRoute allowedRoles={["user"]}>
-                  <ClientDashboard />
-                </ProtectedRoute>
-              }
+              element={<ClientDashboard />}
             />
 
             <Route

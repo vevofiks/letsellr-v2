@@ -200,7 +200,6 @@ export const RegisterOwnerAgency: React.FC = () => {
                 {errors.location_area?.message}
               </FieldError>
             </Field>
-
             {/* Password */}
             <Field>
               <FieldLabel htmlFor="password">Password</FieldLabel>

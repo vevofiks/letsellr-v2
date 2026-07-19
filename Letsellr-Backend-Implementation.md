@@ -51,27 +51,27 @@ For a lightning-fast, production-ready FastAPI backend, the absolute best choice
 - [x] Apply migration: `alembic upgrade head`.
 
 ### Phase 3: Authentication & Security
-- [ ] Integrate Firebase Admin SDK or Supabase Python Client for token verification.
-- [ ] Create `depends/auth.py` dependency to extract and verify the Bearer token and inject the `current_user`.
-- [ ] Create `require_role(role)` dependency for RBAC (Admin, Owner, Agency).
-- [ ] Implement `POST /api/auth/register` (creates DB record after auth provider validates email).
-- [ ] Implement `GET /api/auth/me` to return current user profile.
+- [x] Integrate Firebase Admin SDK or Supabase Python Client for token verification.
+- [x] Create `depends/auth.py` dependency to extract and verify the Bearer token and inject the `current_user`.
+- [x] Create `require_role(role)` dependency for RBAC (Admin, Owner, Agency).
+- [x] Implement `POST /api/auth/register` (creates DB record after auth provider validates email).
+- [x] Implement `GET /api/auth/me` to return current user profile.
 
 ### Phase 4: Core Property APIs
-- [ ] Implement `POST /api/properties` (Create listing).
+- [x] Implement `POST /api/properties` (Create listing).
     - [x] *Logic constraint:* Agencies cannot list `pg` or `hostel`.
-- [ ] Implement `PATCH /api/properties/{id}` (Update listing).
-    - [ ] *Security constraint:* Ensure `current_user.id == property.owner_id`.
-- [ ] Implement `DELETE /api/properties/{id}`.
-- [ ] Implement `GET /api/properties` (Public Browse).
-    - [ ] Add filters: category, intent, city.
+- [x] Implement `PATCH /api/properties/{id}` (Update listing).
+    - [x] *Security constraint:* Ensure `current_user.id == property.owner_id`.
+- [x] Implement `DELETE /api/properties/{id}`.
+- [x] Implement `GET /api/properties` (Public Browse).
+    - [x] Add filters: category, intent, city, min_price, max_price, sort_by.
     - [ ] Implement Geospatial filtering (within radius) using PostGIS/SQLAlchemy `ST_DWithin`.
-- [ ] Implement `GET /api/properties/{id}` (Public details).
-- [ ] Implement `GET /api/agencies` and `/api/agencies/{id}`.
+- [x] Implement `GET /api/properties/{id}` (Public details).
+- [x] Implement `GET /api/agencies` and `/api/agencies/{id}`.
 
 ### Phase 5: Enquiry Systems (WhatsApp & Chat)
 - [ ] **WhatsApp (PG/Hostel)**
-    - [ ] Create `GET /api/properties/{ref}/enquiry-link` to generate `wa.me` URL.
+    - [x] Create `GET /api/properties/ref/{ref}/enquiry-link` to generate `wa.me` URL.
     - [ ] Implement `POST /api/webhooks/whatsapp` to handle inbound bot messages.
     - [ ] Setup rate limiting/contact tracking (3 free contacts logic).
 - [ ] **In-Platform Chat (Other Categories)**

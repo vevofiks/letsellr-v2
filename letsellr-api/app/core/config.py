@@ -75,6 +75,9 @@ class Settings(BaseSettings):
     WHATSAPP_WEBHOOK_VERIFY_TOKEN: str = ""
     FREE_CONTACT_LIMIT: int = 3
 
+    # ── Map / Places API ──────────────────────────────────────────────────────
+    PLACES_API_KEY: str = ""
+
     # ── CORS ─────────────────────────────────────────────────────────────
     # Stored as a raw string in .env (comma-separated); parsed by validator.
     CORS_ORIGINS_STR: str = "http://localhost:3000,http://localhost:5173"

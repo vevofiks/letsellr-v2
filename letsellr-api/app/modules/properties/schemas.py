@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal, Optional, Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 
 
 class LocationSchema(BaseModel):
@@ -58,7 +58,7 @@ class PropertyUpdate(BaseModel):
     location: Optional[LocationSchema] = None
     owner_phone: Optional[str] = Field(None, max_length=20)
     owner_whatsapp: Optional[str] = Field(None, max_length=20)
-    status: Optional[Literal["draft", "pending_review", "inactive"]] = None
+    status: Optional[Literal["draft", "pending_review", "inactive", "live"]] = None
 
 
 class StatsSchema(BaseModel):
@@ -111,3 +111,41 @@ class PropertyResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ── Enquiry Link ───────────────────────────────────────────────────────────────
+
+class EnquiryLinkResponse(BaseModel):
+    """
+    Returned by GET /api/properties/ref/{ref}/enquiry-link.
+
+    `link` is a wa.me deep-link URL that opens a pre-filled WhatsApp chat
+    to the property owner — bypassing any broker or middleman.
+    """
+    ref: str
+    link: str
+    enquiry_type: str  # always "whatsapp_bot" for this endpoint
+
+
+# ── Paginated Browse Response ──────────────────────────────────────────────────
+
+class PropertyBrowseResponse(BaseModel):
+    """Paginated wrapper for the public property list endpoint."""
+    results: list[PropertyResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+# ── Nearby Locations ───────────────────────────────────────────────────────────
+
+class LocationSuggestion(BaseModel):
+    name: str
+    address: Optional[str] = None
+    latitude: float
+    longitude: float
+    types: list[str] = Field(default_factory=list)
+
+class NearbyLocationsResponse(BaseModel):
+    results: list[LocationSuggestion]

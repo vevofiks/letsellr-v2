@@ -96,16 +96,18 @@ async def verify_registration(
 
 # ── Login ─────────────────────────────────────────────────────────────────────
 
+from typing import Union
+
 @router.post(
     "/login",
-    response_model=TokenResponse,
-    summary="Sign in with email and password",
+    response_model=Union[TokenResponse, MessageResponse],
+    summary="Sign in with email and optional password",
 )
-async def login(payload: LoginRequest, db: DbSession) -> TokenResponse:
+async def login(payload: LoginRequest, db: DbSession) -> Union[TokenResponse, MessageResponse]:
     """
-    **Login with email and password.**
+    **Login flow.**
 
-    Validates user credentials against Supabase and returns session JWT tokens.
+    If password is provided, signs in directly. Otherwise, sends OTP.
     """
     service = AuthService(db)
     return await service.login(payload)
