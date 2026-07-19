@@ -67,7 +67,8 @@ class AuthService:
 
         supabase = get_supabase_client()
         try:
-            supabase.auth.sign_up({
+            res = supabase.auth.admin.generate_link({
+                "type": "signup",
                 "email": payload.email,
                 "password": payload.password,
                 "options": {
@@ -81,6 +82,11 @@ class AuthService:
                     }
                 }
             })
+            if hasattr(res, "properties") and res.properties.email_otp:
+                from app.core.email import send_otp_email
+                await send_otp_email(payload.email, res.properties.email_otp, "registration")
+            else:
+                raise Exception("Failed to retrieve OTP from Supabase.")
         except Exception as e:
             logger.error("Supabase sign_up error: %s", e)
             error_str = str(e).lower()
@@ -88,6 +94,11 @@ class AuthService:
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                     detail="Email rate limit exceeded. Please wait a moment before trying again.",
+                ) from e
+            if "user_already_exists" in error_str or "user already registered" in error_str:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="An account with this email already exists. Please log in.",
                 ) from e
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -109,19 +120,15 @@ class AuthService:
 
         supabase = get_supabase_client()
         try:
-            supabase.auth.sign_up({
+            res = supabase.auth.admin.generate_link({
+                "type": "magiclink",
                 "email": payload.email,
-                "password": payload.password,
-                "options": {
-                    "data": {
-                        "name": payload.name,
-                        "phone": payload.phone,
-                        "role": "user",
-                        "location": payload.location,
-                        "preference_type": payload.preference_type,
-                    }
-                }
             })
+            if hasattr(res, "properties") and res.properties.email_otp:
+                from app.core.email import send_otp_email
+                await send_otp_email(payload.email, res.properties.email_otp, "registration")
+            else:
+                raise Exception("Failed to retrieve OTP from Supabase.")
         except Exception as e:
             logger.error("Supabase user sign_up error: %s", e)
             error_str = str(e).lower()
@@ -129,6 +136,11 @@ class AuthService:
                 raise HTTPException(
                     status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                     detail="Email rate limit exceeded. Please wait a moment before trying again.",
+                ) from e
+            if "user_already_exists" in error_str or "user already registered" in error_str:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="An account with this email already exists. Please log in.",
                 ) from e
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -241,7 +253,7 @@ class AuthService:
 
     # ── Login ─────────────────────────────────────────────────────────────────
 
-    async def login(self, payload: LoginRequest) -> TokenResponse:
+    async def login(self, payload: LoginRequest) -> TokenResponse | MessageResponse:
         user = await self.repo.get_by_email(payload.email)
         if not user:
             raise HTTPException(
@@ -256,36 +268,52 @@ class AuthService:
             )
 
         supabase = get_supabase_client()
-        try:
-            res = supabase.auth.sign_in_with_password({
-                "email": payload.email,
-                "password": payload.password
-            })
-        except Exception as e:
-            logger.error("Supabase login sign_in_with_password error: %s", e)
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email or password.",
-            ) from e
-
-        if not res.user or not res.session:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to retrieve user session from Supabase.",
+        if payload.password:
+            try:
+                res = supabase.auth.sign_in_with_password({
+                    "email": payload.email,
+                    "password": payload.password
+                })
+            except Exception as e:
+                logger.error("Supabase login sign_in_with_password error: %s", e)
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid email or password.",
+                ) from e
+            if not res.user or not res.session:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to retrieve user session from Supabase.",
+                )
+            if not user.auth_provider_uid or user.auth_provider_uid != res.user.id:
+                user.auth_provider_uid = res.user.id
+                await self.db.commit()
+            logger.info("User logged in via Supabase password: %s", user.email)
+            return TokenResponse(
+                access_token=res.session.access_token,
+                refresh_token=res.session.refresh_token,
+                user=UserPublic.model_validate(user),
             )
+        else:
+            try:
+                res = supabase.auth.admin.generate_link({
+                    "type": "magiclink",
+                    "email": payload.email,
+                })
+                if hasattr(res, "properties") and res.properties.email_otp:
+                    from app.core.email import send_otp_email
+                    await send_otp_email(payload.email, res.properties.email_otp, "login")
+                else:
+                    raise Exception("Failed to retrieve OTP from Supabase.")
+            except Exception as e:
+                logger.error("Supabase login magiclink error: %s", e)
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to send OTP for login. Please try again later.",
+                ) from e
 
-        # Sync provider uid if missing or mismatched
-        if not user.auth_provider_uid or user.auth_provider_uid != res.user.id:
-            user.auth_provider_uid = res.user.id
-            await self.db.commit()
-
-        logger.info("User logged in via Supabase: %s", user.email)
-        
-        return TokenResponse(
-            access_token=res.session.access_token,
-            refresh_token=res.session.refresh_token,
-            user=UserPublic.model_validate(user),
-        )
+            logger.info("OTP sent for login: %s", user.email)
+            return MessageResponse(message="OTP sent to your email. Please verify to log in.")
 
     async def verify_login(self, payload: VerifyLoginRequest) -> TokenResponse:
         supabase = get_supabase_client()
@@ -344,7 +372,36 @@ class AuthService:
 
         supabase = get_supabase_client()
         try:
-            supabase.auth.sign_in_with_otp({"email": payload.email})
+            if payload.purpose == "registration":
+                pending = _pending_registrations.get(payload.email) or _pending_user_registrations.get(payload.email)
+                if not pending:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="No pending registration found. Please register again.",
+                    )
+            
+                if hasattr(pending, "password") and pending.password:
+                    res = supabase.auth.admin.generate_link({
+                        "type": "signup",
+                        "email": payload.email,
+                        "password": pending.password,
+                    })
+                else:
+                    res = supabase.auth.admin.generate_link({
+                        "type": "magiclink",
+                        "email": payload.email,
+                    })
+            else:
+                res = supabase.auth.admin.generate_link({
+                    "type": "magiclink",
+                    "email": payload.email,
+                })
+
+            if hasattr(res, "properties") and res.properties.email_otp:
+                from app.core.email import send_otp_email
+                await send_otp_email(payload.email, res.properties.email_otp, payload.purpose)
+            else:
+                raise Exception("Failed to retrieve OTP from Supabase.")
         except Exception as e:
             logger.error("Supabase resend_otp error: %s", e)
             error_str = str(e).lower()

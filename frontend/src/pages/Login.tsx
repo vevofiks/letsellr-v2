@@ -48,8 +48,15 @@ export const Login: React.FC = () => {
 
   const onSubmit = async (data: LoginInput) => {
     try {
-      await login(data.email, data.password);
-      toast.success("Successfully signed in!");
+      const isDirectLogin = await login(data.email, data.password);
+      if (isDirectLogin) {
+        toast.success("Successfully signed in!");
+      } else {
+        toast.success("OTP sent to your email!");
+        navigate("/verify-otp", {
+          state: { email: data.email, purpose: "login" },
+        });
+      }
     } catch (err: any) {
       console.error(err);
       toast.error(
@@ -68,7 +75,7 @@ export const Login: React.FC = () => {
             Welcome Back
           </h1>
           <p className="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed text-center">
-            Enter your email and password to log in.
+            Enter your email to receive an OTP, or provide your password if you have one.
           </p>
         </div>
 
@@ -92,7 +99,7 @@ export const Login: React.FC = () => {
             {/* Password */}
             <Field>
               <div className="flex items-center justify-between">
-                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <FieldLabel htmlFor="password">Password (Optional)</FieldLabel>
               </div>
               <div className="relative">
                 <Input
@@ -118,6 +125,7 @@ export const Login: React.FC = () => {
                 {errors.password?.message}
               </FieldError>
             </Field>
+
           </FieldGroup>
 
           {/* Form Actions */}

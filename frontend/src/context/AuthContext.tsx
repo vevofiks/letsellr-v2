@@ -23,7 +23,7 @@ export interface UserProfile {
 interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password?: string) => Promise<boolean>;
   verifyLogin: (email: string, otp: string) => Promise<void>;
   registerOwnerAgency: (data: any) => Promise<void>;
   registerClient: (data: any) => Promise<void>;
@@ -76,14 +76,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Initiate Login (Direct Email + Password)
-  const login = async (email: string, password: string) => {
+  // Initiate Login (Password or OTP)
+  const login = async (email: string, password?: string): Promise<boolean> => {
     const res = await api.post("/api/auth/login", { email, password });
-    const { access_token, refresh_token, user: userData } = res.data;
-
-    localStorage.setItem("access_token", access_token);
-    localStorage.setItem("refresh_token", refresh_token);
-    setUser(userData);
+    
+    // If we receive an access token, it was a direct password login
+    if (res.data.access_token) {
+      const { access_token, refresh_token, user: userData } = res.data;
+      localStorage.setItem("access_token", access_token);
+      localStorage.setItem("refresh_token", refresh_token);
+      setUser(userData);
+      return true; // logged in directly
+    }
+    
+    // Otherwise it was an OTP request
+    return false; // OTP required
   };
 
   // Step 2: Verify Login (legacy/fallback)

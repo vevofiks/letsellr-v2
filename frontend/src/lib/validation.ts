@@ -34,7 +34,6 @@ const emailSchema = z
     // 1. Block known disposable email domains
     const disposableDomains = [
       "mailinator.com",
-      "yopmail.com",
       "tempmail.com",
       "dispostable.com",
       "10minutemail.com",
@@ -100,12 +99,6 @@ export const clientRegisterSchema = z
     phone: phoneSchema,
     preference_type: z.string().min(1, "Please select a preference type"),
     location: locationSchema,
-    password: passwordSchema,
-    confirm_password: z.string().min(8, "Confirm password is required"),
-  })
-  .refine((data) => data.password === data.confirm_password, {
-    message: "Passwords do not match",
-    path: ["confirm_password"],
   });
 
 export type ClientRegisterInput = z.infer<typeof clientRegisterSchema>;
@@ -165,7 +158,7 @@ export type OwnerAgencyRegisterInput = z.infer<typeof ownerAgencyRegisterSchema>
 // ── Login Schema ─────────────────────────────────────────────────────────────
 export const loginSchema = z.object({
   email: emailSchema,
-  password: z.string().min(1, "Password is required"),
+  password: z.string().optional(),
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

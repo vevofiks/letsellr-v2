@@ -129,33 +129,7 @@ export const RegisterClient: React.FC = () => {
               </FieldError>
             </Field>
 
-            {/* Password */}
-            <Field>
-              <FieldLabel htmlFor="password">Password</FieldLabel>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                {...register("password")}
-              />
-              <FieldError className="text-left text-xs font-medium text-destructive">
-                {errors.password?.message}
-              </FieldError>
-            </Field>
 
-            {/* Confirm Password */}
-            <Field>
-              <FieldLabel htmlFor="confirm_password">Confirm Password</FieldLabel>
-              <Input
-                id="confirm_password"
-                type="password"
-                placeholder="••••••••"
-                {...register("confirm_password")}
-              />
-              <FieldError className="text-left text-xs font-medium text-destructive">
-                {errors.confirm_password?.message}
-              </FieldError>
-            </Field>
           </FieldGroup>
 
           {/* Form Actions */}

@@ -84,7 +84,10 @@ def create_app() -> FastAPI:
     # ── Global Exception Handlers ──────────────────────────────────────────────
     @app.exception_handler(404)
     async def not_found_handler(request, exc):
-        return JSONResponse(status_code=404, content={"detail": "Resource not found."})
+        detail = getattr(exc, "detail", "Resource not found.")
+        if detail == "Not Found":
+            detail = "Resource not found."
+        return JSONResponse(status_code=404, content={"detail": detail})
 
     @app.exception_handler(500)
     async def server_error_handler(request, exc):

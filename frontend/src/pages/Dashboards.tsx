@@ -1,6 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import {
@@ -12,14 +12,11 @@ import {
 } from "@/components/ui/select";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
-import { ProfileModal } from "@/components/ProfileModal";
+import { AppNavbar } from "@/components/AppNavbar";
 
 import { 
-  LogOut, 
-  User, 
   Home, 
   PlusCircle, 
-  LayoutDashboard, 
   Search, 
   MapPin, 
   ChevronLeft, 
@@ -29,67 +26,6 @@ import {
   Maximize
 } from "lucide-react";
 
-// ── Shared Dashboard Header ─────────────────────────────────────────────────
-const DashboardHeader: React.FC<{ title: string }> = ({ title }) => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const [profileModalOpen, setProfileModalOpen] = useState(false);
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
-  // Determine dashboard home path based on user role
-  let homePath = "/register/type";
-  if (user) {
-    if (user.role === "user") homePath = "/dashboard";
-    else if (user.role === "owner" || user.role === "agency") homePath = "/owner/dashboard";
-    else if (user.role === "admin") homePath = "/admin";
-  }
-
-  return (
-    <header className="border-b border-slate-100 bg-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-8">
-          <Link to={homePath} className="text-xl font-bold text-[#308178]">
-            Letsellr<span className="text-slate-400">.v2</span>
-          </Link>
-          <nav className="hidden items-center gap-6 md:flex">
-            <span className="text-sm font-semibold text-slate-900 flex items-center gap-1.5">
-              <LayoutDashboard className="h-4 w-4 text-slate-500" />
-              {title}
-            </span>
-            <button
-              onClick={() => setProfileModalOpen(true)}
-              className="text-sm font-medium text-slate-500 hover:text-[#308178] flex items-center gap-1.5 cursor-pointer bg-transparent border-0"
-            >
-              <User className="h-4 w-4" />
-              My Profile
-            </button>
-          </nav>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">{user?.role}</p>
-            <p className="text-sm font-bold text-slate-900">{user?.name}</p>
-          </div>
-          <Button
-            variant="ghost"
-            onClick={handleLogout}
-            className="text-slate-500 hover:text-rose-600 hover:bg-rose-50"
-          >
-            <LogOut className="h-4 w-4 mr-1.5" />
-            Sign Out
-          </Button>
-        </div>
-      </div>
-      {profileModalOpen && (
-        <ProfileModal onClose={() => setProfileModalOpen(false)} />
-      )}
-    </header>
-  );
-};
 
 // ── Client / Seeker Dashboard ────────────────────────────────────────────────
 export const ClientDashboard: React.FC = () => {
@@ -105,30 +41,21 @@ export const ClientDashboard: React.FC = () => {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [detectedLocation, setDetectedLocation] = useState<string>("");
   const [page, setPage] = useState(1);
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [profileModalOpen, setProfileModalOpen] = useState(false);
-
   const limit = 6;
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
 
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Close dropdown on click outside
+  // Redirect non-client authenticated users to their respective dashboards
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setProfileDropdownOpen(false);
+    if (user) {
+      if (user.role === "owner" || user.role === "agency") {
+        navigate("/owner/dashboard", { replace: true });
+      } else if (user.role === "admin") {
+        navigate("/admin", { replace: true });
       }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
+    }
+  }, [user, navigate]);
 
   // Fallback images for premium property categories
   const getCategoryFallbackImage = (cat: string) => {
@@ -176,7 +103,7 @@ export const ClientDashboard: React.FC = () => {
       }
 
       const res = await api.get("/api/properties", { params });
-      setProperties(res.data);
+      setProperties(res.data.results || res.data || []);
     } catch (err) {
       console.error("Failed to fetch properties", err);
       toast.error("Failed to load listings");
@@ -305,62 +232,8 @@ export const ClientDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f4f6f5] text-left relative font-sans">
-      
-      {/* Premium Webflow-inspired Header Navigation */}
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-100 shadow-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-12">
-            {/* Elegant Infinity Logo */}
-            <Link to="/dashboard" className="flex items-center gap-2 group">
-              <div className="p-1 rounded-lg bg-teal-50 group-hover:bg-teal-100 transition-colors">
-                <svg className="h-7 w-7 text-[#1b3b2b] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 1 0 0-8c-2 0-4 1.33-6 4Z" />
-                </svg>
-              </div>
-              <span className="text-xl font-black tracking-tight text-[#1b3b2b]">Letsellr</span>
-            </Link>
-          </div>
 
-          <div className="flex items-center gap-4">
-            {/* User Dropdown Button (Explore Properties theme) */}
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                className="bg-[#1b3b2b] hover:bg-[#152e22] text-white text-xs font-bold px-6 py-2.5 rounded-full transition-all cursor-pointer shadow-sm flex items-center gap-2"
-              >
-                <span>Explore Properties</span>
-                <svg className="h-3 w-3 text-white/80" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                </svg>
-              </button>
-
-              {profileDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-48 rounded-xl bg-white py-2 shadow-xl border border-slate-100 z-50 animate-in fade-in slide-in-from-top-3 duration-150">
-                  <div className="px-4 py-2 border-b border-slate-50">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{user?.role}</p>
-                    <p className="text-xs font-bold text-slate-800 truncate">{user?.name || user?.email}</p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setProfileModalOpen(true);
-                      setProfileDropdownOpen(false);
-                    }}
-                    className="flex w-full items-center px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-[#1b3b2b] transition-colors bg-transparent border-0 text-left cursor-pointer"
-                  >
-                    My Profile
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="flex w-full items-center px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
-                  >
-                    Sign Out
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </header>
+      <AppNavbar logoHref="/dashboard" />
 
       {/* Main Container */}
       <main className="mx-auto max-w-9xl px-5 py-8">
@@ -375,7 +248,7 @@ export const ClientDashboard: React.FC = () => {
               Your Reliable Ally in Worldwide Real Estate
             </span>
             <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white m-0 leading-tight">
-              Worldwide Real Estate
+              Choose Your Next Home
             </h1>
           </div>
         </div>
@@ -718,10 +591,6 @@ export const ClientDashboard: React.FC = () => {
           </>
         )}
       </main>
-
-      {profileModalOpen && (
-        <ProfileModal onClose={() => setProfileModalOpen(false)} />
-      )}
     </div>
   );
 };
@@ -730,7 +599,7 @@ export const ClientDashboard: React.FC = () => {
 export const OwnerDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-left">
-      <DashboardHeader title="Partner Dashboard" />
+      <AppNavbar logoHref="/owner/dashboard" title="Partner Dashboard" />
       <main className="mx-auto max-w-7xl px-6 py-8">
         <div className="mb-6 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
           <div>
@@ -802,7 +671,7 @@ export const OwnerDashboard: React.FC = () => {
 export const AdminDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-left">
-      <DashboardHeader title="Admin Dashboard" />
+      <AppNavbar logoHref="/admin" title="Admin Dashboard" />
       <main className="mx-auto max-w-7xl px-6 py-8">
         <div className="mb-6">
           <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">System Control Room</h1>

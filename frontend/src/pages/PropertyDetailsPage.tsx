@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
@@ -12,7 +12,7 @@ import "leaflet/dist/leaflet.css";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
-import { ProfileModal } from "@/components/ProfileModal";
+import { AppNavbar } from "@/components/AppNavbar";
 
 import { 
   ArrowLeft,
@@ -108,8 +108,6 @@ export const PropertyDetailsPage: React.FC = () => {
   const [property, setProperty] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [relatedProperties, setRelatedProperties] = useState<any[]>([]);
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
 
@@ -140,18 +138,6 @@ export const PropertyDetailsPage: React.FC = () => {
 
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
-  const dropdownRef = useRef<HTMLDivElement | null>(null);
-
-  // Close dropdown on click outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setProfileDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   // Fetch Property Details
   useEffect(() => {
@@ -305,70 +291,7 @@ export const PropertyDetailsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-[#f4f6f5] text-left relative font-sans">
       
-      {/* Premium Webflow-inspired Header Navigation */}
-      <header className="sticky top-0 z-40 bg-white border-b border-slate-100 shadow-sm">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-12">
-            {/* Elegant Infinity Logo */}
-            <Link to="/dashboard" className="flex items-center gap-2 group">
-              <div className="p-1 rounded-lg bg-teal-50 group-hover:bg-teal-100 transition-colors">
-                <svg className="h-7 w-7 text-[#1b3b2b] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 1 0 0-8c-2 0-4 1.33-6 4Z" />
-                </svg>
-              </div>
-              <span className="text-xl font-black tracking-tight text-[#1b3b2b]">Letsellr</span>
-            </Link>
-          </div>
-
-          <div className="flex items-center gap-3">
-            {user ? (
-              /* User Dropdown Button (Explore Properties theme) */
-              <div className="relative" ref={dropdownRef}>
-                <button
-                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                  className="bg-[#1b3b2b] hover:bg-[#152e22] text-white text-xs font-bold px-6 py-2.5 rounded-full transition-all cursor-pointer shadow-sm flex items-center gap-2"
-                >
-                  <span>Explore Properties</span>
-                  <svg className="h-3 w-3 text-white/80" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-                  </svg>
-                </button>
-
-                {profileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 rounded-xl bg-white py-2 shadow-xl border border-slate-100 z-50 animate-in fade-in slide-in-from-top-3 duration-150">
-                    <div className="px-4 py-2 border-b border-slate-50">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{user?.role}</p>
-                      <p className="text-xs font-bold text-slate-800 truncate">{user?.name || user?.email}</p>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setProfileModalOpen(true);
-                        setProfileDropdownOpen(false);
-                      }}
-                      className="flex w-full items-center px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 hover:text-[#1b3b2b] transition-colors"
-                    >
-                      My Profile
-                    </button>
-                    <button
-                      onClick={handleLogout}
-                      className="flex w-full items-center px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors"
-                    >
-                      Sign Out
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Button
-                onClick={() => navigate("/login", { state: { from: `/properties/${propertyId}` } })}
-                className="bg-[#1b3b2b] hover:bg-[#254f3b] text-white text-xs font-extrabold px-6 py-2.5 rounded-full cursor-pointer shadow-sm transition-colors"
-              >
-                Sign In
-              </Button>
-            )}
-          </div>
-        </div>
-      </header>
+      <AppNavbar logoHref="/dashboard" />
 
       {/* Main Container */}
       <main className="mx-auto max-w-7xl px-6 py-8">
@@ -714,9 +637,6 @@ export const PropertyDetailsPage: React.FC = () => {
         </div>
       </main>
 
-      {profileModalOpen && (
-        <ProfileModal onClose={() => setProfileModalOpen(false)} />
-      )}
     </div>
   );
 };

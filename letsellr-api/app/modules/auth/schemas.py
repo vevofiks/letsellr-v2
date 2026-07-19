@@ -18,7 +18,6 @@ class UserRegisterRequest(BaseModel):
     phone: str = Field(..., min_length=7, max_length=20)
     preference_type: str = Field(..., min_length=1)
     location: str = Field(..., min_length=2, max_length=200)
-    password: str = Field(..., min_length=6, max_length=100)
 
 
 class RegisterRequest(BaseModel):
@@ -46,9 +45,9 @@ class VerifyRegistrationRequest(BaseModel):
 # ── Login ─────────────────────────────────────────────────────────────────────
 
 class LoginRequest(BaseModel):
-    """Sign in using email and password."""
+    """Sign in using email and optional password."""
     email: EmailStr
-    password: str = Field(..., min_length=1)
+    password: str | None = None
 
 
 class VerifyLoginRequest(BaseModel):
