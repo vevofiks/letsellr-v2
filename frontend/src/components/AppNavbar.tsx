@@ -12,7 +12,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, UserPlus, User } from "lucide-react";
+import { LogOut, UserPlus, User, ChevronDown } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ProfileModal } from "@/components/ProfileModal";
 import { AuthModal, type AuthModalMode } from "@/components/AuthModal";
@@ -61,6 +61,15 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
         .toUpperCase()
     : "?";
 
+  const roleLabel =
+    user?.role === "agency"
+      ? "AGENCY"
+      : user?.role === "owner"
+      ? "OWNER"
+      : user?.role === "client" || user?.role === "buyer" || user?.role === "tenant"
+      ? "CLIENT"
+      : (user?.role || "USER").toUpperCase();
+
   return (
     <>
       <header className="sticky top-0 z-40 bg-white border-b border-slate-100 shadow-sm">
@@ -94,10 +103,21 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
               <button
                 id="profile-icon-btn"
                 onClick={() => setDropdownOpen((o) => !o)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-green hover:bg-brand-green-hover text-white text-xs font-black transition-all shadow-sm cursor-pointer select-none"
+                className="flex items-center gap-1.5 sm:gap-2 p-1 rounded-full hover:bg-slate-100 transition-colors cursor-pointer focus:outline-none select-none"
                 title={user.name}
               >
-                {initials}
+                <div className="h-8 w-8 sm:h-9 sm:w-9 rounded-full bg-slate-900 text-white font-black text-xs flex items-center justify-center shadow-xs border border-slate-200 shrink-0">
+                  {initials}
+                </div>
+                <div className="flex flex-col text-left pr-1">
+                  <span className="text-xs font-extrabold text-slate-900 line-clamp-1 max-w-30">
+                    {user.name}
+                  </span>
+                  <span className="text-[9px] font-bold text-brand-green uppercase tracking-wider">
+                    {roleLabel}
+                  </span>
+                </div>
+                <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
               </button>
             ) : (
               /* ── LOGGED OUT: user icon button ──────────────────────── */
