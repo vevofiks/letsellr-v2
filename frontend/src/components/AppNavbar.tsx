@@ -12,7 +12,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, UserPlus, User, ChevronDown } from "lucide-react";
+import { LogOut, UserPlus, User, ChevronDown, Building2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ProfileModal } from "@/components/ProfileModal";
 import { AuthModal, type AuthModalMode } from "@/components/AuthModal";
@@ -93,6 +93,22 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
               </div>
               <span className="text-xl font-black tracking-tight text-brand-green">Letsellr</span>
             </Link>
+
+            <nav className="hidden md:flex items-center gap-6">
+              <Link
+                to="/dashboard"
+                className="text-xs font-extrabold text-slate-600 hover:text-brand-green transition-colors"
+              >
+                Properties
+              </Link>
+              <Link
+                to="/agencies"
+                className="text-xs font-extrabold text-slate-600 hover:text-brand-green transition-colors flex items-center gap-1.5"
+              >
+                <Building2 className="h-4 w-4 text-brand-green" />
+                Agencies
+              </Link>
+            </nav>
           </div>
 
           {/* ── Right: profile button + dropdown ─────────────────────── */}

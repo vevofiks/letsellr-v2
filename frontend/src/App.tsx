@@ -14,6 +14,8 @@ import { OwnerPropertyFormPage } from "@/pages/OwnerPropertyFormPage";
 import { OwnerPropertyDetailPage } from "@/pages/OwnerPropertyDetailPage";
 import { OwnerSettingsPage } from "@/pages/OwnerSettingsPage";
 import { PropertyDetailsPage } from "@/pages/PropertyDetailsPage";
+import { AgenciesPage } from "@/pages/AgenciesPage";
+import { AgencyDetailsPage } from "@/pages/AgencyDetailsPage";
 import { Toaster } from "@/components/ui/sonner";
 
 function App() {
@@ -65,6 +67,15 @@ function App() {
             <Route
               path="/dashboard"
               element={<ClientDashboard />}
+            />
+
+            <Route
+              path="/agencies"
+              element={<AgenciesPage />}
+            />
+            <Route
+              path="/agencies/:agencyId"
+              element={<AgencyDetailsPage />}
             />
 
             <Route
