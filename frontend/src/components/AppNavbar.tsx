@@ -12,7 +12,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogIn, LogOut, UserPlus, User } from "lucide-react";
+import { LogOut, UserPlus, User } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ProfileModal } from "@/components/ProfileModal";
 import { AuthModal, type AuthModalMode } from "@/components/AuthModal";
@@ -71,7 +71,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
             <Link to={logoHref} className="flex items-center gap-2 group">
               <div className="p-1 rounded-lg bg-teal-50 group-hover:bg-teal-100 transition-colors">
                 <svg
-                  className="h-7 w-7 text-[#1b3b2b] shrink-0"
+                  className="h-7 w-7 text-brand-green shrink-0"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
@@ -82,7 +82,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
                   <path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 1 0 0-8c-2 0-4 1.33-6 4Z" />
                 </svg>
               </div>
-              <span className="text-xl font-black tracking-tight text-[#1b3b2b]">Letsellr</span>
+              <span className="text-xl font-black tracking-tight text-brand-green">Letsellr</span>
             </Link>
           </div>
 
@@ -94,7 +94,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
               <button
                 id="profile-icon-btn"
                 onClick={() => setDropdownOpen((o) => !o)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1b3b2b] hover:bg-[#152e22] text-white text-xs font-black transition-all shadow-sm cursor-pointer select-none"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-green hover:bg-brand-green-hover text-white text-xs font-black transition-all shadow-sm cursor-pointer select-none"
                 title={user.name}
               >
                 {initials}
@@ -104,7 +104,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
               <button
                 id="profile-icon-btn"
                 onClick={() => setDropdownOpen((o) => !o)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#1b3b2b] hover:bg-[#152e22] text-white transition-all shadow-sm cursor-pointer"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-green hover:bg-brand-green-hover text-white transition-all shadow-sm cursor-pointer"
                 title="Account"
               >
                 <User className="h-4 w-4" />
@@ -121,7 +121,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
                     {/* User card */}
                     <div className="px-4 pt-2 pb-3 border-b border-slate-100">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1b3b2b] text-white text-xs font-black shrink-0">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-green text-white text-xs font-black shrink-0">
                           {initials}
                         </div>
                         <div className="min-w-0">
@@ -139,9 +139,9 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
                         setDropdownOpen(false);
                         setProfileModalOpen(true);
                       }}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-teal-50 hover:text-[#1b3b2b] transition-colors text-left"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-teal-50 hover:text-brand-green transition-colors text-left"
                     >
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-100 text-[#1b3b2b] shrink-0">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-100 text-brand-green shrink-0">
                         <User className="h-3.5 w-3.5" />
                       </span>
                       <div>
@@ -181,9 +181,9 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
                         setDropdownOpen(false);
                         setAuthModal({ open: true, mode: "register-client" });
                       }}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-teal-50 hover:text-[#1b3b2b] transition-colors text-left"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-teal-50 hover:text-brand-green transition-colors text-left"
                     >
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-100 text-[#1b3b2b] shrink-0">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-100 text-brand-green shrink-0">
                         <UserPlus className="h-3.5 w-3.5" />
                       </span>
                       <div>

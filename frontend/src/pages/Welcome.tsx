@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from "react";
+import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
-import { HouseIcon, UserCheckIcon, UsersIcon, ChevronRightIcon } from "@animateicons/react/lucide";
+import { UserCheckIcon, UsersIcon, ChevronRightIcon } from "@animateicons/react/lucide";
 import { useAuth } from "@/context/AuthContext";
 import { AppNavbar } from "@/components/AppNavbar";
 
@@ -88,7 +89,10 @@ export const Welcome: React.FC = () => {
           </div>
 
           {/* Role cards — Owner & Agency only */}
-          <div className="w-full grid grid-cols-1 md:grid-cols-2 border border-slate-200 bg-white divide-y md:divide-y-0 md:divide-x divide-slate-200 shadow-sm max-w-2xl mx-auto rounded-2xl overflow-hidden">
+          <div className={cn(
+            "w-full grid grid-cols-1 md:grid-cols-2 border border-slate-200 bg-white divide-y md:divide-y-0 md:divide-x shadow-sm max-w-2xl mx-auto rounded-2xl overflow-hidden",
+            "divide-slate-200"
+          )}>
             {roles.map((role) => {
               const isSelected = selectedRole === role.id;
               const Icon = role.Icon;
@@ -125,7 +129,7 @@ export const Welcome: React.FC = () => {
                     {role.title}
                   </h3>
 
-                  <p className="mt-2 text-xs text-slate-500 max-w-[200px] leading-relaxed">
+                  <p className="mt-2 text-xs text-slate-500 max-w-50 leading-relaxed">
                     {role.description}
                   </p>
 

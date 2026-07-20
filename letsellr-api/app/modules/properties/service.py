@@ -35,6 +35,11 @@ class PropertyService:
         return f"PROP-{random_str}"
 
     async def create_property(self, data: PropertyCreate, current_user: User) -> Property:
+        if current_user.role == "owner" and data.category not in ["pg", "hostel"]:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Individual owners can only list in PG or Hostel categories.",
+            )
         if current_user.role == "agency" and data.category not in AGENCY_ALLOWED_CATEGORIES:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -59,7 +64,7 @@ class PropertyService:
                 "location_state": location_data.get("state"),
                 "latitude": location_data.get("latitude"),
                 "longitude": location_data.get("longitude"),
-                "status": "pending_review",
+                "status": data.status or "pending_review",
                 "stats": {"views": 0, "enquiries": 0, "saves": 0},
             }
         )

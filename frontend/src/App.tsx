@@ -7,7 +7,12 @@ import { RegisterOwnerAgency } from "@/pages/RegisterOwnerAgency";
 import { RegisterClient } from "@/pages/RegisterClient";
 import { Login } from "@/pages/Login";
 import { VerifyOTP } from "@/pages/VerifyOTP";
-import { ClientDashboard, OwnerDashboard, AdminDashboard } from "@/pages/Dashboards";
+import { ClientDashboard, AdminDashboard } from "@/pages/Dashboards";
+import { OwnerDashboard } from "@/pages/OwnerDashboard";
+import { OwnerPropertiesPage } from "@/pages/OwnerPropertiesPage";
+import { OwnerPropertyFormPage } from "@/pages/OwnerPropertyFormPage";
+import { OwnerPropertyDetailPage } from "@/pages/OwnerPropertyDetailPage";
+import { OwnerSettingsPage } from "@/pages/OwnerSettingsPage";
 import { PropertyDetailsPage } from "@/pages/PropertyDetailsPage";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -67,12 +72,52 @@ function App() {
               element={<PropertyDetailsPage />}
             />
 
-            {/* Protected Owner/Agency Dashboard Route */}
+            {/* Protected Owner/Agency Experience Routes */}
             <Route
               path="/owner/dashboard"
               element={
                 <ProtectedRoute allowedRoles={["owner", "agency"]}>
                   <OwnerDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/owner/properties"
+              element={
+                <ProtectedRoute allowedRoles={["owner", "agency"]}>
+                  <OwnerPropertiesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/owner/properties/new"
+              element={
+                <ProtectedRoute allowedRoles={["owner", "agency"]}>
+                  <OwnerPropertyFormPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/owner/properties/:propertyId/edit"
+              element={
+                <ProtectedRoute allowedRoles={["owner", "agency"]}>
+                  <OwnerPropertyFormPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/owner/properties/:propertyId"
+              element={
+                <ProtectedRoute allowedRoles={["owner", "agency"]}>
+                  <OwnerPropertyDetailPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/owner/settings"
+              element={
+                <ProtectedRoute allowedRoles={["owner", "agency"]}>
+                  <OwnerSettingsPage />
                 </ProtectedRoute>
               }
             />

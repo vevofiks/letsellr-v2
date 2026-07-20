@@ -37,6 +37,7 @@ from app.modules.chat.router import router as chat_router
 from app.modules.admin.router import router as admin_router
 from app.modules.media.router import router as media_router
 from app.modules.webhooks.router import router as webhooks_router
+from app.modules.reviews.router import router as reviews_router
 
 
 # ── Lifespan (startup / shutdown) ─────────────────────────────────────────────
@@ -108,8 +109,10 @@ def create_app() -> FastAPI:
     app.include_router(admin_router,      prefix=f"{api_prefix}/admin",      tags=["Admin"])
     app.include_router(media_router,      prefix=f"{api_prefix}/media",      tags=["Media"])
     app.include_router(webhooks_router,   prefix=f"{api_prefix}/webhooks",   tags=["Webhooks"])
+    app.include_router(reviews_router,    prefix=api_prefix)
 
     return app
 
 
 app = create_app()
+# Reload trigger

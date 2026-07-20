@@ -140,6 +140,8 @@ code {
 }
 
 @theme inline {
+  --color-brand-green: #1b3b2b;
+  --color-brand-green-hover: #152e22;
   --font-heading: 'DM Sans', sans-serif;
   --font-sans: 'DM Sans', sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
