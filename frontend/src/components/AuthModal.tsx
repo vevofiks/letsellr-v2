@@ -29,6 +29,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 
 export type AuthModalMode = "register-client" | "login";
 
@@ -133,7 +134,10 @@ const OTPStep: React.FC<{
               <InputOTPSlot
                 key={i}
                 index={i}
-                className="h-12 w-10 rounded-lg border border-slate-200 bg-white text-lg font-extrabold text-slate-800 transition-all data-[active=true]:border-[#308178] data-[active=true]:ring-2 data-[active=true]:ring-[#308178]/10"
+                className={cn(
+                  "h-12 w-10 rounded-lg border border-slate-200 bg-white text-lg font-extrabold text-slate-800 transition-all",
+                  "data-[active=true]:border-[#308178] data-[active=true]:ring-2 data-[active=true]:ring-[#308178]/10"
+                )}
               />
             ))}
             <span className="text-slate-300 font-bold text-lg px-0.5">-</span>
@@ -141,7 +145,10 @@ const OTPStep: React.FC<{
               <InputOTPSlot
                 key={i}
                 index={i}
-                className="h-12 w-10 rounded-lg border border-slate-200 bg-white text-lg font-extrabold text-slate-800 transition-all data-[active=true]:border-[#308178] data-[active=true]:ring-2 data-[active=true]:ring-[#308178]/10"
+                className={cn(
+                  "h-12 w-10 rounded-lg border border-slate-200 bg-white text-lg font-extrabold text-slate-800 transition-all",
+                  "data-[active=true]:border-[#308178] data-[active=true]:ring-2 data-[active=true]:ring-[#308178]/10"
+                )}
               />
             ))}
           </div>
@@ -238,7 +245,11 @@ const RegisterClientStep: React.FC<{
             id="rc-name"
             placeholder="Jane Doe"
             {...register("name")}
-            className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178] transition-all bg-white placeholder-slate-400"
+            className={cn(
+              "w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 transition-all bg-white",
+              "placeholder:text-slate-400",
+              "focus:outline-none focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178]"
+            )}
           />
           {errors.name && (
             <p className="mt-1 text-xs text-rose-600 font-medium">{errors.name.message}</p>
@@ -253,7 +264,11 @@ const RegisterClientStep: React.FC<{
             type="email"
             placeholder="jane@example.com"
             {...register("email")}
-            className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178] transition-all bg-white placeholder-slate-400"
+            className={cn(
+              "w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 transition-all bg-white",
+              "placeholder:text-slate-400",
+              "focus:outline-none focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178]"
+            )}
           />
           {errors.email && (
             <p className="mt-1 text-xs text-rose-600 font-medium">{errors.email.message}</p>
@@ -268,7 +283,11 @@ const RegisterClientStep: React.FC<{
             type="tel"
             placeholder="+1234567890"
             {...register("phone")}
-            className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178] transition-all bg-white placeholder-slate-400"
+            className={cn(
+              "w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 transition-all bg-white",
+              "placeholder:text-slate-400",
+              "focus:outline-none focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178]"
+            )}
           />
           {errors.phone && (
             <p className="mt-1 text-xs text-rose-600 font-medium">{errors.phone.message}</p>
@@ -280,8 +299,11 @@ const RegisterClientStep: React.FC<{
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">
             Looking to Buy or Rent?
           </label>
-          <Select onValueChange={(val: string) => setValue("preference_type", val)}>
-            <SelectTrigger className="w-full border border-slate-200 rounded-xl text-sm font-medium text-slate-800 px-3.5 py-2.5 h-auto focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178]">
+          <Select onValueChange={(val: string | null) => { if (val) setValue("preference_type", val as any); }}>
+            <SelectTrigger className={cn(
+              "w-full border border-slate-200 rounded-xl text-sm font-medium text-slate-800 px-3.5 py-2.5 h-auto",
+              "focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178]"
+            )}>
               <SelectValue placeholder="Select preference..." />
             </SelectTrigger>
             <SelectContent>
@@ -302,7 +324,11 @@ const RegisterClientStep: React.FC<{
             id="rc-location"
             placeholder="e.g. London, UK"
             {...register("location")}
-            className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178] transition-all bg-white placeholder-slate-400"
+            className={cn(
+              "w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 transition-all bg-white",
+              "placeholder:text-slate-400",
+              "focus:outline-none focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178]"
+            )}
           />
           {errors.location && (
             <p className="mt-1 text-xs text-rose-600 font-medium">{errors.location.message}</p>
@@ -379,7 +405,11 @@ const LoginStep: React.FC<{
             type="email"
             placeholder="name@example.com"
             {...register("email")}
-            className="w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178] transition-all bg-white placeholder-slate-400"
+            className={cn(
+              "w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 transition-all bg-white",
+              "placeholder:text-slate-400",
+              "focus:outline-none focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178]"
+            )}
           />
           {errors.email && (
             <p className="mt-1 text-xs text-rose-600 font-medium">{errors.email.message}</p>
@@ -445,7 +475,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialMode, onClose }) =>
         </button>
 
         {/* Accent bar */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-[#308178] via-[#3a9b91] to-[#25645d]" />
+        <div className="h-1.5 w-full bg-linear-to-r from-[#308178] via-[#3a9b91] to-[#25645d]" />
 
         {/* Content */}
         <div className="px-7 py-7">

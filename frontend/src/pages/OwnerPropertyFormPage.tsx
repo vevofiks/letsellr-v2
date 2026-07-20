@@ -1,0 +1,701 @@
+import React, { useState, useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { 
+  Building2, 
+  Plus, 
+  Trash2, 
+  Save, 
+  Send, 
+  MapPin, 
+  Lock, 
+  Image as ImageIcon, 
+  Video, 
+  Phone, 
+  Info,
+  ArrowLeft,
+  Check
+} from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { OwnerNavbar } from "@/components/OwnerNavbar";
+import { toast } from "sonner";
+import { api } from "@/lib/api";
+
+const AMENITIES_LIST = [
+  "Wifi",
+  "Air Conditioning",
+  "Parking",
+  "Power Backup",
+  "24x7 Security",
+  "Elevator / Lift",
+  "Food & Mess",
+  "Washing Machine / Laundry",
+  "Housekeeping",
+  "Water Purifier",
+  "Gym",
+  "CCTV Surveillance",
+  "Swimming Pool",
+  "Furnished Rooms"
+];
+
+export const OwnerPropertyFormPage: React.FC = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { propertyId } = useParams<{ propertyId?: string }>();
+
+  const isEdit = Boolean(propertyId);
+  const isOwner = user?.role === "owner";
+
+  const [loading, setLoading] = useState(isEdit);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Form State
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState(isOwner ? "pg" : "apartment");
+  const [intent, setIntent] = useState<"rent" | "buy" | "lease">("rent");
+  
+  const [price, setPrice] = useState<number | "">("");
+  const [priceUnit, setPriceUnit] = useState<"per_month" | "total">("per_month");
+  const [deposit, setDeposit] = useState<number | "">("");
+
+  const [area, setArea] = useState<number | "">("");
+  const [bedrooms, setBedrooms] = useState<number | "">("");
+  const [bathrooms, setBathrooms] = useState<number | "">("");
+  const [furnishing, setFurnishing] = useState<"unfurnished" | "semi" | "furnished">("semi");
+
+  const [address, setAddress] = useState("");
+  const [locationArea, setLocationArea] = useState("");
+  const [city, setCity] = useState("");
+  const [pincode, setPincode] = useState("");
+  const [state, setState] = useState("Kerala");
+  const [latitude, setLatitude] = useState<number | "">("");
+  const [longitude, setLongitude] = useState<number | "">("");
+
+  const [amenities, setAmenities] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<string[]>([
+    "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80"
+  ]);
+  const [photoInput, setPhotoInput] = useState("");
+  const [videoLink, setVideoLink] = useState("");
+
+  const [ownerPhone, setOwnerPhone] = useState(user?.phone || "");
+  const [ownerWhatsapp, setOwnerWhatsapp] = useState(user?.phone || "");
+
+  useEffect(() => {
+    if (isEdit && propertyId) {
+      fetchExistingProperty(propertyId);
+    }
+  }, [propertyId]);
+
+  const fetchExistingProperty = async (id: string) => {
+    try {
+      setLoading(true);
+      const res = await api.get(`/api/properties/${id}`);
+      const data = res.data;
+
+      setTitle(data.title || "");
+      setDescription(data.description || "");
+      setCategory(data.category || (isOwner ? "pg" : "apartment"));
+      setIntent(data.intent || "rent");
+      setPrice(data.price || "");
+      setPriceUnit(data.price_unit || "per_month");
+      setDeposit(data.deposit || "");
+      setArea(data.area || "");
+      setBedrooms(data.bedrooms || "");
+      setBathrooms(data.bathrooms || "");
+      setFurnishing(data.furnishing || "semi");
+      
+      setAddress(data.location_address || "");
+      setLocationArea(data.location_area || "");
+      setCity(data.location_city || "");
+      setPincode(data.location_pincode || "");
+      setState(data.location_state || "Kerala");
+      setLatitude(data.latitude || "");
+      setLongitude(data.longitude || "");
+
+      setAmenities(data.amenities || []);
+      setPhotos(data.photos && data.photos.length > 0 ? data.photos : []);
+      setVideoLink(data.video_link || "");
+
+      setOwnerPhone(data.owner_phone || "");
+      setOwnerWhatsapp(data.owner_whatsapp || "");
+    } catch (err) {
+      console.error("Failed to load property details", err);
+      toast.error("Property not found or access denied.");
+      navigate("/owner/properties");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleToggleAmenity = (item: string) => {
+    setAmenities((prev) =>
+      prev.includes(item) ? prev.filter((a) => a !== item) : [...prev, item]
+    );
+  };
+
+  const handleAddPhoto = () => {
+    if (!photoInput.trim()) return;
+    if (photos.length >= 10) {
+      toast.error("Maximum 10 photos allowed.");
+      return;
+    }
+    setPhotos([...photos, photoInput.trim()]);
+    setPhotoInput("");
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    setPhotos(photos.filter((_, i) => i !== index));
+  };
+
+  const handleSubmitForm = async (targetStatus: "draft" | "pending_review") => {
+    if (!title.trim()) {
+      toast.error("Property title is required.");
+      return;
+    }
+    if (!price || Number(price) <= 0) {
+      toast.error("Valid price is required.");
+      return;
+    }
+    if (!locationArea.trim() || !city.trim() || !pincode.trim()) {
+      toast.error("Area, City, and Pincode location fields are required.");
+      return;
+    }
+    if (photos.length === 0) {
+      toast.error("At least one photo URL is required.");
+      return;
+    }
+    if (!ownerPhone.trim()) {
+      toast.error("Owner contact phone number is required.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+
+      const payload = {
+        category,
+        intent,
+        title: title.trim(),
+        description: description.trim() || undefined,
+        price: Number(price),
+        price_unit: priceUnit,
+        deposit: deposit ? Number(deposit) : undefined,
+        area: area ? Number(area) : undefined,
+        bedrooms: bedrooms ? Number(bedrooms) : undefined,
+        bathrooms: bathrooms ? Number(bathrooms) : undefined,
+        furnishing,
+        amenities,
+        photos,
+        video_link: videoLink.trim() || undefined,
+        location: {
+          address: address.trim() || undefined,
+          area: locationArea.trim(),
+          city: city.trim(),
+          pincode: pincode.trim(),
+          state: state.trim(),
+          latitude: latitude !== "" ? Number(latitude) : undefined,
+          longitude: longitude !== "" ? Number(longitude) : undefined,
+        },
+        owner_phone: ownerPhone.trim(),
+        owner_whatsapp: ownerWhatsapp.trim() || undefined,
+        status: targetStatus,
+      };
+
+      if (isEdit && propertyId) {
+        await api.patch(`/api/properties/${propertyId}`, payload);
+        toast.success(
+          targetStatus === "draft"
+            ? "Property saved as draft."
+            : "Property updated and submitted for review!"
+        );
+      } else {
+        await api.post("/api/properties", payload);
+        toast.success(
+          targetStatus === "draft"
+            ? "Property listing saved as draft."
+            : "Property listing submitted for review!"
+        );
+      }
+
+      navigate("/owner/properties");
+    } catch (err: any) {
+      console.error("Property submission failed", err);
+      toast.error(err.response?.data?.detail || "Failed to save property listing.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+        <OwnerNavbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-3">
+            <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-brand-green" />
+            <p className="text-xs font-bold text-slate-500">Loading form details...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-50/70 flex flex-col font-sans pb-12">
+      <OwnerNavbar />
+
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+        
+        {/* Top Navigation */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => navigate("/owner/properties")}
+            className="inline-flex items-center gap-2 text-xs font-extrabold text-slate-600 hover:text-slate-900 bg-white border border-slate-200 px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
+          >
+            <ArrowLeft className="h-4 w-4" /> Back to My Properties
+          </button>
+
+          <span className="text-xs font-extrabold text-slate-400">
+            {isEdit ? "Edit Listing" : "New Property Listing"}
+          </span>
+        </div>
+
+        {/* Header Title Banner */}
+        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-2">
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight my-0">
+            {isEdit ? "Edit Property Listing" : "Post a New Property Listing"}
+          </h1>
+          <p className="text-xs text-slate-500 font-semibold">
+            Fill in the details below. Listings submitted for review will be reviewed by admin before going live.
+          </p>
+        </div>
+
+        {/* Section 1: Basic Information */}
+        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-5">
+          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
+            <Building2 className="h-5 w-5 text-brand-green" /> Basic Information
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            
+            {/* Category selection */}
+            <div className="space-y-1.5 sm:col-span-1">
+              <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                <span>Property Category</span>
+                {isOwner && (
+                  <span className="text-[10px] text-brand-green font-black flex items-center gap-1">
+                    <Lock className="h-3 w-3" /> Category Locked
+                  </span>
+                )}
+              </label>
+
+              {isOwner ? (
+                <div className="space-y-2">
+                  <select
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 cursor-not-allowed"
+                    disabled={isOwner}
+                  >
+                    <option value="pg">PG (Paying Guest)</option>
+                    <option value="hostel">Hostel</option>
+                  </select>
+                  <p className="text-[10px] font-medium bg-emerald-50/70 text-emerald-800 p-2 rounded-lg border border-emerald-100">
+                    <Info className="h-3 w-3 inline mr-1" />
+                    Individual self-listing owners are restricted to <strong>PG & Hostel</strong> listings.
+                  </p>
+                </div>
+              ) : (
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20"
+                >
+                  <option value="apartment">Apartment</option>
+                  <option value="villa_house">Villa / House</option>
+                  <option value="land">Land / Plot</option>
+                  <option value="commercial">Commercial Space</option>
+                </select>
+              )}
+            </div>
+
+            {/* Listing Intent */}
+            <div className="space-y-1.5 sm:col-span-1">
+              <label className="text-xs font-bold text-slate-700">Listing Intent</label>
+              <select
+                value={intent}
+                onChange={(e) => setIntent(e.target.value as any)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20"
+              >
+                <option value="rent">For Rent</option>
+                <option value="buy">For Sale</option>
+                <option value="lease">For Lease</option>
+              </select>
+            </div>
+
+            {/* Property Title */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="text-xs font-bold text-slate-700">Listing Title *</label>
+              <input
+                type="text"
+                placeholder="e.g. Luxury 2 BHK Apartment near InfoPark, Kakkanad"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-green/20"
+                required
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="text-xs font-bold text-slate-700">Detailed Description</label>
+              <textarea
+                rows={3}
+                placeholder="Describe key features, house rules, nearby landmarks, or highlights..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-green/20"
+              />
+            </div>
+
+          </div>
+        </div>
+
+        {/* Section 2: Pricing */}
+        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-5">
+          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
+            ₹ Pricing & Terms
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Price (₹) *</label>
+              <input
+                type="number"
+                placeholder="e.g. 15000"
+                value={price}
+                onChange={(e) => setPrice(e.target.value ? Number(e.target.value) : "")}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-green/20"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Price Unit</label>
+              <select
+                value={priceUnit}
+                onChange={(e) => setPriceUnit(e.target.value as any)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20"
+              >
+                <option value="per_month">Per Month</option>
+                <option value="total">Total Price</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Security Deposit (₹)</label>
+              <input
+                type="number"
+                placeholder="e.g. 30000"
+                value={deposit}
+                onChange={(e) => setDeposit(e.target.value ? Number(e.target.value) : "")}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400"
+              />
+            </div>
+
+          </div>
+        </div>
+
+        {/* Section 3: Specs & Features */}
+        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-5">
+          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
+            Property Specifications
+          </h2>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Area (sq ft)</label>
+              <input
+                type="number"
+                placeholder="e.g. 1200"
+                value={area}
+                onChange={(e) => setArea(e.target.value ? Number(e.target.value) : "")}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Bedrooms</label>
+              <input
+                type="number"
+                placeholder="e.g. 2"
+                value={bedrooms}
+                onChange={(e) => setBedrooms(e.target.value ? Number(e.target.value) : "")}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Bathrooms</label>
+              <input
+                type="number"
+                placeholder="e.g. 2"
+                value={bathrooms}
+                onChange={(e) => setBathrooms(e.target.value ? Number(e.target.value) : "")}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Furnishing</label>
+              <select
+                value={furnishing}
+                onChange={(e) => setFurnishing(e.target.value as any)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
+              >
+                <option value="semi">Semi-Furnished</option>
+                <option value="furnished">Fully Furnished</option>
+                <option value="unfurnished">Unfurnished</option>
+              </select>
+            </div>
+
+          </div>
+        </div>
+
+        {/* Section 4: Location */}
+        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-5">
+          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
+            <MapPin className="h-5 w-5 text-brand-green" /> Location Details
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            
+            <div className="space-y-1.5 sm:col-span-3">
+              <label className="text-xs font-bold text-slate-700">Address / Building Name</label>
+              <input
+                type="text"
+                placeholder="e.g. Flat 4B, Skyline Ivy League, Seaport Airport Road"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Area / Locality *</label>
+              <input
+                type="text"
+                placeholder="e.g. Kakkanad"
+                value={locationArea}
+                onChange={(e) => setLocationArea(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">City *</label>
+              <input
+                type="text"
+                placeholder="e.g. Kochi"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Pincode *</label>
+              <input
+                type="text"
+                placeholder="e.g. 682030"
+                value={pincode}
+                onChange={(e) => setPincode(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Latitude</label>
+              <input
+                type="number"
+                step="any"
+                placeholder="e.g. 10.0159"
+                value={latitude}
+                onChange={(e) => setLatitude(e.target.value ? Number(e.target.value) : "")}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Longitude</label>
+              <input
+                type="number"
+                step="any"
+                placeholder="e.g. 76.3419"
+                value={longitude}
+                onChange={(e) => setLongitude(e.target.value ? Number(e.target.value) : "")}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">State</label>
+              <input
+                type="text"
+                value={state}
+                onChange={(e) => setState(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+              />
+            </div>
+
+          </div>
+        </div>
+
+        {/* Section 5: Amenities */}
+        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-4">
+          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
+            Amenities & Facilities
+          </h2>
+
+          <div className="flex flex-wrap gap-2">
+            {AMENITIES_LIST.map((item) => {
+              const selected = amenities.includes(item);
+              return (
+                <button
+                  type="button"
+                  key={item}
+                  onClick={() => handleToggleAmenity(item)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
+                    selected
+                      ? "bg-emerald-50 border-brand-green text-brand-green"
+                      : "bg-white border-slate-200 text-slate-600 hover:border-slate-300"
+                  }`}
+                >
+                  {selected && <Check className="h-3 w-3" />}
+                  {item}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Section 6: Photos & Video */}
+        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-5">
+          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
+            <ImageIcon className="h-5 w-5 text-brand-green" /> Photos & Video Links
+          </h2>
+
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <input
+                type="url"
+                placeholder="Paste image URL (Unsplash or direct image link)..."
+                value={photoInput}
+                onChange={(e) => setPhotoInput(e.target.value)}
+                className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+              />
+              <button
+                type="button"
+                onClick={handleAddPhoto}
+                className="bg-brand-green text-white font-extrabold text-xs px-4 py-2 rounded-xl flex items-center gap-1"
+              >
+                <Plus className="h-4 w-4" /> Add Photo
+              </button>
+            </div>
+
+            {/* Photo Previews */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {photos.map((url, idx) => (
+                <div key={idx} className="relative group rounded-xl overflow-hidden border border-slate-200 h-24">
+                  <img src={url} alt="" className="h-full w-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => handleRemovePhoto(idx)}
+                    className="absolute top-1 right-1 bg-rose-600 text-white p-1 rounded-lg opacity-90 group-hover:opacity-100 transition-opacity"
+                    title="Remove Photo"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Video Link */}
+            <div className="space-y-1.5 pt-2 border-t border-slate-100">
+              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                <Video className="h-4 w-4 text-slate-500" /> Youtube Video Link or Embed URL
+              </label>
+              <input
+                type="url"
+                placeholder="e.g. https://www.youtube.com/watch?v=..."
+                value={videoLink}
+                onChange={(e) => setVideoLink(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Section 7: Contact Info */}
+        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-5">
+          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
+            <Phone className="h-5 w-5 text-brand-green" /> Owner Contact Information
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Contact Phone Number *</label>
+              <input
+                type="tel"
+                placeholder="e.g. +91 9876543210"
+                value={ownerPhone}
+                onChange={(e) => setOwnerPhone(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+                required
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">WhatsApp Number (For Direct Enquiries)</label>
+              <input
+                type="tel"
+                placeholder="e.g. +91 9876543210"
+                value={ownerWhatsapp}
+                onChange={(e) => setOwnerWhatsapp(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Form Actions */}
+        <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-slate-200">
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={() => handleSubmitForm("draft")}
+            className="w-full sm:w-auto bg-slate-200 hover:bg-slate-300 text-slate-800 font-extrabold text-xs px-6 py-3 rounded-full flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+          >
+            <Save className="h-4 w-4" /> Save as Draft
+          </button>
+
+          <button
+            type="button"
+            disabled={submitting}
+            onClick={() => handleSubmitForm("pending_review")}
+            className="w-full sm:w-auto bg-brand-green hover:bg-brand-green-hover text-white font-extrabold text-xs px-8 py-3 rounded-full flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-50"
+          >
+            <Send className="h-4 w-4" /> {isEdit ? "Update & Submit for Review" : "Submit Property for Review"}
+          </button>
+        </div>
+
+      </main>
+    </div>
+  );
+};

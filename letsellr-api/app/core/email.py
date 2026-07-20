@@ -108,4 +108,7 @@ async def send_otp_email(to_email: str, otp: str, purpose: str = "login") -> Non
     }
     subject = subject_map.get(purpose, "Your Letsellr OTP Code")
     html = _otp_html(otp, purpose, settings.OTP_EXPIRE_MINUTES)
-    await _send_email(to_email, subject, html)
+    try:
+        await _send_email(to_email, subject, html)
+    except Exception as e:
+        logger.warning("SMTP delivery failed for %s: %s. [FALLBACK OTP CODE: %s]", to_email, e, otp)

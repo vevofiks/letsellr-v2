@@ -9,10 +9,10 @@ async def test_create_property_owner_success(client, test_owner):
     app.dependency_overrides[get_current_user] = lambda: test_owner
     
     property_data = {
-        "category": "apartment",
+        "category": "pg",
         "intent": "rent",
-        "title": "Beautiful Apartment in Kadavanthra",
-        "description": "2 BHK fully furnished apartment",
+        "title": "Beautiful PG in Kadavanthra",
+        "description": "Luxury fully furnished PG accommodation",
         "price": 25000,
         "price_unit": "per_month",
         "deposit": 75000,
@@ -41,11 +41,11 @@ async def test_create_property_owner_success(client, test_owner):
     assert response.status_code == 201
     res_data = response.json()
     assert res_data["title"] == property_data["title"]
-    assert res_data["category"] == "apartment"
+    assert res_data["category"] == "pg"
     assert res_data["intent"] == "rent"
     assert res_data["owner_role"] == "owner"
     assert res_data["status"] == "pending_review"
-    assert res_data["enquiry_type"] == "manual_chat"
+    assert res_data["enquiry_type"] == "whatsapp_bot"
     assert "ref" in res_data
     assert res_data["stats"] == {"views": 0, "enquiries": 0, "saves": 0}
 
@@ -158,7 +158,7 @@ async def test_get_property_not_found(client):
     random_uuid = uuid4()
     response = await client.get(f"/api/properties/{random_uuid}")
     assert response.status_code == 404
-    assert response.json()["detail"] == "Resource not found."
+    assert response.json()["detail"] == "Property not found"
 
 @pytest.mark.asyncio
 async def test_list_public_properties(client, db, test_owner):
@@ -201,7 +201,9 @@ async def test_list_public_properties(client, db, test_owner):
     # Query all public properties
     response = await client.get("/api/properties")
     assert response.status_code == 200
-    properties = response.json()
+    data = response.json()
+    assert "results" in data
+    properties = data["results"]
     # Only live properties should be returned
     assert len(properties) >= 1
     assert any(p["ref"] == "PROP-LIVE1" for p in properties)
@@ -210,14 +212,14 @@ async def test_list_public_properties(client, db, test_owner):
     # Query with filters
     response = await client.get("/api/properties?category=villa_house&intent=buy&city=kochi")
     assert response.status_code == 200
-    filtered = response.json()
+    filtered = response.json()["results"]
     assert len(filtered) >= 1
     assert filtered[0]["ref"] == "PROP-LIVE1"
     
     # Query with no match filter
     response = await client.get("/api/properties?city=NonExistentCity")
     assert response.status_code == 200
-    assert len(response.json()) == 0
+    assert len(response.json()["results"]) == 0
 
 @pytest.mark.asyncio
 async def test_update_property_owner_success(client, db, test_owner):
@@ -424,7 +426,7 @@ async def test_get_enquiry_link_invalid_category(client, db, test_owner):
     
     response = await client.get(f"/api/properties/ref/{prop.ref}/enquiry-link")
     assert response.status_code == 400
-    assert "Enquiry link only available for PG/Hostel" in response.json()["detail"]
+    assert "Enquiry link is only available for PG/Hostel" in response.json()["detail"]
 
 @pytest.mark.asyncio
 async def test_get_owner_properties(client, db, test_owner, test_other_owner):
@@ -516,7 +518,7 @@ async def test_list_properties_nearby_success(client, db, test_owner):
 
     response = await client.get("/api/properties?lat=9.967&lng=76.299&radius=10.0")
     assert response.status_code == 200
-    results = response.json()
+    results = response.json()["results"]
     assert len(results) == 2
     # Verify ordering: closest first
     assert results[0]["ref"] == "PROP-NEAR-CLOSE"
@@ -550,7 +552,7 @@ async def test_list_properties_nearby_outside_radius(client, db, test_owner):
 
     response = await client.get("/api/properties?lat=9.967&lng=76.299&radius=10.0")
     assert response.status_code == 200
-    results = response.json()
+    results = response.json()["results"]
     # Should not include prop_far because it is outside the 10km radius
     assert not any(p["ref"] == "PROP-NEAR-FAR" for p in results)
 
@@ -598,12 +600,12 @@ async def test_list_properties_pagination(client, db, test_owner):
     # Query with limit 2
     response1 = await client.get("/api/properties?limit=2")
     assert response1.status_code == 200
-    results1 = response1.json()
+    results1 = response1.json()["results"]
     assert len(results1) == 2
 
     # Query page 2 with limit 2
     response2 = await client.get("/api/properties?limit=2&page=2")
     assert response2.status_code == 200
-    results2 = response2.json()
+    results2 = response2.json()["results"]
     assert len(results2) >= 1
 

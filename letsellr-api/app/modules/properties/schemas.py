@@ -39,6 +39,7 @@ class PropertyCreate(BaseModel):
     
     owner_phone: str = Field(..., max_length=20)
     owner_whatsapp: Optional[str] = Field(None, max_length=20)
+    status: Optional[Literal["draft", "pending_review"]] = "pending_review"
 
 
 class PropertyUpdate(BaseModel):
