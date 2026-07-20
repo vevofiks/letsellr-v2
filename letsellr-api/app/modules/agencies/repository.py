@@ -23,10 +23,10 @@ class AgencyRepository:
         city: Optional[str] = None,
         limit: int = 20,
         offset: int = 0,
-    ) -> List[Any]:
+    ) -> Tuple[List[Any], int]:
         """
         Return all active, verified agency users with their profiles
-        and live listing counts.
+        and live listing counts, along with the total count.
         """
         # Sub-query: count live properties per owner
         live_count_sq = (
@@ -47,9 +47,12 @@ class AgencyRepository:
         if city:
             stmt = stmt.where(User.location_city.ilike(f"%{city}%"))
 
+        count_stmt = select(func.count()).select_from(stmt.subquery())
+        total = await self.db.scalar(count_stmt) or 0
+
         stmt = stmt.order_by(User.created_at.desc()).limit(limit).offset(offset)
         result = await self.db.execute(stmt)
-        return list(result.all())
+        return list(result.all()), total
 
     async def get_agency_by_id(
         self, user_id: UUID

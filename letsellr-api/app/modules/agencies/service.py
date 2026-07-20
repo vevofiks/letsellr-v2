@@ -3,6 +3,7 @@ Module: Agencies
 Service — Business logic for agency profile reads
 """
 
+import math
 from typing import Optional
 from uuid import UUID
 
@@ -10,7 +11,7 @@ from fastapi import HTTPException, status
 
 from app.db.session import AsyncSession
 from app.modules.agencies.repository import AgencyRepository
-from app.modules.agencies.schemas import AgencyPublicResponse
+from app.modules.agencies.schemas import AgencyPublicResponse, AgencyBrowseResponse
 from app.modules.users.models import AgencyProfile, User
 
 
@@ -37,11 +38,20 @@ class AgencyService:
         self,
         city: Optional[str] = None,
         page: int = 1,
-    ) -> list[AgencyPublicResponse]:
-        limit = 20
+        limit: int = 12,
+    ) -> AgencyBrowseResponse:
         offset = (page - 1) * limit
-        rows = await self.repo.list_agencies(city=city, limit=limit, offset=offset)
-        return [_build_response(user, profile, count) for user, profile, count in rows]
+        rows, total = await self.repo.list_agencies(city=city, limit=limit, offset=offset)
+        results = [_build_response(user, profile, count) for user, profile, count in rows]
+        total_pages = math.ceil(total / limit) if limit else 0
+
+        return AgencyBrowseResponse(
+            results=results,
+            total=total,
+            page=page,
+            page_size=limit,
+            total_pages=total_pages,
+        )
 
     async def get_agency(self, agency_id: UUID) -> AgencyPublicResponse:
         row = await self.repo.get_agency_by_id(agency_id)

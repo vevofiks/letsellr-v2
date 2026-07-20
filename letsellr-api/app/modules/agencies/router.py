@@ -12,27 +12,28 @@ from uuid import UUID
 from fastapi import APIRouter, Query
 
 from app.depends.db import DbSession
-from app.modules.agencies.schemas import AgencyPublicResponse
+from app.modules.agencies.schemas import AgencyPublicResponse, AgencyBrowseResponse
 from app.modules.agencies.service import AgencyService
 
 router = APIRouter(tags=["Agencies"])
 
 
-@router.get("", response_model=List[AgencyPublicResponse])
+@router.get("", response_model=AgencyBrowseResponse)
 async def list_agencies(
     db: DbSession,
     city: Optional[str] = Query(None, description="Filter by city name (partial match)"),
     page: int = Query(1, ge=1),
+    limit: int = Query(12, ge=1, le=100),
 ):
     """
     Public directory of all active agencies on the platform.
 
-    Supports optional `city` filter and pagination via `page`.
-    Each agency entry includes their display name, areas served,
-    verification badge status, and live listing count.
+    Supports optional `city` filter and pagination via `page` and `limit`.
+    Each agency entry includes display info, areas served,
+    verification status, and live listing count.
     """
     service = AgencyService(db)
-    return await service.list_agencies(city=city, page=page)
+    return await service.list_agencies(city=city, page=page, limit=limit)
 
 
 @router.get("/{agency_id}", response_model=AgencyPublicResponse)
