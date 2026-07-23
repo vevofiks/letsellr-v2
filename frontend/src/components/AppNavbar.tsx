@@ -12,7 +12,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { LogOut, UserPlus, User } from "lucide-react";
+import { LogOut, UserPlus, User, LayoutDashboard } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { ProfileModal } from "@/components/ProfileModal";
 import { AuthModal, type AuthModalMode } from "@/components/AuthModal";
@@ -48,7 +48,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
 
   const handleLogout = () => {
     logout();
-    navigate("/register/type");
+    navigate("/");
   };
 
   // Avatar initials from name
@@ -69,18 +69,12 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
           {/* ── Logo + optional title ─────────────────────────────────── */}
           <div className="flex items-center gap-8">
             <Link to={logoHref} className="flex items-center gap-2 group">
-              <div className="p-1 rounded-lg bg-teal-50 group-hover:bg-teal-100 transition-colors">
-                <svg
-                  className="h-7 w-7 text-brand-green shrink-0"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M12 12c-2-2.67-4-4-6-4a4 4 0 1 0 0 8c2 0 4-1.33 6-4Zm0 0c2 2.67 4 4 6 4a4 4 0 1 0 0-8c-2 0-4 1.33-6 4Z" />
-                </svg>
+              <div className="flex items-center justify-center transition-transform group-hover:scale-105">
+                    <img
+                      src="/logo.png"
+                      alt="Letsellr Logo"
+                      className="h-9 w-auto object-contain shrink-0 drop-shadow-sm"
+                    />
               </div>
               <span className="text-xl font-black tracking-tight text-brand-green">Letsellr</span>
             </Link>
@@ -94,7 +88,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
               <button
                 id="profile-icon-btn"
                 onClick={() => setDropdownOpen((o) => !o)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-green hover:bg-brand-green-hover text-white text-xs font-black transition-all shadow-sm cursor-pointer select-none"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100/50 hover:bg-slate-200/60 backdrop-blur-md border border-slate-200 text-slate-600 hover:text-slate-900 text-xs font-black transition-all shadow-sm cursor-pointer select-none"
                 title={user.name}
               >
                 {initials}
@@ -104,7 +98,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
               <button
                 id="profile-icon-btn"
                 onClick={() => setDropdownOpen((o) => !o)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-green hover:bg-brand-green-hover text-white transition-all shadow-sm cursor-pointer"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100/50 hover:bg-slate-200/60 backdrop-blur-md border border-slate-200 text-slate-500 hover:text-slate-800 transition-all shadow-sm cursor-pointer"
                 title="Account"
               >
                 <User className="h-4 w-4" />
@@ -139,9 +133,9 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
                         setDropdownOpen(false);
                         setProfileModalOpen(true);
                       }}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-teal-50 hover:text-brand-green transition-colors text-left"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors text-left"
                     >
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-100 text-brand-green shrink-0">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-700 shrink-0">
                         <User className="h-3.5 w-3.5" />
                       </span>
                       <div>
@@ -156,14 +150,14 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
                         setDropdownOpen(false);
                         handleLogout();
                       }}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors text-left"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-red-50 hover:text-red-600 transition-colors text-left group hover:rounded-b-[14px]"
                     >
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-rose-100 text-rose-600 shrink-0">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 group-hover:bg-red-100 text-slate-700 group-hover:text-red-600 shrink-0">
                         <LogOut className="h-3.5 w-3.5" />
                       </span>
                       <div>
-                        <p className="font-bold">Sign Out</p>
-                        <p className="text-[10px] text-rose-400 font-normal mt-0.5">End your current session</p>
+                        <p className="font-bold text-slate-800 group-hover:text-red-700">Sign Out</p>
+                        <p className="text-[10px] text-slate-400 font-normal mt-0.5 group-hover:text-red-500/80">End your current session</p>
                       </div>
                     </button>
                   </>
@@ -181,9 +175,9 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
                         setDropdownOpen(false);
                         setAuthModal({ open: true, mode: "register-client" });
                       }}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-teal-50 hover:text-brand-green transition-colors text-left"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors text-left"
                     >
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-teal-100 text-brand-green shrink-0">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-700 shrink-0">
                         <UserPlus className="h-3.5 w-3.5" />
                       </span>
                       <div>
@@ -196,19 +190,18 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
 
                     {/* Owner / Agency */}
                     <button
-                      id="dropdown-login-owner"
                       onClick={() => {
                         setDropdownOpen(false);
-                        navigate("/register/type");
+                        navigate('/register/type')
                       }}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-gray-50 hover:rounded-b-md hover:text-amber-700 transition-colors text-left"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:rounded-b-md hover:text-[#1b3b2b] transition-all text-left bg-slate-50/30"
                     >
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-amber-100 text-amber-600 shrink-0 text-[10px] font-black">
-                        A
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1b3b2b] text-white shrink-0 shadow-sm">
+                        <LayoutDashboard className="h-4 w-4" />
                       </span>
                       <div>
-                        <p className="font-bold text-slate-800">Owner / Agency</p>
-                        <p className="text-[10px] text-slate-400 font-normal mt-0.5">List &amp; manage properties</p>
+                        <p className="font-bold text-slate-900">Owner / Agency</p>
+                        <p className="text-[10px] text-slate-500 font-medium mt-0.5">Dashboard login &amp; listing</p>
                       </div>
                     </button>
                   </>

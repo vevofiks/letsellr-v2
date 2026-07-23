@@ -22,6 +22,7 @@ import {
   InputOTP,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -104,7 +105,7 @@ const OTPStep: React.FC<{
   return (
     <div className="flex flex-col items-center gap-6 pt-2 pb-1">
       {/* Lock icon */}
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-teal-50 text-[#308178]">
+      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-700">
         <Lock className="h-6 w-6" />
       </div>
 
@@ -170,7 +171,7 @@ const OTPStep: React.FC<{
         type="button"
         disabled={loading || otp.length < 6}
         onClick={() => verify(otp)}
-        className="w-full h-11 rounded-xl bg-[#308178] hover:bg-[#25645d] text-white font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full h-11 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? "Verifying..." : "Verify & Continue"}
       </button>
@@ -188,7 +189,7 @@ const OTPStep: React.FC<{
           type="button"
           disabled={countdown > 0 || resending}
           onClick={handleResend}
-          className="flex items-center gap-1.5 text-sm text-[#308178] hover:text-[#25645d] px-3 py-2 rounded-xl hover:bg-teal-50/50 transition-colors disabled:opacity-40"
+          className="flex items-center gap-1.5 text-sm text-slate-700 hover:text-slate-900 px-3 py-2 rounded-xl hover:bg-slate-100 transition-colors disabled:opacity-40"
         >
           <RotateCw className={`h-4 w-4 ${resending ? "animate-spin" : ""}`} />
           Resend Code
@@ -228,7 +229,7 @@ const RegisterClientStep: React.FC<{
   return (
     <div className="flex flex-col gap-5">
       <div className="text-center space-y-1">
-        <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-teal-50 text-[#308178] mx-auto mb-2">
+        <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-slate-100 text-slate-700 mx-auto mb-2">
           <UserPlus className="h-5 w-5" />
         </div>
         <h3 className="text-xl font-extrabold text-slate-900">Create Client Account</h3>
@@ -241,15 +242,11 @@ const RegisterClientStep: React.FC<{
         {/* Name */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">Full Name</label>
-          <input
+          <Input
             id="rc-name"
             placeholder="Jane Doe"
             {...register("name")}
-            className={cn(
-              "w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 transition-all bg-white",
-              "placeholder:text-slate-400",
-              "focus:outline-none focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178]"
-            )}
+
           />
           {errors.name && (
             <p className="mt-1 text-xs text-rose-600 font-medium">{errors.name.message}</p>
@@ -259,16 +256,12 @@ const RegisterClientStep: React.FC<{
         {/* Email */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">Email Address</label>
-          <input
+          <Input
             id="rc-email"
             type="email"
             placeholder="jane@example.com"
             {...register("email")}
-            className={cn(
-              "w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 transition-all bg-white",
-              "placeholder:text-slate-400",
-              "focus:outline-none focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178]"
-            )}
+
           />
           {errors.email && (
             <p className="mt-1 text-xs text-rose-600 font-medium">{errors.email.message}</p>
@@ -278,16 +271,12 @@ const RegisterClientStep: React.FC<{
         {/* Phone */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">Phone Number</label>
-          <input
+          <Input
             id="rc-phone"
             type="tel"
             placeholder="+1234567890"
             {...register("phone")}
-            className={cn(
-              "w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 transition-all bg-white",
-              "placeholder:text-slate-400",
-              "focus:outline-none focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178]"
-            )}
+
           />
           {errors.phone && (
             <p className="mt-1 text-xs text-rose-600 font-medium">{errors.phone.message}</p>
@@ -299,11 +288,8 @@ const RegisterClientStep: React.FC<{
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">
             Looking to Buy or Rent?
           </label>
-          <Select onValueChange={(val: string | null) => { if (val) setValue("preference_type", val as any); }}>
-            <SelectTrigger className={cn(
-              "w-full border border-slate-200 rounded-xl text-sm font-medium text-slate-800 px-3.5 py-2.5 h-auto",
-              "focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178]"
-            )}>
+          <Select onValueChange={(val: string) => setValue("preference_type", val as any)}>
+            <SelectTrigger className="w-full border border-slate-200 rounded-lg text-sm font-medium text-slate-800 px-3.5 py-2.5 h-11 focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178]">
               <SelectValue placeholder="Select preference..." />
             </SelectTrigger>
             <SelectContent>
@@ -320,15 +306,11 @@ const RegisterClientStep: React.FC<{
         {/* Location */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">Target Location / City</label>
-          <input
+          <Input
             id="rc-location"
             placeholder="e.g. London, UK"
             {...register("location")}
-            className={cn(
-              "w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 transition-all bg-white",
-              "placeholder:text-slate-400",
-              "focus:outline-none focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178]"
-            )}
+
           />
           {errors.location && (
             <p className="mt-1 text-xs text-rose-600 font-medium">{errors.location.message}</p>
@@ -338,9 +320,9 @@ const RegisterClientStep: React.FC<{
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full h-11 rounded-xl bg-[#308178] hover:bg-[#25645d] text-white font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed mt-1"
+          className="w-full h-11 rounded-lg bg-[#1b3b2b] hover:bg-[#152e22] text-white font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed mt-1"
         >
-          {isSubmitting ? "Sending OTP..." : "Register & Get OTP"}
+          {isSubmitting ? "Submitting..." : "Submit"}
         </button>
       </form>
 
@@ -349,7 +331,7 @@ const RegisterClientStep: React.FC<{
         <button
           type="button"
           onClick={onSwitchToLogin}
-          className="text-[#308178] font-bold hover:underline focus:outline-none"
+          className="text-slate-900 font-bold hover:underline focus:outline-none"
         >
           Sign In
         </button>
@@ -387,7 +369,7 @@ const LoginStep: React.FC<{
   return (
     <div className="flex flex-col gap-5">
       <div className="text-center space-y-1">
-        <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-teal-50 text-[#308178] mx-auto mb-2">
+        <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-slate-100 text-slate-700 mx-auto mb-2">
           <LogIn className="h-5 w-5" />
         </div>
         <h3 className="text-xl font-extrabold text-slate-900">Welcome Back</h3>
@@ -400,16 +382,12 @@ const LoginStep: React.FC<{
         {/* Email */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 mb-1.5">Email Address</label>
-          <input
+          <Input
             id="login-email"
             type="email"
             placeholder="name@example.com"
             {...register("email")}
-            className={cn(
-              "w-full px-3.5 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-800 transition-all bg-white",
-              "placeholder:text-slate-400",
-              "focus:outline-none focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178]"
-            )}
+
           />
           {errors.email && (
             <p className="mt-1 text-xs text-rose-600 font-medium">{errors.email.message}</p>
@@ -419,7 +397,7 @@ const LoginStep: React.FC<{
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full h-11 rounded-xl bg-[#308178] hover:bg-[#25645d] text-white font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed mt-1"
+          className="w-full h-11 rounded-lg bg-[#1b3b2b] hover:bg-[#152e22] text-white font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed mt-1"
         >
           {isSubmitting ? "Sending OTP..." : "Send OTP"}
         </button>
@@ -430,7 +408,7 @@ const LoginStep: React.FC<{
         <button
           type="button"
           onClick={onSwitchToRegister}
-          className="text-[#308178] font-bold hover:underline focus:outline-none"
+          className="text-slate-900 font-bold hover:underline focus:outline-none"
         >
           Create an Account
         </button>
@@ -474,8 +452,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialMode, onClose }) =>
           <X className="h-4 w-4" />
         </button>
 
-        {/* Accent bar */}
-        <div className="h-1.5 w-full bg-linear-to-r from-[#308178] via-[#3a9b91] to-[#25645d]" />
 
         {/* Content */}
         <div className="px-7 py-7">

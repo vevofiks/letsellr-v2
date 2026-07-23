@@ -14,7 +14,7 @@ from app.core.config import settings
 # pool_size / max_overflow: tune based on your hosting plan
 engine = create_async_engine(
     settings.DATABASE_URL,
-    echo=settings.DEBUG,          # logs SQL in development
+    echo=False,                   # disabled SQL query logs in development
     pool_pre_ping=True,
     pool_size=10,
     max_overflow=20,

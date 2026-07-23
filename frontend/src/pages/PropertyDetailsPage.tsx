@@ -13,6 +13,7 @@ import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { AppNavbar } from "@/components/AppNavbar";
+import { AuthModal, type AuthModalMode } from "@/components/AuthModal";
 
 import { 
   ArrowLeft,
@@ -95,9 +96,9 @@ const getPhotosGrid = (photos: string[] | undefined, category: string) => {
     ],
     pg: [
       "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80",
+      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80",
       "https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&w=800&q=80"
     ],
     hostel: [
@@ -136,6 +137,10 @@ export const PropertyDetailsPage: React.FC = () => {
   const [relatedProperties, setRelatedProperties] = useState<any[]>([]);
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
+  const [authModal, setAuthModal] = useState<{ open: boolean; mode: AuthModalMode }>({
+    open: false,
+    mode: "login",
+  });
 
   // Reviews State
   const [reviews, setReviews] = useState<any[]>([]);
@@ -429,7 +434,7 @@ export const PropertyDetailsPage: React.FC = () => {
     if (!property) return;
     if (!user) {
       toast.error("Please sign in to contact the owner.");
-      navigate("/login", { state: { from: `/properties/${property.id}` } });
+      setAuthModal({ open: true, mode: "login" });
       return;
     }
     try {
@@ -447,7 +452,7 @@ export const PropertyDetailsPage: React.FC = () => {
     if (!user) {
       e.preventDefault();
       toast.error("Please sign in to view contact details.");
-      navigate("/login", { state: { from: `/properties/${property.id}` } });
+      setAuthModal({ open: true, mode: "login" });
     }
   };
 
@@ -726,8 +731,8 @@ export const PropertyDetailsPage: React.FC = () => {
           </div>
 
           {/* Right Sidebar: Cost widget and contact details */}
-          <div className="lg:col-span-1 lg:row-span-4 space-y-6 lg:sticky lg:top-24 lg:self-start">
-            <Card className="border border-slate-100 bg-white shadow-2xl rounded-3xl p-6 relative overflow-hidden">
+          <div className="w-full lg:w-[380px] shrink-0 sticky top-24 space-y-6">
+            <Card className="border border-slate-100 bg-white shadow-xl rounded-3xl p-6 relative overflow-hidden">
               
               {/* Cost widget title */}
               <div className="space-y-1">
@@ -1089,6 +1094,12 @@ export const PropertyDetailsPage: React.FC = () => {
         </div>
       </main>
 
+      {authModal.open && (
+        <AuthModal
+          initialMode={authModal.mode}
+          onClose={() => setAuthModal({ open: false, mode: "login" })}
+        />
+      )}
     </div>
   );
 };

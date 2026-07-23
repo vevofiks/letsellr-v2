@@ -142,7 +142,7 @@ export const Login: React.FC = () => {
               New to Letsellr?{" "}
               <button
                 type="button"
-                onClick={() => navigate("/")}
+                onClick={() => navigate("/register/owner-agency")}
                 className="text-[#308178] font-bold hover:underline ml-1 focus:outline-none"
               >
                 Create an Account

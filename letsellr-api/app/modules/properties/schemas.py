@@ -120,12 +120,12 @@ class EnquiryLinkResponse(BaseModel):
     """
     Returned by GET /api/properties/ref/{ref}/enquiry-link.
 
-    `link` is a wa.me deep-link URL that opens a pre-filled WhatsApp chat
-    to the property owner — bypassing any broker or middleman.
+    `link` is a wa.me deep-link URL that opens a pre-filled WhatsApp chat.
     """
     ref: str
     link: str
-    enquiry_type: str  # always "whatsapp_bot" for this endpoint
+    enquiry_type: str
+    is_pg_or_hostel: bool
 
 
 # ── Paginated Browse Response ──────────────────────────────────────────────────

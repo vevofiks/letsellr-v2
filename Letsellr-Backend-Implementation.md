@@ -81,11 +81,11 @@ For a lightning-fast, production-ready FastAPI backend, the absolute best choice
     - [ ] Implement `POST /api/chats/{id}/messages` (fallback for non-websocket clients).
 
 ### Phase 6: Admin MVP Dashboard APIs
-- [ ] Create `GET /api/admin/users` (List clients, owners, agencies).
-- [ ] Create `PATCH /api/admin/users/{id}/status` (Suspend/Activate).
-- [ ] Create `GET /api/admin/verification-requests`.
-- [ ] Create `POST /api/admin/verification-requests/{id}/approve` (Grants ✅ Badge).
-- [ ] Create `POST /api/admin/verification-requests/{id}/reject`.
+- [x] Create `GET /api/admin/users` (List clients, owners, agencies).
+- [x] Create `PATCH /api/admin/users/{id}/status` (Suspend/Activate).
+- [x] Create `GET /api/admin/verification-requests`.
+- [x] Create `POST /api/admin/verification-requests/{id}/approve` (Grants ✅ Badge).
+- [x] Create `POST /api/admin/verification-requests/{id}/reject`.
 - [ ] Create `GET /api/admin/properties/queue` (Pending listings).
 - [ ] Create `POST /api/admin/properties/{id}/approve` and `/reject`.
 - [ ] Implement APIs for Reviews, Property Types, and Testimonial management.

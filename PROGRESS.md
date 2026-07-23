@@ -8,7 +8,8 @@
 - **Frontend**: Added automatic smart role-redirection to the Client Dashboard, ensuring Owners, Agencies, and Admins are seamlessly redirected to their respective private dashboards.
 - **Frontend**: Resolved a critical infinite redirect loop bug caused by `PublicRoute` misconfiguration and restored missing geolocation states in the Dashboard components.
 
-## [2026-07-18]
+## [2026-07-18]Letsellr
+
 
 - **Frontend**: Fixed properties not loading in the dashboard due to an API pagination response format mismatch.
 - **Backend**: Added Pydantic schema `UserUpdateRequest` and endpoint `PUT /api/users/me` allowing authenticated users to update their profile details (name, preferred city, and preference type).

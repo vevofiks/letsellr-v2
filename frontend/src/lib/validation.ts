@@ -41,6 +41,7 @@ const emailSchema = z
       "sharklasers.com",
       "getnada.com",
       "boun.cr",
+      // "yopmail.com",
       "maildrop.cc",
     ];
     if (disposableDomains.some((d) => domain.includes(d))) {

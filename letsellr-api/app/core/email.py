@@ -77,7 +77,7 @@ def _otp_html(otp: str, purpose: str, expires_minutes: int) -> str:
                   <p style="color:#64748b;font-size:14px;margin:0 0 8px;">
                     ⏱ This code expires in <strong style="color:#334155;">{expires_minutes} minutes</strong>.
                   </p>
-                  <p style="color:#64748b;font-size:14px;margin:0;">
+                  <p style="color:#64748b;font-size:14px;margin:0 padding-left:5px;">
                     🔒 Never share this code with anyone. Letsellr staff will never ask for it.
                   </p>
                 </td>

@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     APP_VERSION: str = "0.1.0"
     DEBUG: bool = False
     ENVIRONMENT: Literal["development", "staging", "production"] = "development"
+    API_HOST: str = "0.0.0.0"
+    API_PORT: int = 8000
 
     # ── Database ─────────────────────────────────────────────────────────────
     DATABASE_URL: str  # postgresql+asyncpg://...

@@ -50,8 +50,8 @@ class User(UUIDMixin, TimestampMixin, Base):
 
     # ── Verification & Status ─────────────────────────────────────────────────
     verification_status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="pending", index=True,
-        comment="pending | verified | rejected",
+        String(20), nullable=False, default="unverified", index=True,
+        comment="unverified | review_request | verified | rejected",
     )
     verification_note: Mapped[str | None] = mapped_column(
         Text, nullable=True, comment="Admin rejection reason",

@@ -13,7 +13,8 @@ import {
   Phone, 
   Info,
   ArrowLeft,
-  Check
+  Check,
+  Calendar
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { OwnerNavbar } from "@/components/OwnerNavbar";
@@ -81,6 +82,9 @@ export const OwnerPropertyFormPage: React.FC = () => {
   const [ownerPhone, setOwnerPhone] = useState(user?.phone || "");
   const [ownerWhatsapp, setOwnerWhatsapp] = useState(user?.phone || "");
 
+  const [availabilityStatus, setAvailabilityStatus] = useState<"available" | "occupied" | "upcoming">("available");
+  const [availableFrom, setAvailableFrom] = useState("");
+
   useEffect(() => {
     if (isEdit && propertyId) {
       fetchExistingProperty(propertyId);
@@ -116,6 +120,14 @@ export const OwnerPropertyFormPage: React.FC = () => {
       setAmenities(data.amenities || []);
       setPhotos(data.photos && data.photos.length > 0 ? data.photos : []);
       setVideoLink(data.video_link || "");
+
+      if (data.extra_details) {
+        setAvailabilityStatus(data.extra_details.availability_status || "available");
+        setAvailableFrom(data.extra_details.available_from || "");
+      } else {
+        setAvailabilityStatus("available");
+        setAvailableFrom("");
+      }
 
       setOwnerPhone(data.owner_phone || "");
       setOwnerWhatsapp(data.owner_whatsapp || "");
@@ -188,6 +200,10 @@ export const OwnerPropertyFormPage: React.FC = () => {
         amenities,
         photos,
         video_link: videoLink.trim() || undefined,
+        extra_details: {
+          availability_status: availabilityStatus,
+          available_from: availableFrom || undefined
+        },
         location: {
           address: address.trim() || undefined,
           area: locationArea.trim(),
@@ -462,6 +478,40 @@ export const OwnerPropertyFormPage: React.FC = () => {
               </select>
             </div>
 
+          </div>
+        </div>
+
+        {/* Section 4: Availability & Status */}
+        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-5">
+          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
+            <Calendar className="h-5 w-5 text-brand-green" /> Availability Status
+          </h2>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Current Occupancy/Availability</label>
+              <select
+                value={availabilityStatus}
+                onChange={(e) => setAvailabilityStatus(e.target.value as any)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20"
+              >
+                <option value="available">Available Now</option>
+                <option value="upcoming">Upcoming / Available Soon</option>
+                <option value="occupied">Occupied (No Vacancy)</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Available From (Optional)</label>
+              <input
+                type="date"
+                value={availableFrom}
+                onChange={(e) => setAvailableFrom(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900"
+              />
+            </div>
+            
           </div>
         </div>
 

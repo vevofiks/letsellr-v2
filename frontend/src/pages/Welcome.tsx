@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { UserCheckIcon, UsersIcon, ChevronRightIcon } from "@animateicons/react/lucide";
 import { useAuth } from "@/context/AuthContext";
 import { AppNavbar } from "@/components/AppNavbar";
+import { AuthModal, type AuthModalMode } from "@/components/AuthModal";
 
 interface RoleOption {
   id: "owner" | "agency";
@@ -20,6 +21,10 @@ export const Welcome: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [selectedRole, setSelectedRole] = useState<"owner" | "agency">("owner");
+  const [authModal, setAuthModal] = useState<{ open: boolean; mode: AuthModalMode }>({
+    open: false,
+    mode: "login",
+  });
 
   const ownerIconRef = useRef<any>(null);
   const agencyIconRef = useRef<any>(null);
@@ -70,17 +75,26 @@ export const Welcome: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-[#f4f6f5] font-sans">
 
-      <AppNavbar logoHref="/register/type" />
+      {/* <AppNavbar logoHref="/register/type" /> */}
 
       {/* ── Page Content ──────────────────────────────────────────────── */}
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-12">
         <div className="w-full max-w-4xl flex flex-col items-center text-center">
 
           {/* Hero header */}
-          <div className="max-w-xl mx-auto space-y-3 mb-10">
+          <div className="max-w-xl mx-auto space-y-1 mb-10">
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
               List on Letsellr
             </h1>
+              <div className="flex items-center justify-center transition-transform group-hover:scale-105">
+                <img
+                  src="/logo.png"
+                  alt="Letellr Logo"
+                  height={700}
+                  className="h-12 w-auto object-contain shrink-0 drop-shadow-sm"
+                />
+              </div>
+
             <p className="text-sm md:text-base text-slate-600 font-medium leading-relaxed max-w-md mx-auto">
               Are you a property owner or agency?
               <br />
@@ -155,7 +169,8 @@ export const Welcome: React.FC = () => {
           <div className="mt-8 md:mt-10 text-sm text-slate-600 font-medium">
             Already have an account?{" "}
             <button
-              onClick={() => navigate("/login")}
+              onClick={() => setAuthModal({ open: true, mode: "login" })}
+
               className="font-bold text-[#308178] hover:text-[#25645d] hover:underline focus:outline-none transition-colors"
             >
               Sign In
@@ -164,6 +179,13 @@ export const Welcome: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {authModal.open && (
+        <AuthModal
+          initialMode={authModal.mode}
+          onClose={() => setAuthModal({ open: false, mode: "login" })}
+        />
+      )}
     </div>
   );
 };

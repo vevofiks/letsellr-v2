@@ -857,10 +857,10 @@ export const ClientDashboard: React.FC = () => {
         </div>
       ) : (
         /* Main Container */
-        <main className="mx-auto max-w-9xl px-5 py-8">
+        <main className="mx-auto max-w-9xl px-5 ">
         
         {/* Full-width Hero Banner Section */}
-        <div 
+        {/* <div 
           className="relative overflow-hidden -mx-5 md:mx-0 rounded-none md:rounded-[32px] text-white py-12 md:py-20 px-4 md:px-16 shadow-lg bg-cover bg-center mb-8 flex flex-col items-center justify-center min-h-60 md:min-h-95"
           style={{ backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0.85)), url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=80')` }}
         >
@@ -873,7 +873,7 @@ export const ClientDashboard: React.FC = () => {
               Choose Your Next Home
             </h1>
           </div>
-        </div>
+        </div> */}
 
         {/* Custom Search Filter Bar from Reference UI */}
         <div className="w-full relative z-20 mt-6 pb-6 border-b border-slate-200">
@@ -1039,214 +1039,180 @@ export const ClientDashboard: React.FC = () => {
                     <span>Filter</span>
                   </button>
 
-                  {/* Absolute Popover */}
+                  {/* Popover — bottom sheet on mobile, dropdown on desktop */}
                   {showAdvancedPopover && (
-                    <div 
-                      ref={popoverRef}
-                      className="absolute right-0 top-full mt-2 w-64 bg-white border border-slate-200 shadow-xl rounded-lg p-4 z-40 animate-in fade-in slide-in-from-top-2 duration-150"
-                    >
-                      <div className="flex flex-col gap-3">
-                        <div className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-1.5 mb-1 flex items-center justify-between">
-                          <span>Advanced Filters</span>
-                          <div className="flex items-center gap-2">
-                            {gpsActive && <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />}
-                            <button
-                              type="button"
-                              onClick={() => setShowAdvancedPopover(false)}
-                              className="p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
-                            >
-                              <X className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
+                    <>
+                      {/* Mobile backdrop */}
+                      <div className="fixed inset-0 bg-black/30 z-40 lg:hidden" onClick={() => setShowAdvancedPopover(false)} />
+                      <div
+                        ref={popoverRef}
+                        className={cn(
+                          "z-50 bg-white border border-slate-200 shadow-xl",
+                          // Mobile: full-width bottom sheet
+                          "fixed bottom-0 left-0 right-0 rounded-t-2xl p-4 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-200",
+                          // Desktop: dropdown
+                          "lg:absolute lg:fixed-[unset] lg:bottom-auto lg:left-auto lg:right-0 lg:top-full lg:mt-2 lg:w-72 lg:rounded-lg lg:max-h-none lg:overflow-visible lg:slide-in-from-bottom-0 lg:slide-in-from-top-2"
+                        )}
+                      >
+                        {/* Handle bar — mobile only */}
+                        <div className="flex justify-center mb-3 lg:hidden">
+                          <div className="w-10 h-1 rounded-full bg-slate-200" />
                         </div>
 
-                        {/* Mobile-only additional filters inside the Popover */}
-                        <div className="flex lg:hidden flex-col gap-3 border-b border-slate-100 pb-3">
-                          {/* Looking For */}
-                          <div className="flex flex-col gap-1 text-left">
-                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Looking For</span>
-                            <Select
-                              value={intent || undefined}
-                              onValueChange={(val) => {
-                                setIntent(val === "all" || !val ? "" : val);
-                                setPage(1);
-                              }}
-                            >
-                              <SelectTrigger className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
-                                <SelectValue placeholder="Buy / Rent / Lease">
-                                  {intent === "buy" ? "For Sale" : intent === "rent" ? "For Rent" : intent === "lease" ? "For Lease" : "Buy / Rent / Lease"}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-50">
-                                <SelectItem value="all">Buy / Rent / Lease</SelectItem>
-                                <SelectItem value="buy">For Sale</SelectItem>
-                                <SelectItem value="rent">For Rent</SelectItem>
-                                <SelectItem value="lease">For Lease</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {/* Type */}
-                          <div className="flex flex-col gap-1 text-left">
-                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Type</span>
-                            <Select
-                              value={category || undefined}
-                              onValueChange={(val) => {
-                                setCategory(val === "all" || !val ? "" : val);
-                                setPage(1);
-                              }}
-                            >
-                              <SelectTrigger className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
-                                <SelectValue placeholder="Residence">
-                                  {category === "apartment" ? "Apartment" : category === "villa_house" ? "Villa / House" : category === "land" ? "Land" : category === "commercial" ? "Commercial" : category === "pg" ? "PG" : category === "hostel" ? "Hostel" : "Residence"}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-50">
-                                <SelectItem value="all">All Categories</SelectItem>
-                                <SelectItem value="apartment">Apartment</SelectItem>
-                                <SelectItem value="villa_house">Villa / House</SelectItem>
-                                <SelectItem value="land">Land</SelectItem>
-                                <SelectItem value="commercial">Commercial</SelectItem>
-                                <SelectItem value="pg">PG</SelectItem>
-                                <SelectItem value="hostel">Hostel</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {/* Price */}
-                          <div className="flex flex-col gap-1 text-left">
-                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Price</span>
-                            <Select
-                              value={priceRange === "all" ? undefined : priceRange}
-                              onValueChange={(val) => {
-                                setPriceRange(val || "all");
-                                setPage(1);
-                              }}
-                            >
-                              <SelectTrigger className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
-                                <SelectValue placeholder="Any Price">
-                                  {priceRange === "under-50k" ? "Under ₹50k" : priceRange === "50k-5l" ? "₹50k - ₹5L" : priceRange === "5l-15l" ? "₹5L - ₹15L" : priceRange === "15l-50l" ? "₹15L - ₹50L" : priceRange === "50l-1cr" ? "₹50L - ₹1Cr" : priceRange === "above-1cr" ? "Above ₹1Cr" : "Any Price"}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-50">
-                                <SelectItem value="all">Any Price</SelectItem>
-                                <SelectItem value="under-50k">Under ₹50k</SelectItem>
-                                <SelectItem value="50k-5l">₹50k - ₹5L</SelectItem>
-                                <SelectItem value="5l-15l">₹5L - ₹15L</SelectItem>
-                                <SelectItem value="15l-50l">₹15L - ₹50L</SelectItem>
-                                <SelectItem value="50l-1cr">₹50L - ₹1Cr</SelectItem>
-                                <SelectItem value="above-1cr">Above ₹1Cr</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          {/* Location Text Input */}
-                          <div className="flex flex-col gap-1 text-left">
-                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Location</span>
-                            <div className={cn(
-                              "flex items-center gap-1.5 bg-white border rounded-md h-8 px-2 shadow-sm transition-all",
-                              gpsActive ? "border-emerald-500 bg-emerald-50/10" : "border-slate-200 hover:border-slate-300",
-                              "focus-within:ring-2 focus-within:ring-[#308178]/20 focus-within:border-[#308178]"
-                            )}>
-                              <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                              <input
-                                type="text"
-                                placeholder="City..."
-                                value={searchCity}
-                                onChange={(e) => setSearchCity(e.target.value)}
-                                onBlur={() => {
-                                  setCity(searchCity);
-                                  setPage(1);
-                                }}
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    setCity(searchCity);
-                                    setPage(1);
-                                  }
-                                }}
-                                className={cn(
-                                  "w-full bg-transparent border-0 font-semibold text-slate-800 text-[11px] focus:outline-none focus:ring-0 p-0",
-                                  "placeholder:text-slate-400"
-                                )}
-                              />
+                        <div className="flex flex-col gap-3">
+                          <div className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 flex items-center justify-between">
+                            <span className="flex items-center gap-1.5">
+                              <SlidersHorizontal className="h-3.5 w-3.5 text-slate-500" />
+                              Filters
+                              {gpsActive && <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />}
+                            </span>
+                            <div className="flex items-center gap-2">
+                              {(intent || category || city || priceRange !== "all" || gpsActive || limit !== 12) && (
+                                <button
+                                  type="button"
+                                  onClick={() => { handleResetAll(); setShowAdvancedPopover(false); }}
+                                  className="text-[10px] font-extrabold text-rose-500 hover:text-rose-700 px-2 py-0.5 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
+                                >
+                                  Reset All
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => setShowAdvancedPopover(false)}
+                                className="p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
                             </div>
                           </div>
-                        </div>
 
-                        {/* GPS Proximity Section */}
-                        <div className="flex flex-col gap-1 text-left">
-                          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">GPS Nearby Search</span>
+                          {/* Mobile-only: Looking For + Type in 2-col grid */}
+                          <div className="grid grid-cols-2 gap-2 lg:hidden">
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Intent</span>
+                              <Select value={intent || undefined} onValueChange={(val) => { setIntent(val === "all" || !val ? "" : val); setPage(1); }}>
+                                <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
+                                  <SelectValue placeholder="Any">{intent === "buy" ? "Sale" : intent === "rent" ? "Rent" : intent === "lease" ? "Lease" : "Any"}</SelectValue>
+                                </SelectTrigger>
+                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-[60]">
+                                  <SelectItem value="all">Any</SelectItem>
+                                  <SelectItem value="buy">For Sale</SelectItem>
+                                  <SelectItem value="rent">For Rent</SelectItem>
+                                  <SelectItem value="lease">For Lease</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Type</span>
+                              <Select value={category || undefined} onValueChange={(val) => { setCategory(val === "all" || !val ? "" : val); setPage(1); }}>
+                                <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
+                                  <SelectValue placeholder="All">{category === "apartment" ? "Apt" : category === "villa_house" ? "Villa" : category === "land" ? "Land" : category === "commercial" ? "Comm" : category === "pg" ? "PG" : category === "hostel" ? "Hostel" : "All"}</SelectValue>
+                                </SelectTrigger>
+                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-[60]">
+                                  <SelectItem value="all">All</SelectItem>
+                                  <SelectItem value="apartment">Apartment</SelectItem>
+                                  <SelectItem value="villa_house">Villa / House</SelectItem>
+                                  <SelectItem value="land">Land</SelectItem>
+                                  <SelectItem value="commercial">Commercial</SelectItem>
+                                  <SelectItem value="pg">PG</SelectItem>
+                                  <SelectItem value="hostel">Hostel</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          {/* Mobile-only: Price + Location in 2-col grid */}
+                          <div className="grid grid-cols-2 gap-2 lg:hidden">
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Price</span>
+                              <Select value={priceRange === "all" ? undefined : priceRange} onValueChange={(val) => { setPriceRange(val || "all"); setPage(1); }}>
+                                <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
+                                  <SelectValue placeholder="Any">{priceRange === "under-50k" ? "<₹50k" : priceRange === "50k-5l" ? "₹50k-5L" : priceRange === "5l-15l" ? "₹5-15L" : priceRange === "15l-50l" ? "₹15-50L" : priceRange === "50l-1cr" ? "₹50L-1Cr" : priceRange === "above-1cr" ? ">₹1Cr" : "Any"}</SelectValue>
+                                </SelectTrigger>
+                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-[60]">
+                                  <SelectItem value="all">Any Price</SelectItem>
+                                  <SelectItem value="under-50k">Under ₹50k</SelectItem>
+                                  <SelectItem value="50k-5l">₹50k - ₹5L</SelectItem>
+                                  <SelectItem value="5l-15l">₹5L - ₹15L</SelectItem>
+                                  <SelectItem value="15l-50l">₹15L - ₹50L</SelectItem>
+                                  <SelectItem value="50l-1cr">₹50L - ₹1Cr</SelectItem>
+                                  <SelectItem value="above-1cr">Above ₹1Cr</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">City</span>
+                              <div className={cn("flex items-center gap-1 bg-white border rounded-md h-8 px-2 transition-all", gpsActive ? "border-emerald-500" : "border-slate-200")}>
+                                <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
+                                <input type="text" placeholder="City..." value={searchCity}
+                                  onChange={(e) => setSearchCity(e.target.value)}
+                                  onBlur={() => { setCity(searchCity); setPage(1); }}
+                                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setCity(searchCity); setPage(1); } }}
+                                  className="w-full bg-transparent border-0 font-semibold text-slate-800 text-[11px] focus:outline-none p-0 placeholder:text-slate-400"
+                                />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* GPS Proximity */}
+                          <div className="flex flex-col gap-1">
+                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">GPS Nearby</span>
+                            <button type="button" onClick={toggleGPS} disabled={gpsLoading}
+                              className={`w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md border text-[11px] font-bold transition-all cursor-pointer ${
+                                gpsActive ? "border-emerald-500 text-emerald-700 bg-emerald-50/50" : "border-slate-200 text-slate-600 bg-white hover:bg-slate-50"
+                              }`}
+                            >
+                              {gpsLoading ? <span className="h-3.5 w-3.5 border-2 border-slate-500 border-t-transparent rounded-full animate-spin" /> : (
+                                <><MapPin className={`h-3 w-3 ${gpsActive ? "text-emerald-600 animate-bounce" : "text-slate-400"}`} />
+                                {gpsActive ? "Proximity Active" : "Detect GPS Location"}</>
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Radius + Limit in 2-col */}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Radius</span>
+                              <Select value={String(radius)} onValueChange={(val) => { setRadius(Number(val || "20")); setPage(1); }} disabled={!gpsActive}>
+                                <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px] disabled:opacity-50">
+                                  <SelectValue placeholder="20 km" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-[60]">
+                                  <SelectItem value="5">5 km</SelectItem>
+                                  <SelectItem value="10">10 km</SelectItem>
+                                  <SelectItem value="20">20 km</SelectItem>
+                                  <SelectItem value="50">50 km</SelectItem>
+                                  <SelectItem value="100">100 km</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Per Page</span>
+                              <Select value={String(limit)} onValueChange={(val) => { setLimit(Number(val || "12")); setPage(1); }}>
+                                <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
+                                  <SelectValue placeholder="12" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-[60]">
+                                  <SelectItem value="12">12</SelectItem>
+                                  <SelectItem value="24">24</SelectItem>
+                                  <SelectItem value="48">48</SelectItem>
+                                  <SelectItem value="100">100</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
+
+                          {/* Apply button — mobile only */}
                           <button
                             type="button"
-                            onClick={() => {
-                              toggleGPS();
-                            }}
-                            disabled={gpsLoading}
-                            className={`w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md border text-[11px] font-bold transition-all cursor-pointer ${
-                              gpsActive 
-                                ? "border-emerald-500 text-emerald-700 bg-emerald-50/50" 
-                                : "border-slate-200 text-slate-600 bg-white hover:bg-slate-50"
-                            }`}
+                            onClick={() => setShowAdvancedPopover(false)}
+                            className="lg:hidden w-full h-10 rounded-lg bg-brand-green hover:bg-brand-green-hover text-white font-extrabold text-sm transition-colors mt-1"
                           >
-                            {gpsLoading ? (
-                              <span className="h-3.5 w-3.5 border-2 border-slate-500 border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                              <>
-                                <MapPin className={`h-3 w-3 ${gpsActive ? "text-emerald-600 animate-bounce" : "text-slate-400"}`} />
-                                {gpsActive ? `Proximity Active` : "Detect GPS Location"}
-                              </>
-                            )}
+                            Apply Filters
                           </button>
                         </div>
-
-                        {/* Radius Select */}
-                        <div className="flex flex-col gap-1 text-left">
-                          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Search Radius</span>
-                          <Select
-                            value={String(radius)}
-                            onValueChange={(val) => {
-                              setRadius(Number(val || "20"));
-                              setPage(1);
-                            }}
-                            disabled={!gpsActive}
-                          >
-                            <SelectTrigger className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px] disabled:opacity-50">
-                              <SelectValue placeholder="20 km" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-50">
-                              <SelectItem value="5">5 km</SelectItem>
-                              <SelectItem value="10">10 km</SelectItem>
-                              <SelectItem value="20">20 km</SelectItem>
-                              <SelectItem value="50">50 km</SelectItem>
-                              <SelectItem value="100">100 km</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        {/* Page Limit Select */}
-                        <div className="flex flex-col gap-1 text-left">
-                          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Items Per Page</span>
-                          <Select
-                            value={String(limit)}
-                            onValueChange={(val) => {
-                              setLimit(Number(val || "12"));
-                              setPage(1);
-                            }}
-                          >
-                            <SelectTrigger className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
-                              <SelectValue placeholder="12" />
-                            </SelectTrigger>
-                            <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-50">
-                              <SelectItem value="12">12 Items</SelectItem>
-                              <SelectItem value="24">24 Items</SelectItem>
-                              <SelectItem value="48">48 Items</SelectItem>
-                              <SelectItem value="100">100 Items</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
                       </div>
-                    </div>
+                    </>
                   )}
                 </div>
               </div>
@@ -1255,9 +1221,9 @@ export const ClientDashboard: React.FC = () => {
           </form>
         </div>
 
-        {/* Active Filter Chips */}
+        {/* Active Filter Chips — visible on all screen sizes */}
         {(intent || category || city || searchQuery || priceRange !== "all" || gpsActive || limit !== 12) && (
-          <div className="flex justify-center items-center gap-2 mt-4 flex-wrap relative z-20 max-w-6xl mx-auto px-4">
+          <div className="hidden lg:flex items-center gap-2 mt-4 flex-wrap relative z-20 w-full px-0">
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mr-1">Active:</span>
             
             {searchQuery && (
@@ -1321,12 +1287,12 @@ export const ClientDashboard: React.FC = () => {
               className="text-[11px] font-extrabold text-rose-600 hover:text-rose-700 hover:underline px-2 py-1 ml-1 cursor-pointer transition-colors"
             >
               Clear All
-            </button>
+            </button> 
           </div>
         )}
 
         {/* Title Grid Section */}
-        <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 mt-10 border-b border-slate-200/60 pb-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 mt-10 border-b border-slate-200/60 pb-4">
           <div className="text-left">
             <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight capitalize">
               {category ? category.replace("_", " / ") : "Residence"}{city ? ` in ${city}` : ""}
@@ -1619,7 +1585,7 @@ export const ClientDashboard: React.FC = () => {
       )}
 
       {viewMode === "list" && (
-        <div className="fixed bottom-6 right-6 z-50">
+        <div className={cn("fixed bottom-6 right-6 z-50", showAdvancedPopover && "hidden lg:block")}>
           <button
             type="button"
             onClick={() => setViewMode("map")}

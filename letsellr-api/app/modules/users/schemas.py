@@ -36,3 +36,7 @@ class UserUpdateRequest(BaseModel):
     location_city: str | None = None
     preference_type: str | None = None
 
+
+class VerificationSubmitRequest(BaseModel):
+    document_keys: list[str]
+

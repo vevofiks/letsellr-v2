@@ -23,6 +23,7 @@ from app.modules.properties.schemas import (
     LocationSuggestion,
 )
 from app.modules.users.models import User
+import urllib.parse
 
 
 class PropertyService:
@@ -127,30 +128,22 @@ class PropertyService:
         """
         Resolve a property ref to a WhatsApp wa.me deep-link.
 
-        Only available for PG/Hostel properties (enquiry_type = whatsapp_bot).
         Increments the property's `enquiries` stat counter on each call.
         """
         prop = await self.repo.get_by_ref(ref)
         if not prop:
             raise HTTPException(status_code=404, detail="Property not found")
 
-        if prop.category not in ["pg", "hostel"]:
-            raise HTTPException(
-                status_code=400,
-                detail="Enquiry link is only available for PG/Hostel listings. "
-                       "Other categories use in-platform chat.",
-            )
+        is_pg_or_hostel = prop.category in ["pg", "hostel"]
 
-        # Use owner_whatsapp preferentially; fall back to owner_phone
-        phone_raw = prop.owner_whatsapp or prop.owner_phone
-        phone = phone_raw.replace("+", "").replace(" ", "").replace("-", "")
+        # Use a static defined number instead of the owner's phone
+        phone = "917025351519"
 
         # Pre-filled message text
         message = (
             f"Hi, I found your listing on Letsellr (Ref: {ref}) "
             f"and I'm interested. Is it still available?"
         )
-        import urllib.parse
         wa_link = f"https://wa.me/{phone}?text={urllib.parse.quote(message)}"
 
         # Increment enquiry stat
@@ -158,10 +151,13 @@ class PropertyService:
         current_stats["enquiries"] = current_stats.get("enquiries", 0) + 1
         await self.repo.update(prop, {"stats": current_stats})
 
+        enquiry_type = "whatsapp_bot" if is_pg_or_hostel else "manual_chat"
+
         return EnquiryLinkResponse(
             ref=ref,
             link=wa_link,
-            enquiry_type="whatsapp_bot",
+            enquiry_type=enquiry_type,
+            is_pg_or_hostel=is_pg_or_hostel
         )
 
     async def list_public_properties(
