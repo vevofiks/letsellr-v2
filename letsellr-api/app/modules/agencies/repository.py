@@ -44,8 +44,16 @@ class AgencyRepository:
             .where(User.status == "active")
         )
 
-        if city:
-            stmt = stmt.where(User.location_city.ilike(f"%{city}%"))
+        if city and city != "My Location":
+            search_pattern = f"%{city}%"
+            from sqlalchemy import or_
+            stmt = stmt.where(
+                or_(
+                    User.location_city.ilike(search_pattern),
+                    User.location_area.ilike(search_pattern),
+                    func.array_to_string(AgencyProfile.areas_served, ',').ilike(search_pattern),
+                )
+            )
 
         stmt = stmt.order_by(User.created_at.desc()).limit(limit).offset(offset)
         result = await self.db.execute(stmt)

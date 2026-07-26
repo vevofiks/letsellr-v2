@@ -59,6 +59,8 @@ class PropertyRepository:
             stmt = stmt.where(Property.intent == filters["intent"])
         if "city" in filters:
             stmt = stmt.where(Property.location_city.ilike(f"%{filters['city']}%"))
+        if "owner_id" in filters:
+            stmt = stmt.where(Property.owner_id == filters["owner_id"])
         if "min_price" in filters:
             stmt = stmt.where(Property.price >= filters["min_price"])
         if "max_price" in filters:

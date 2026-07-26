@@ -3,7 +3,6 @@ import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { UserCheckIcon, UsersIcon, ChevronRightIcon } from "@animateicons/react/lucide";
 import { useAuth } from "@/context/AuthContext";
-import { AppNavbar } from "@/components/AppNavbar";
 import { AuthModal, type AuthModalMode } from "@/components/AuthModal";
 
 interface RoleOption {
@@ -73,29 +72,26 @@ export const Welcome: React.FC = () => {
   }, [user, navigate]);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#f4f6f5] font-sans">
-
-      {/* <AppNavbar logoHref="/register/type" /> */}
+    <div className="min-h-[100dvh] flex flex-col justify-center bg-white font-sans overflow-x-hidden">
 
       {/* ── Page Content ──────────────────────────────────────────────── */}
-      <main className="flex flex-1 flex-col items-center justify-center px-4 py-12">
-        <div className="w-full max-w-4xl flex flex-col items-center text-center">
+      <main className="flex flex-1 flex-col items-center justify-center px-4 sm:px-6 py-6 sm:py-12 bg-white w-full">
+        <div className="w-full max-w-2xl flex flex-col items-center text-center mx-auto">
 
           {/* Hero header */}
-          <div className="max-w-xl mx-auto space-y-1 mb-10">
-            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
+          <div className="w-full max-w-xl mx-auto space-y-2 mb-6 sm:mb-8">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900">
               List on Letsellr
             </h1>
-              <div className="flex items-center justify-center transition-transform group-hover:scale-105">
-                <img
-                  src="/logo.png"
-                  alt="Letellr Logo"
-                  height={700}
-                  className="h-12 w-auto object-contain shrink-0 drop-shadow-sm"
-                />
-              </div>
+            <div className="flex items-center justify-center py-1">
+              <img
+                src="/logo.png"
+                alt="Letsellr Logo"
+                className="h-9 sm:h-11 w-auto object-contain shrink-0 drop-shadow-sm"
+              />
+            </div>
 
-            <p className="text-sm md:text-base text-slate-600 font-medium leading-relaxed max-w-md mx-auto">
+            <p className="text-xs sm:text-sm md:text-base text-slate-600 font-medium leading-relaxed max-w-md mx-auto">
               Are you a property owner or agency?
               <br />
               Select your type below to get started.
@@ -104,7 +100,7 @@ export const Welcome: React.FC = () => {
 
           {/* Role cards — Owner & Agency only */}
           <div className={cn(
-            "w-full grid grid-cols-1 md:grid-cols-2 border border-slate-200 bg-white divide-y md:divide-y-0 md:divide-x shadow-sm max-w-2xl mx-auto rounded-2xl overflow-hidden",
+            "w-full grid grid-cols-1 md:grid-cols-2 border border-slate-200 bg-white divide-y md:divide-y-0 md:divide-x shadow-sm rounded-2xl overflow-hidden",
             "divide-slate-200"
           )}>
             {roles.map((role) => {
@@ -115,49 +111,50 @@ export const Welcome: React.FC = () => {
                 <div
                   key={role.id}
                   onClick={() => handleRoleSelect(role)}
-                  className={`relative flex flex-col items-center justify-center p-8 md:p-12 cursor-pointer select-none transition-all duration-300 ease-out border-b-4 ${
+                  className={`relative flex flex-col items-center justify-center p-5 sm:p-8 md:p-10 cursor-pointer select-none transition-all duration-300 ease-out border-b-4 ${
                     isSelected
-                      ? "bg-white z-10 shadow-[0_20px_50px_rgba(0,0,0,0.08)] border-b-[#308178]"
+                      ? "bg-white z-10 shadow-[0_10px_30px_rgba(0,0,0,0.06)] border-b-brand-green"
                       : "bg-transparent border-b-transparent hover:bg-slate-50/50"
                   }`}
                 >
                   <div
-                    className={`pointer-events-none flex h-16 w-16 items-center justify-center rounded-full transition-colors duration-300 ${
-                      isSelected ? "text-[#308178]" : "text-slate-500"
+                    className={`pointer-events-none flex h-12 sm:h-16 w-12 sm:w-16 items-center justify-center rounded-full transition-colors duration-300 ${
+                      isSelected ? "text-brand-deep-green" : "text-slate-500"
                     }`}
                   >
                     <Icon
                       ref={role.ref}
-                      size={48}
+                      size={40}
                       isAnimated={isSelected}
                       duration={1.2}
-                      color={isSelected ? "#308178" : "#475569"}
+                      color={isSelected ? "#23D283" : "#475569"}
                     />
                   </div>
 
                   <h3
-                    className={`mt-4 text-lg font-bold tracking-tight transition-colors duration-300 ${
-                      isSelected ? "text-[#308178]" : "text-slate-800"
+                    className={`mt-3 sm:mt-4 text-base sm:text-lg font-bold tracking-tight transition-colors duration-300 ${
+                      isSelected ? "text-brand-deep-green" : "text-slate-800"
                     }`}
                   >
                     {role.title}
                   </h3>
 
-                  <p className="mt-2 text-xs text-slate-500 max-w-50 leading-relaxed">
+                  <p className="mt-1.5 text-xs text-slate-500 max-w-56 leading-relaxed">
                     {role.description}
                   </p>
 
-                  <div className="h-6 mt-4 flex items-center justify-center">
+                  <div className="h-6 mt-3 sm:mt-4 flex items-center justify-center">
                     {isSelected && (
                       <button
+                        type="button"
                         onClick={(e) => {
                           e.stopPropagation();
                           navigate(role.route, { state: role.state });
                         }}
-                        className="text-[#308178] text-xs font-bold uppercase tracking-wider flex items-center gap-1 hover:underline transition-all duration-200"
+                        className="text-brand-deep-green text-xs font-bold uppercase tracking-wider flex items-center gap-1 hover:underline transition-all duration-200 cursor-pointer"
                       >
                         Select Role
-                        <ChevronRightIcon size={14} isAnimated={true} color="#308178" />
+                        <ChevronRightIcon size={14} isAnimated={true} color="#23D283" />
                       </button>
                     )}
                   </div>
@@ -165,17 +162,17 @@ export const Welcome: React.FC = () => {
               );
             })}
           </div>
+
           {/* Footer Login Switcher */}
-          <div className="mt-8 md:mt-10 text-sm text-slate-600 font-medium">
+          <div className="mt-6 sm:mt-8 text-xs sm:text-sm text-slate-600 font-medium">
             Already have an account?{" "}
             <button
+              type="button"
               onClick={() => setAuthModal({ open: true, mode: "login" })}
-
-              className="font-bold text-[#308178] hover:text-[#25645d] hover:underline focus:outline-none transition-colors"
+              className="font-bold text-brand-deep-green hover:text-brand-green-hover hover:underline focus:outline-none transition-colors cursor-pointer"
             >
               Sign In
             </button>
-
           </div>
         </div>
       </main>

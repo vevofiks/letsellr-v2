@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { 
   Building2, 
@@ -9,17 +9,25 @@ import {
   MapPin, 
   Lock, 
   Image as ImageIcon, 
-  Video, 
-  Phone, 
   Info,
   ArrowLeft,
   Check,
-  Calendar
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  Search,
+  Navigation,
+  Loader2
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { OwnerNavbar } from "@/components/OwnerNavbar";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import markerIcon from "leaflet/dist/images/marker-icon.png";
+import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
+import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
 const AMENITIES_LIST = [
   "Wifi",
@@ -57,7 +65,6 @@ export const OwnerPropertyFormPage: React.FC = () => {
   
   const [price, setPrice] = useState<number | "">("");
   const [priceUnit, setPriceUnit] = useState<"per_month" | "total">("per_month");
-  const [deposit, setDeposit] = useState<number | "">("");
 
   const [area, setArea] = useState<number | "">("");
   const [bedrooms, setBedrooms] = useState<number | "">("");
@@ -67,31 +74,210 @@ export const OwnerPropertyFormPage: React.FC = () => {
   const [address, setAddress] = useState("");
   const [locationArea, setLocationArea] = useState("");
   const [city, setCity] = useState("");
-  const [pincode, setPincode] = useState("");
+  const [pincode, setPincode] = useState("682030");
   const [state, setState] = useState("Kerala");
   const [latitude, setLatitude] = useState<number | "">("");
   const [longitude, setLongitude] = useState<number | "">("");
 
   const [amenities, setAmenities] = useState<string[]>([]);
-  const [photos, setPhotos] = useState<string[]>([
-    "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80"
-  ]);
-  const [photoInput, setPhotoInput] = useState("");
-  const [videoLink, setVideoLink] = useState("");
-
-  const [ownerPhone, setOwnerPhone] = useState(user?.phone || "");
-  const [ownerWhatsapp, setOwnerWhatsapp] = useState(user?.phone || "");
+  const [availableAmenities, setAvailableAmenities] = useState<string[]>(AMENITIES_LIST);
+  const [customAmenity, setCustomAmenity] = useState("");
+  
+  const [photos, setPhotos] = useState<string[]>([]);
 
   const [availabilityStatus, setAvailabilityStatus] = useState<"available" | "occupied" | "upcoming">("available");
   const [availableFrom, setAvailableFrom] = useState("");
+  const [existingStatus, setExistingStatus] = useState<string>("");
 
+  // Accordion open/close state
+  const [specsOpen, setSpecsOpen] = useState(false);
+
+  // Map and Search states
+  const mapRef = useRef<HTMLDivElement | null>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const markerInstanceRef = useRef<L.Marker | null>(null);
+
+  const [mapSearchQuery, setMapSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+
+  // Geolocation logic to get user current location automatically (if not editing)
   useEffect(() => {
-    if (isEdit && propertyId) {
-      fetchExistingProperty(propertyId);
+    if (!isEdit && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const lat = position.coords.latitude;
+          const lng = position.coords.longitude;
+          setLatitude(lat);
+          setLongitude(lng);
+        },
+        (error) => {
+          console.warn("Auto-geolocation access denied or failed:", error);
+        }
+      );
     }
-  }, [propertyId]);
+  }, [isEdit]);
 
-  const fetchExistingProperty = async (id: string) => {
+  // Leaflet Map Initialization
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    // Fix default icons path
+    delete (L.Icon.Default.prototype as any)._getIconUrl;
+    L.Icon.Default.mergeOptions({
+      iconUrl: markerIcon,
+      iconRetinaUrl: markerIcon2x,
+      shadowUrl: markerShadow,
+    });
+
+    const initialLat = latitude !== "" ? Number(latitude) : 10.0159;
+    const initialLng = longitude !== "" ? Number(longitude) : 76.3419;
+
+    const map = L.map(mapRef.current, {
+      zoomControl: true,
+      attributionControl: false,
+      maxZoom: 18,
+    }).setView([initialLat, initialLng], latitude !== "" ? 15 : 12);
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+    }).addTo(map);
+
+    const marker = L.marker([initialLat, initialLng], {
+      draggable: true,
+    }).addTo(map);
+
+    // Track dragging
+    marker.on("dragend", () => {
+      const position = marker.getLatLng();
+      setLatitude(position.lat);
+      setLongitude(position.lng);
+    });
+
+    // Track map click to reposition marker
+    map.on("click", (e) => {
+      marker.setLatLng(e.latlng);
+      setLatitude(e.latlng.lat);
+      setLongitude(e.latlng.lng);
+    });
+
+    mapInstanceRef.current = map;
+    markerInstanceRef.current = marker;
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+      markerInstanceRef.current = null;
+    };
+  }, []);
+
+  // Update map marker when latitude/longitude values change externally (e.g. from fetched property or search)
+  useEffect(() => {
+    if (mapInstanceRef.current && markerInstanceRef.current && latitude !== "" && longitude !== "") {
+      const lat = Number(latitude);
+      const lng = Number(longitude);
+      const currentPos = markerInstanceRef.current.getLatLng();
+      
+      // Pan to new coordinate only if the shift is substantial
+      if (Math.abs(currentPos.lat - lat) > 0.0001 || Math.abs(currentPos.lng - lng) > 0.0001) {
+        markerInstanceRef.current.setLatLng([lat, lng]);
+        mapInstanceRef.current.setView([lat, lng], 15);
+      }
+    }
+  }, [latitude, longitude]);
+
+  // Handle Search submit
+  const handleMapSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mapSearchQuery.trim()) return;
+
+    try {
+      setSearchLoading(true);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&limit=5&addressdetails=1&q=${encodeURIComponent(mapSearchQuery)}`
+      );
+      const data = await response.json();
+      setSearchResults(data);
+      if (data.length === 0) {
+        toast.error("No locations found for your search.");
+      }
+    } catch (err) {
+      console.error("Nominatim search failed:", err);
+      toast.error("Location search failed. Please try again.");
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  // Handle suggestion select
+  const handleSelectSearchResult = (result: any) => {
+    const lat = Number(result.lat);
+    const lng = Number(result.lon);
+    setLatitude(lat);
+    setLongitude(lng);
+    setSearchResults([]);
+    setMapSearchQuery(result.display_name);
+
+    // Auto-fill address details
+    if (result.address) {
+      const cityVal = result.address.city || result.address.town || result.address.village || result.address.county || "";
+      const stateVal = result.address.state || "";
+      const areaVal = result.address.suburb || result.address.neighbourhood || result.address.residential || "";
+
+      if (cityVal) setCity(cityVal);
+      if (stateVal) setState(stateVal);
+      if (areaVal) setLocationArea(areaVal);
+    }
+    toast.success("Location updated on map.");
+  };
+
+  // Handle Use Current Location button click
+  const handleUseCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      toast.error("Geolocation is not supported by your browser.");
+      return;
+    }
+
+    setSearchLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setLatitude(lat);
+        setLongitude(lng);
+        setSearchLoading(false);
+        toast.success("Marker moved to your current location.");
+
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+          );
+          const data = await response.json();
+          if (data && data.address) {
+            const cityVal = data.address.city || data.address.town || data.address.village || data.address.county || "";
+            const stateVal = data.address.state || "";
+            const areaVal = data.address.suburb || data.address.neighbourhood || data.address.residential || "";
+
+            if (cityVal) setCity(cityVal);
+            if (stateVal) setState(stateVal);
+            if (areaVal) setLocationArea(areaVal);
+            if (data.display_name) setMapSearchQuery(data.display_name);
+          }
+        } catch (err) {
+          console.error("Reverse geocoding failed:", err);
+        }
+      },
+      (error) => {
+        setSearchLoading(false);
+        console.error("Geolocation failed:", error);
+        toast.error("Unable to retrieve your current location. Please verify browser permissions.");
+      }
+    );
+  };
+
+  const fetchExistingProperty = React.useCallback(async (id: string) => {
     try {
       setLoading(true);
       const res = await api.get(`/api/properties/${id}`);
@@ -103,7 +289,6 @@ export const OwnerPropertyFormPage: React.FC = () => {
       setIntent(data.intent || "rent");
       setPrice(data.price || "");
       setPriceUnit(data.price_unit || "per_month");
-      setDeposit(data.deposit || "");
       setArea(data.area || "");
       setBedrooms(data.bedrooms || "");
       setBathrooms(data.bathrooms || "");
@@ -117,9 +302,18 @@ export const OwnerPropertyFormPage: React.FC = () => {
       setLatitude(data.latitude || "");
       setLongitude(data.longitude || "");
 
-      setAmenities(data.amenities || []);
+      const fetchedAmenities = data.amenities || [];
+      setAmenities(fetchedAmenities);
+      setAvailableAmenities((prev) => {
+        const merged = [...prev];
+        fetchedAmenities.forEach((item: string) => {
+          if (!merged.includes(item)) merged.push(item);
+        });
+        return merged;
+      });
+
       setPhotos(data.photos && data.photos.length > 0 ? data.photos : []);
-      setVideoLink(data.video_link || "");
+      setExistingStatus(data.status || "");
 
       if (data.extra_details) {
         setAvailabilityStatus(data.extra_details.availability_status || "available");
@@ -128,9 +322,6 @@ export const OwnerPropertyFormPage: React.FC = () => {
         setAvailabilityStatus("available");
         setAvailableFrom("");
       }
-
-      setOwnerPhone(data.owner_phone || "");
-      setOwnerWhatsapp(data.owner_whatsapp || "");
     } catch (err) {
       console.error("Failed to load property details", err);
       toast.error("Property not found or access denied.");
@@ -138,7 +329,14 @@ export const OwnerPropertyFormPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isOwner, navigate]);
+
+  useEffect(() => {
+    if (isEdit && propertyId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      fetchExistingProperty(propertyId);
+    }
+  }, [isEdit, propertyId, fetchExistingProperty]);
 
   const handleToggleAmenity = (item: string) => {
     setAmenities((prev) =>
@@ -146,14 +344,29 @@ export const OwnerPropertyFormPage: React.FC = () => {
     );
   };
 
-  const handleAddPhoto = () => {
-    if (!photoInput.trim()) return;
-    if (photos.length >= 10) {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files) return;
+
+    if (photos.length + files.length > 10) {
       toast.error("Maximum 10 photos allowed.");
       return;
     }
-    setPhotos([...photos, photoInput.trim()]);
-    setPhotoInput("");
+
+    Array.from(files).forEach((file) => {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error(`${file.name} is too large. Max size is 2MB.`);
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const dataUrl = event.target?.result as string;
+        if (dataUrl) {
+          setPhotos((prev) => [...prev, dataUrl]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleRemovePhoto = (index: number) => {
@@ -169,18 +382,16 @@ export const OwnerPropertyFormPage: React.FC = () => {
       toast.error("Valid price is required.");
       return;
     }
-    if (!locationArea.trim() || !city.trim() || !pincode.trim()) {
-      toast.error("Area, City, and Pincode location fields are required.");
+    if (!locationArea.trim() || !city.trim()) {
+      toast.error("Area and City location fields are required.");
       return;
     }
     if (photos.length === 0) {
-      toast.error("At least one photo URL is required.");
+      toast.error("At least one photo upload is required.");
       return;
     }
-    if (!ownerPhone.trim()) {
-      toast.error("Owner contact phone number is required.");
-      return;
-    }
+
+    const phoneValue = user?.phone || "";
 
     try {
       setSubmitting(true);
@@ -192,14 +403,12 @@ export const OwnerPropertyFormPage: React.FC = () => {
         description: description.trim() || undefined,
         price: Number(price),
         price_unit: priceUnit,
-        deposit: deposit ? Number(deposit) : undefined,
         area: area ? Number(area) : undefined,
         bedrooms: bedrooms ? Number(bedrooms) : undefined,
         bathrooms: bathrooms ? Number(bathrooms) : undefined,
         furnishing,
         amenities,
         photos,
-        video_link: videoLink.trim() || undefined,
         extra_details: {
           availability_status: availabilityStatus,
           available_from: availableFrom || undefined
@@ -208,13 +417,13 @@ export const OwnerPropertyFormPage: React.FC = () => {
           address: address.trim() || undefined,
           area: locationArea.trim(),
           city: city.trim(),
-          pincode: pincode.trim(),
+          pincode: pincode.trim() || "682030",
           state: state.trim(),
           latitude: latitude !== "" ? Number(latitude) : undefined,
           longitude: longitude !== "" ? Number(longitude) : undefined,
         },
-        owner_phone: ownerPhone.trim(),
-        owner_whatsapp: ownerWhatsapp.trim() || undefined,
+        owner_phone: phoneValue.trim(),
+        owner_whatsapp: phoneValue.trim() || undefined,
         status: targetStatus,
       };
 
@@ -235,9 +444,10 @@ export const OwnerPropertyFormPage: React.FC = () => {
       }
 
       navigate("/owner/properties");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Property submission failed", err);
-      toast.error(err.response?.data?.detail || "Failed to save property listing.");
+      const apiErr = err as { response?: { data?: { detail?: string } } };
+      toast.error(apiErr.response?.data?.detail || "Failed to save property listing.");
     } finally {
       setSubmitting(false);
     }
@@ -248,17 +458,28 @@ export const OwnerPropertyFormPage: React.FC = () => {
       <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
         <OwnerNavbar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-3">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-brand-green" />
-            <p className="text-xs font-bold text-slate-500">Loading form details...</p>
+          <div className="flex flex-col items-center gap-6">
+            <div className="relative flex items-center justify-center h-20 w-20">
+              <div className="absolute inset-0 rounded-full border-[3px] border-slate-100 border-t-[#014645] animate-spin" />
+              <img 
+                src="/logo.png" 
+                alt="Letsellr Logo" 
+                className="h-9 w-auto z-10 animate-pulse" 
+              />
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-450 animate-pulse">
+              Loading form details...
+            </p>
           </div>
         </div>
       </div>
     );
   }
 
+  const showAvailability = isEdit && existingStatus === "live";
+
   return (
-    <div className="min-h-screen bg-slate-50/70 flex flex-col font-sans pb-12">
+    <div className="min-h-screen bg-slate-50/70 flex flex-col font-sans pb-12 text-slate-900">
       <OwnerNavbar />
 
       <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
@@ -267,7 +488,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
         <div className="flex items-center justify-between">
           <button
             onClick={() => navigate("/owner/properties")}
-            className="inline-flex items-center gap-2 text-xs font-extrabold text-slate-600 hover:text-slate-900 bg-white border border-slate-200 px-3.5 py-2 rounded-xl transition-all cursor-pointer shadow-xs"
+            className="inline-flex items-center gap-2 text-xs font-extrabold text-slate-600 hover:text-slate-900 bg-white border border-slate-200 px-3.5 py-2 rounded-md transition-all cursor-pointer shadow-xs"
           >
             <ArrowLeft className="h-4 w-4" /> Back to My Properties
           </button>
@@ -278,17 +499,17 @@ export const OwnerPropertyFormPage: React.FC = () => {
         </div>
 
         {/* Header Title Banner */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-2">
+        <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-xs space-y-2 text-left">
           <h1 className="text-2xl font-black text-slate-900 tracking-tight my-0">
             {isEdit ? "Edit Property Listing" : "Post a New Property Listing"}
           </h1>
-          <p className="text-xs text-slate-500 font-semibold">
+          <p className="text-xs text-slate-500 font-semibold mt-1">
             Fill in the details below. Listings submitted for review will be reviewed by admin before going live.
           </p>
         </div>
 
         {/* Section 1: Basic Information */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-5">
+        <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-xs space-y-5 text-left">
           <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
             <Building2 className="h-5 w-5 text-brand-green" /> Basic Information
           </h2>
@@ -311,7 +532,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
                   <select
                     value={category}
                     onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-slate-100 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 cursor-not-allowed"
+                    className="w-full bg-slate-100 border border-slate-200 rounded-md px-3 py-2 text-xs font-bold text-slate-900 cursor-not-allowed"
                     disabled={isOwner}
                   >
                     <option value="pg">PG (Paying Guest)</option>
@@ -326,7 +547,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20"
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20"
                 >
                   <option value="apartment">Apartment</option>
                   <option value="villa_house">Villa / House</option>
@@ -341,8 +562,8 @@ export const OwnerPropertyFormPage: React.FC = () => {
               <label className="text-xs font-bold text-slate-700">Listing Intent</label>
               <select
                 value={intent}
-                onChange={(e) => setIntent(e.target.value as any)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20"
+                onChange={(e) => setIntent(e.target.value as "rent" | "buy" | "lease")}
+                className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20"
               >
                 <option value="rent">For Rent</option>
                 <option value="buy">For Sale</option>
@@ -358,7 +579,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
                 placeholder="e.g. Luxury 2 BHK Apartment near InfoPark, Kakkanad"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-green/20"
+                className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-green/20"
                 required
               />
             </div>
@@ -371,7 +592,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
                 placeholder="Describe key features, house rules, nearby landmarks, or highlights..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-green/20"
+                className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-green/20"
               />
             </div>
 
@@ -379,12 +600,12 @@ export const OwnerPropertyFormPage: React.FC = () => {
         </div>
 
         {/* Section 2: Pricing */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-5">
+        <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-xs space-y-5 text-left">
           <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
             ₹ Pricing & Terms
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-slate-700">Price (₹) *</label>
@@ -393,7 +614,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
                 placeholder="e.g. 15000"
                 value={price}
                 onChange={(e) => setPrice(e.target.value ? Number(e.target.value) : "")}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-green/20"
+                className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-green/20"
                 required
               />
             </div>
@@ -402,121 +623,119 @@ export const OwnerPropertyFormPage: React.FC = () => {
               <label className="text-xs font-bold text-slate-700">Price Unit</label>
               <select
                 value={priceUnit}
-                onChange={(e) => setPriceUnit(e.target.value as any)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20"
+                onChange={(e) => setPriceUnit(e.target.value as "per_month" | "total")}
+                className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20"
               >
                 <option value="per_month">Per Month</option>
                 <option value="total">Total Price</option>
               </select>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Security Deposit (₹)</label>
-              <input
-                type="number"
-                placeholder="e.g. 30000"
-                value={deposit}
-                onChange={(e) => setDeposit(e.target.value ? Number(e.target.value) : "")}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400"
-              />
-            </div>
-
           </div>
         </div>
 
-        {/* Section 3: Specs & Features */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-5">
-          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
-            Property Specifications
-          </h2>
+        {/* Section 3: Specs & Features - ACCORDION LAYOUT */}
+        <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-xs text-left">
+          <button
+            type="button"
+            onClick={() => setSpecsOpen(!specsOpen)}
+            className="w-full flex items-center justify-between text-base font-bold text-slate-900 border-0 bg-transparent p-0 cursor-pointer focus:outline-none"
+          >
+            <span className="flex items-center gap-2">Property Specifications</span>
+            {specsOpen ? <ChevronUp className="h-5 w-5 text-slate-500" /> : <ChevronDown className="h-5 w-5 text-slate-500" />}
+          </button>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Area (sq ft)</label>
-              <input
-                type="number"
-                placeholder="e.g. 1200"
-                value={area}
-                onChange={(e) => setArea(e.target.value ? Number(e.target.value) : "")}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
-              />
+          {specsOpen && (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5 animate-in fade-in duration-200">
+              
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">Area (sq ft) (Optional)</label>
+                <input
+                  type="number"
+                  placeholder="e.g. 1200"
+                  value={area}
+                  onChange={(e) => setArea(e.target.value ? Number(e.target.value) : "")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">Bedrooms</label>
+                <input
+                  type="number"
+                  placeholder="e.g. 2"
+                  value={bedrooms}
+                  onChange={(e) => setBedrooms(e.target.value ? Number(e.target.value) : "")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">Bathrooms</label>
+                <input
+                  type="number"
+                  placeholder="e.g. 2"
+                  value={bathrooms}
+                  onChange={(e) => setBathrooms(e.target.value ? Number(e.target.value) : "")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">Furnishing</label>
+                <select
+                  value={furnishing}
+                  onChange={(e) => setFurnishing(e.target.value as "unfurnished" | "semi" | "furnished")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs font-bold text-slate-900"
+                >
+                  <option value="semi">Semi-Furnished</option>
+                  <option value="furnished">Fully Furnished</option>
+                  <option value="unfurnished">Unfurnished</option>
+                </select>
+              </div>
+
             </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Bedrooms</label>
-              <input
-                type="number"
-                placeholder="e.g. 2"
-                value={bedrooms}
-                onChange={(e) => setBedrooms(e.target.value ? Number(e.target.value) : "")}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Bathrooms</label>
-              <input
-                type="number"
-                placeholder="e.g. 2"
-                value={bathrooms}
-                onChange={(e) => setBathrooms(e.target.value ? Number(e.target.value) : "")}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Furnishing</label>
-              <select
-                value={furnishing}
-                onChange={(e) => setFurnishing(e.target.value as any)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
-              >
-                <option value="semi">Semi-Furnished</option>
-                <option value="furnished">Fully Furnished</option>
-                <option value="unfurnished">Unfurnished</option>
-              </select>
-            </div>
-
-          </div>
+          )}
         </div>
 
-        {/* Section 4: Availability & Status */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-5">
-          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
-            <Calendar className="h-5 w-5 text-brand-green" /> Availability Status
-          </h2>
+        {/* Section 4: Availability & Status (Shown ONLY if listing is edit mode + already live) */}
+        {showAvailability && (
+          <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-xs space-y-5 text-left">
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
+              <Calendar className="h-5 w-5 text-brand-green" /> Availability Status
+            </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Current Occupancy/Availability</label>
-              <select
-                value={availabilityStatus}
-                onChange={(e) => setAvailabilityStatus(e.target.value as any)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20"
-              >
-                <option value="available">Available Now</option>
-                <option value="upcoming">Upcoming / Available Soon</option>
-                <option value="occupied">Occupied (No Vacancy)</option>
-              </select>
-            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">Current Occupancy/Availability</label>
+                <select
+                  value={availabilityStatus}
+                  onChange={(e) => setAvailabilityStatus(e.target.value as "available" | "occupied" | "upcoming")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20"
+                >
+                  <option value="available">Available Now</option>
+                  <option value="upcoming">Upcoming / Available Soon</option>
+                  <option value="occupied">Occupied (No Vacancy)</option>
+                </select>
+              </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Available From (Optional)</label>
-              <input
-                type="date"
-                value={availableFrom}
-                onChange={(e) => setAvailableFrom(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900"
-              />
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">Available From (Optional)</label>
+                <input
+                  type="date"
+                  value={availableFrom}
+                  onChange={(e) => setAvailableFrom(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs text-slate-900"
+                />
+              </div>
+              
             </div>
-            
           </div>
-        </div>
+        )}
 
-        {/* Section 4: Location */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-5">
+        {/* Section 5: Location */}
+        <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-xs space-y-5 text-left">
           <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
             <MapPin className="h-5 w-5 text-brand-green" /> Location Details
           </h2>
@@ -530,7 +749,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
                 placeholder="e.g. Flat 4B, Skyline Ivy League, Seaport Airport Road"
                 value={address}
                 onChange={(e) => setAddress(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2.5 text-xs text-slate-900"
+                className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs text-slate-900 focus:ring-2 focus:ring-brand-green/20"
               />
             </div>
 
@@ -541,7 +760,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
                 placeholder="e.g. Kakkanad"
                 value={locationArea}
                 onChange={(e) => setLocationArea(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+                className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-brand-green/20"
                 required
               />
             </div>
@@ -553,44 +772,8 @@ export const OwnerPropertyFormPage: React.FC = () => {
                 placeholder="e.g. Kochi"
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+                className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-brand-green/20"
                 required
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Pincode *</label>
-              <input
-                type="text"
-                placeholder="e.g. 682030"
-                value={pincode}
-                onChange={(e) => setPincode(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
-                required
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Latitude</label>
-              <input
-                type="number"
-                step="any"
-                placeholder="e.g. 10.0159"
-                value={latitude}
-                onChange={(e) => setLatitude(e.target.value ? Number(e.target.value) : "")}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Longitude</label>
-              <input
-                type="number"
-                step="any"
-                placeholder="e.g. 76.3419"
-                value={longitude}
-                onChange={(e) => setLongitude(e.target.value ? Number(e.target.value) : "")}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
               />
             </div>
 
@@ -600,21 +783,94 @@ export const OwnerPropertyFormPage: React.FC = () => {
                 type="text"
                 value={state}
                 onChange={(e) => setState(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+                className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-brand-green/20"
               />
             </div>
 
           </div>
+
+          {/* Interactive Location Map Redesign */}
+          <div className="border-t border-slate-100 pt-5 space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <label className="text-xs font-black text-slate-900 block">Pin Exact Property Location</label>
+                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Drag the marker or search to locate the property</p>
+              </div>
+
+              {/* Current location button */}
+              <button
+                type="button"
+                onClick={handleUseCurrentLocation}
+                disabled={searchLoading}
+                className="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs px-3.5 py-2 rounded-xl transition-all cursor-pointer border-0 h-9 disabled:opacity-50"
+              >
+                {searchLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Navigation className="h-3.5 w-3.5 text-brand-green" />
+                )}
+                Use Current Location
+              </button>
+            </div>
+
+            {/* Address Search Bar */}
+            <form onSubmit={handleMapSearch} className="relative flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search for building, locality, or address..."
+                  value={mapSearchQuery}
+                  onChange={(e) => setMapSearchQuery(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-brand-green focus:ring-2 focus:ring-brand-green/20 transition-all font-semibold"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={searchLoading}
+                className="bg-brand-green hover:bg-brand-green-hover text-white font-extrabold text-xs px-5 py-2 rounded-xl flex items-center justify-center gap-1 shadow-sm transition-all border-0 cursor-pointer h-9"
+              >
+                {searchLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  "Search"
+                )}
+              </button>
+
+              {/* Suggestions Dropdown */}
+              {searchResults.length > 0 && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg z-50 overflow-hidden divide-y divide-slate-100 max-h-60 overflow-y-auto">
+                  {searchResults.map((result, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => handleSelectSearchResult(result)}
+                      className="w-full text-left px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-brand-green transition-colors block border-0 bg-transparent cursor-pointer"
+                    >
+                      {result.display_name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </form>
+
+            {/* Map Canvas */}
+            <div 
+              ref={mapRef} 
+              className="h-75 w-full rounded-2xl border border-slate-200 shadow-inner overflow-hidden relative z-10" 
+              style={{ minHeight: '320px' }}
+            />
+          </div>
         </div>
 
-        {/* Section 5: Amenities */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-4">
+        {/* Section 6: Amenities & Facilities */}
+        <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-xs space-y-4 text-left">
           <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
             Amenities & Facilities
           </h2>
 
           <div className="flex flex-wrap gap-2">
-            {AMENITIES_LIST.map((item) => {
+            {availableAmenities.map((item) => {
               const selected = amenities.includes(item);
               return (
                 <button
@@ -633,94 +889,83 @@ export const OwnerPropertyFormPage: React.FC = () => {
               );
             })}
           </div>
-        </div>
 
-        {/* Section 6: Photos & Video */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-5">
-          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
-            <ImageIcon className="h-5 w-5 text-brand-green" /> Photos & Video Links
-          </h2>
-
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <input
-                type="url"
-                placeholder="Paste image URL (Unsplash or direct image link)..."
-                value={photoInput}
-                onChange={(e) => setPhotoInput(e.target.value)}
-                className="flex-1 bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
-              />
-              <button
-                type="button"
-                onClick={handleAddPhoto}
-                className="bg-brand-green text-white font-extrabold text-xs px-4 py-2 rounded-xl flex items-center gap-1"
-              >
-                <Plus className="h-4 w-4" /> Add Photo
-              </button>
-            </div>
-
-            {/* Photo Previews */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {photos.map((url, idx) => (
-                <div key={idx} className="relative group rounded-xl overflow-hidden border border-slate-200 h-24">
-                  <img src={url} alt="" className="h-full w-full object-cover" />
-                  <button
-                    type="button"
-                    onClick={() => handleRemovePhoto(idx)}
-                    className="absolute top-1 right-1 bg-rose-600 text-white p-1 rounded-lg opacity-90 group-hover:opacity-100 transition-opacity"
-                    title="Remove Photo"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            {/* Video Link */}
-            <div className="space-y-1.5 pt-2 border-t border-slate-100">
-              <label className="text-xs font-bold text-slate-700 flex items-center gap-1.5">
-                <Video className="h-4 w-4 text-slate-500" /> Youtube Video Link or Embed URL
-              </label>
-              <input
-                type="url"
-                placeholder="e.g. https://www.youtube.com/watch?v=..."
-                value={videoLink}
-                onChange={(e) => setVideoLink(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
-              />
-            </div>
+          {/* Add custom tag */}
+          <div className="flex items-center gap-2 mt-4 pt-3 border-t border-slate-100 max-w-sm">
+            <input
+              type="text"
+              placeholder="Add custom amenity..."
+              value={customAmenity}
+              onChange={(e) => setCustomAmenity(e.target.value)}
+              className="flex-1 bg-white border border-slate-200 rounded-md px-3 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-1 focus:ring-brand-green focus:border-brand-green"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                const val = customAmenity.trim();
+                if (val) {
+                  if (!availableAmenities.includes(val)) {
+                    setAvailableAmenities((prev) => [...prev, val]);
+                  }
+                  if (!amenities.includes(val)) {
+                    setAmenities((prev) => [...prev, val]);
+                  }
+                  setCustomAmenity("");
+                }
+              }}
+              className="bg-brand-green border-0 text-white font-extrabold text-xs px-3.5 py-1.5 rounded-md flex items-center gap-1 cursor-pointer hover:bg-brand-green-hover transition-colors h-8"
+            >
+              <Plus className="h-3.5 w-3.5" /> Add
+            </button>
           </div>
         </div>
 
-        {/* Section 7: Contact Info */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-xs space-y-5">
+        {/* Section 7: Photos Upload from Storage only */}
+        <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-xs space-y-5 text-left">
           <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
-            <Phone className="h-5 w-5 text-brand-green" /> Owner Contact Information
+            <ImageIcon className="h-5 w-5 text-brand-green" /> Photos
           </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Contact Phone Number *</label>
-              <input
-                type="tel"
-                placeholder="e.g. +91 9876543210"
-                value={ownerPhone}
-                onChange={(e) => setOwnerPhone(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
-                required
-              />
+          <div className="space-y-4">
+            <input
+              type="file"
+              id="property-file-input"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleFileUpload}
+            />
+
+            <div>
+              <label
+                htmlFor="property-file-input"
+                className="inline-flex bg-brand-green hover:bg-brand-green-hover text-white font-extrabold text-xs px-4 py-2.5 rounded-md items-center gap-1.5 cursor-pointer shadow-sm transition-all h-10"
+              >
+                <Plus className="h-4 w-4" /> Upload Photos from Storage
+              </label>
+              <p className="text-[10px] text-slate-400 font-semibold mt-1.5">
+                You can upload multiple image files (JPEG, PNG). Max 10 photos.
+              </p>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">WhatsApp Number (For Direct Enquiries)</label>
-              <input
-                type="tel"
-                placeholder="e.g. +91 9876543210"
-                value={ownerWhatsapp}
-                onChange={(e) => setOwnerWhatsapp(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
-              />
-            </div>
+            {/* Photo Previews */}
+            {photos.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {photos.map((url, idx) => (
+                  <div key={idx} className="relative group rounded-md overflow-hidden border border-slate-200 h-24">
+                    <img src={url} alt="" className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => handleRemovePhoto(idx)}
+                      className="absolute top-1 right-1 bg-rose-600 text-white p-1 rounded-md opacity-90 hover:opacity-100 transition-opacity border-0 cursor-pointer"
+                      title="Remove Photo"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
@@ -730,7 +975,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
             type="button"
             disabled={submitting}
             onClick={() => handleSubmitForm("draft")}
-            className="w-full sm:w-auto bg-slate-200 hover:bg-slate-300 text-slate-800 font-extrabold text-xs px-6 py-3 rounded-full flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+            className="w-full sm:w-auto bg-slate-200 hover:bg-slate-300 text-slate-800 font-extrabold text-xs px-6 py-3 rounded-md flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 border-0 h-10"
           >
             <Save className="h-4 w-4" /> Save as Draft
           </button>
@@ -739,7 +984,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
             type="button"
             disabled={submitting}
             onClick={() => handleSubmitForm("pending_review")}
-            className="w-full sm:w-auto bg-brand-green hover:bg-brand-green-hover text-white font-extrabold text-xs px-8 py-3 rounded-full flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-50"
+            className="w-full sm:w-auto bg-brand-green hover:bg-brand-green-hover text-white font-extrabold text-xs px-8 py-3 rounded-md flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-50 border-0 h-10"
           >
             <Send className="h-4 w-4" /> {isEdit ? "Update & Submit for Review" : "Submit Property for Review"}
           </button>

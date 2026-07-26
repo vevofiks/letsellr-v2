@@ -104,7 +104,7 @@ export const VerifyOTP: React.FC = () => {
       {/* Outer Card Wrapper (responsive padding, subtle border, shadow-sm, increased width) */}
       <Card className="w-full max-w-xl border border-slate-200 bg-white shadow-sm p-5 sm:p-8 rounded-xl flex flex-col justify-center text-center">
         {/* Lock Icon Header */}
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-teal-50 text-[#308178] mb-4">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-light-green text-brand-deep-green mb-4">
           <Lock className="h-6 w-6" />
         </div>
 
@@ -138,13 +138,13 @@ export const VerifyOTP: React.FC = () => {
                 }}
               >
                 <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 w-full">
-                  <InputOTPSlot index={0} className="h-12 w-10 sm:h-14 sm:w-12 rounded-lg border border-slate-200 bg-white text-lg sm:text-xl font-extrabold text-slate-800 transition-all data-[active=true]:border-[#308178] data-[active=true]:ring-2 data-[active=true]:ring-[#308178]/10" />
-                  <InputOTPSlot index={1} className="h-12 w-10 sm:h-14 sm:w-12 rounded-lg border border-slate-200 bg-white text-lg sm:text-xl font-extrabold text-slate-800 transition-all data-[active=true]:border-[#308178] data-[active=true]:ring-2 data-[active=true]:ring-[#308178]/10" />
-                  <InputOTPSlot index={2} className="h-12 w-10 sm:h-14 sm:w-12 rounded-lg border border-slate-200 bg-white text-lg sm:text-xl font-extrabold text-slate-800 transition-all data-[active=true]:border-[#308178] data-[active=true]:ring-2 data-[active=true]:ring-[#308178]/10" />
+                  <InputOTPSlot index={0} className="h-12 w-10 sm:h-14 sm:w-12 rounded-lg border border-slate-200 bg-white text-lg sm:text-xl font-extrabold text-slate-800 transition-all data-[active=true]:border-brand-green data-[active=true]:ring-2 data-[active=true]:ring-brand-green/10" />
+                  <InputOTPSlot index={1} className="h-12 w-10 sm:h-14 sm:w-12 rounded-lg border border-slate-200 bg-white text-lg sm:text-xl font-extrabold text-slate-800 transition-all data-[active=true]:border-brand-green data-[active=true]:ring-2 data-[active=true]:ring-brand-green/10" />
+                  <InputOTPSlot index={2} className="h-12 w-10 sm:h-14 sm:w-12 rounded-lg border border-slate-200 bg-white text-lg sm:text-xl font-extrabold text-slate-800 transition-all data-[active=true]:border-brand-green data-[active=true]:ring-2 data-[active=true]:ring-brand-green/10" />
                   <span className="text-slate-300 font-bold text-lg px-0.5">-</span>
-                  <InputOTPSlot index={3} className="h-12 w-10 sm:h-14 sm:w-12 rounded-lg border border-slate-200 bg-white text-lg sm:text-xl font-extrabold text-slate-800 transition-all data-[active=true]:border-[#308178] data-[active=true]:ring-2 data-[active=true]:ring-[#308178]/10" />
-                  <InputOTPSlot index={4} className="h-12 w-10 sm:h-14 sm:w-12 rounded-lg border border-slate-200 bg-white text-lg sm:text-xl font-extrabold text-slate-800 transition-all data-[active=true]:border-[#308178] data-[active=true]:ring-2 data-[active=true]:ring-[#308178]/10" />
-                  <InputOTPSlot index={5} className="h-12 w-10 sm:h-14 sm:w-12 rounded-lg border border-slate-200 bg-white text-lg sm:text-xl font-extrabold text-slate-800 transition-all data-[active=true]:border-[#308178] data-[active=true]:ring-2 data-[active=true]:ring-[#308178]/10" />
+                  <InputOTPSlot index={3} className="h-12 w-10 sm:h-14 sm:w-12 rounded-lg border border-slate-200 bg-white text-lg sm:text-xl font-extrabold text-slate-800 transition-all data-[active=true]:border-brand-green data-[active=true]:ring-2 data-[active=true]:ring-brand-green/10" />
+                  <InputOTPSlot index={4} className="h-12 w-10 sm:h-14 sm:w-12 rounded-lg border border-slate-200 bg-white text-lg sm:text-xl font-extrabold text-slate-800 transition-all data-[active=true]:border-brand-green data-[active=true]:ring-2 data-[active=true]:ring-brand-green/10" />
+                  <InputOTPSlot index={5} className="h-12 w-10 sm:h-14 sm:w-12 rounded-lg border border-slate-200 bg-white text-lg sm:text-xl font-extrabold text-slate-800 transition-all data-[active=true]:border-brand-green data-[active=true]:ring-2 data-[active=true]:ring-brand-green/10" />
                 </div>
               </InputOTP>
             </div>
@@ -154,7 +154,7 @@ export const VerifyOTP: React.FC = () => {
               {countdown > 0 ? (
                 <span>Resend code in <strong className="text-slate-800 font-bold">{countdown}s</strong></span>
               ) : (
-                <span className="text-emerald-600">You can request a new code.</span>
+                <span className="text-brand-deep-green font-bold">You can request a new code.</span>
               )}
             </div>
           </div>
@@ -164,7 +164,7 @@ export const VerifyOTP: React.FC = () => {
             <Button
               type="submit"
               disabled={loading || otp.length < 6}
-              className="w-full h-11 rounded-xl bg-[#308178] hover:bg-[#25645d] text-white font-semibold transition-colors disabled:opacity-50 disabled:pointer-events-none"
+              className="w-full h-11 rounded-xl bg-brand-green hover:bg-brand-green-hover text-white font-semibold transition-colors disabled:opacity-50 disabled:pointer-events-none border-0"
             >
               {loading ? "Verifying..." : "Verify & Continue"}
             </Button>
@@ -174,7 +174,7 @@ export const VerifyOTP: React.FC = () => {
                 variant="ghost"
                 type="button"
                 onClick={() => navigate(-1)}
-                className="flex items-center gap-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 h-10 px-4 rounded-xl transition-colors"
+                className="flex items-center gap-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 h-10 px-4 rounded-xl transition-colors border-0"
               >
                 <ArrowLeft className="h-4 w-4" />
                 Back
@@ -185,7 +185,7 @@ export const VerifyOTP: React.FC = () => {
                 type="button"
                 disabled={countdown > 0 || resending}
                 onClick={handleResend}
-                className="flex items-center gap-1.5 text-[#308178] hover:text-[#25645d] hover:bg-teal-50/50 h-10 px-4 rounded-xl transition-colors disabled:opacity-40"
+                className="flex items-center gap-1.5 text-brand-deep-green hover:text-brand-green-hover hover:bg-brand-light-green/50 h-10 px-4 rounded-xl transition-colors disabled:opacity-40 border-0"
               >
                 <RotateCw className={`h-4 w-4 ${resending ? "animate-spin" : ""}`} />
                 Resend Code

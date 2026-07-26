@@ -11,10 +11,19 @@ export const PublicRoute: React.FC<PublicRouteProps> = ({ children }) => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-[#308178]" />
-          <p className="text-sm font-medium text-slate-500">Verifying session...</p>
+      <div className="flex min-h-screen items-center justify-center bg-slate-50/50">
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative flex items-center justify-center h-20 w-20">
+            <div className="absolute inset-0 rounded-full border-[3px] border-slate-100 border-t-[#014645] animate-spin" />
+            <img 
+              src="/logo.png" 
+              alt="Letsellr Logo" 
+              className="h-9 w-auto z-10 animate-pulse" 
+            />
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 animate-pulse">
+            Preparing your experience...
+          </p>
         </div>
       </div>
     );

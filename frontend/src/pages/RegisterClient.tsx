@@ -137,7 +137,7 @@ export const RegisterClient: React.FC = () => {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-11 rounded-xl bg-[#308178] hover:bg-[#25645d] text-white font-semibold transition-colors"
+              className="w-full h-11 rounded-xl bg-brand-green hover:bg-brand-green-hover text-white font-semibold transition-colors border-0"
             >
               {isSubmitting ? "Sending OTP..." : "Register"}
             </Button>
@@ -147,7 +147,7 @@ export const RegisterClient: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate("/login")}
-                className="text-[#308178] font-bold hover:underline ml-1 focus:outline-none"
+                className="text-brand-green font-bold hover:underline ml-1 focus:outline-none"
               >
                 Sign In
               </button>

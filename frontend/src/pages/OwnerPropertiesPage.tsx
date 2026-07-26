@@ -20,6 +20,11 @@ import { OwnerNavbar } from "@/components/OwnerNavbar";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 
+// Import shadcn components
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+
 interface Property {
   id: string;
   ref: string;
@@ -48,10 +53,6 @@ export const OwnerPropertiesPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchOwnerProperties();
-  }, []);
-
   const fetchOwnerProperties = async () => {
     try {
       setLoading(true);
@@ -64,6 +65,11 @@ export const OwnerPropertiesPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchOwnerProperties();
+  }, []);
 
   const handleDelete = async (id: string, title: string) => {
     if (!window.confirm(`Are you sure you want to delete "${title}"?`)) return;
@@ -101,34 +107,33 @@ export const OwnerPropertiesPage: React.FC = () => {
     switch (status) {
       case "live":
         return (
-          <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+          <Badge variant="success" className="font-extrabold uppercase tracking-wider text-[9px] px-2.5 py-1 flex items-center gap-1 shrink-0">
             <CheckCircle2 className="h-3 w-3" /> Live
-          </span>
+          </Badge>
         );
       case "pending_review":
         return (
-          <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200/60 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+          <Badge variant="warning" className="font-extrabold uppercase tracking-wider text-[9px] px-2.5 py-1 flex items-center gap-1 shrink-0">
             <Clock className="h-3 w-3" /> Pending Review
-          </span>
+          </Badge>
         );
       case "draft":
         return (
-          <span className="inline-flex items-center gap-1 bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+          <Badge variant="secondary" className="font-extrabold uppercase tracking-wider text-[9px] px-2.5 py-1 flex items-center gap-1 shrink-0">
             <FileEdit className="h-3 w-3" /> Draft
-          </span>
+          </Badge>
         );
       case "rejected":
         return (
-          <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 border border-rose-200/60 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+          <Badge variant="destructive" className="font-extrabold uppercase tracking-wider text-[9px] px-2.5 py-1 flex items-center gap-1 shrink-0">
             <XCircle className="h-3 w-3" /> Rejected
-          </span>
+          </Badge>
         );
-      case "expired":
-      case "inactive":
+      default:
         return (
-          <span className="inline-flex items-center gap-1 bg-gray-100 text-gray-600 border border-gray-200 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+          <Badge variant="outline" className="font-extrabold uppercase tracking-wider text-[9px] px-2.5 py-1 flex items-center gap-1 shrink-0">
             <AlertTriangle className="h-3 w-3" /> {status === "expired" ? "Expired" : "Inactive"}
-          </span>
+          </Badge>
         );
     }
   };
@@ -143,14 +148,14 @@ export const OwnerPropertiesPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50/70 flex flex-col font-sans pb-20 md:pb-8">
+    <div className="min-h-screen bg-slate-50/70 flex flex-col font-sans pb-20 md:pb-8 text-slate-900">
       <OwnerNavbar />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         
         {/* Header & Title Action */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-          <div>
+          <div className="text-left">
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight my-0">
               My Property Listings
             </h1>
@@ -159,16 +164,15 @@ export const OwnerPropertiesPage: React.FC = () => {
             </p>
           </div>
 
-          <Link
-            to="/owner/properties/new"
-            className="bg-brand-green hover:bg-brand-green-hover text-white font-extrabold text-xs px-4 sm:px-5 py-2 sm:py-2.5 rounded-full flex items-center gap-2 shadow-sm transition-all cursor-pointer shrink-0"
-          >
-            <Plus className="h-4 w-4" /> Add Property Listing
+          <Link to="/owner/properties/new">
+            <Button className="bg-brand-green hover:bg-brand-green-hover text-white font-extrabold text-xs px-4 py-2.5 rounded-md flex items-center gap-2 shadow-sm transition-all cursor-pointer shrink-0 border-0 h-10">
+              <Plus className="h-4 w-4" /> Add Property Listing
+            </Button>
           </Link>
         </div>
 
         {/* Filter Controls: Search & Status Pills */}
-        <div className="bg-white border border-slate-100 rounded-3xl p-3.5 sm:p-5 shadow-xs space-y-3.5 sm:space-y-4">
+        <Card className="border border-slate-100 rounded-xl p-3.5 sm:p-5 shadow-xs space-y-3.5 sm:space-y-4">
           
           {/* Search Input */}
           <div className="relative">
@@ -178,7 +182,7 @@ export const OwnerPropertiesPage: React.FC = () => {
               placeholder="Search by title, location area, city, or reference code..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-50 border border-slate-200 rounded-2xl pl-11 pr-4 py-2 sm:py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-green/30 focus:border-brand-green transition-all"
+              className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-11 pr-4 py-2 sm:py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-brand-green focus:border-brand-green transition-all"
             />
           </div>
 
@@ -188,7 +192,7 @@ export const OwnerPropertiesPage: React.FC = () => {
               <button
                 key={pill.value}
                 onClick={() => setStatusFilter(pill.value)}
-                className={`px-3 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-extrabold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                   statusFilter === pill.value
                     ? "bg-brand-green text-white shadow-xs"
                     : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
@@ -204,26 +208,26 @@ export const OwnerPropertiesPage: React.FC = () => {
             ))}
           </div>
 
-        </div>
+        </Card>
 
         {/* Property Cards List */}
         {loading ? (
           <div className="space-y-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white border border-slate-100 rounded-3xl p-5 h-32 animate-pulse flex items-center gap-4">
-                <div className="h-20 w-20 bg-slate-200 rounded-2xl" />
+              <Card key={i} className="border border-slate-100 rounded-xl p-5 h-32 animate-pulse flex items-center gap-4">
+                <div className="h-20 w-20 bg-slate-200 rounded-lg" />
                 <div className="flex-1 space-y-2">
                   <div className="h-4 w-1/3 bg-slate-200 rounded" />
                   <div className="h-3 w-1/4 bg-slate-200 rounded" />
                 </div>
-              </div>
+              </Card>
             ))}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="bg-white border border-dashed border-slate-200 rounded-3xl p-8 sm:p-12 text-center space-y-4 flex flex-col items-center justify-center">
+          <Card className="border border-dashed border-slate-200 rounded-xl p-8 sm:p-12 text-center space-y-4 flex flex-col items-center justify-center">
             <Building2 className="h-12 w-12 text-slate-300" />
             <div>
-              <h3 className="text-base font-bold text-slate-900">No properties found</h3>
+              <h3 className="text-base font-bold text-slate-900 my-0">No properties found</h3>
               <p className="text-xs text-slate-500 font-semibold mt-1">
                 {searchQuery || statusFilter !== "all"
                   ? "Try adjusting your search query or status filter."
@@ -233,25 +237,24 @@ export const OwnerPropertiesPage: React.FC = () => {
             {statusFilter !== "all" || searchQuery ? (
               <button
                 onClick={() => { setSearchQuery(""); setStatusFilter("all"); }}
-                className="text-xs font-bold text-brand-green hover:underline flex items-center gap-1"
+                className="text-xs font-bold text-brand-green hover:underline flex items-center gap-1 cursor-pointer bg-transparent border-0"
               >
                 <RefreshCw className="h-3.5 w-3.5" /> Reset Filters
               </button>
             ) : (
-              <Link
-                to="/owner/properties/new"
-                className="bg-brand-green text-white font-extrabold text-xs px-5 py-2.5 rounded-full flex items-center gap-2"
-              >
-                <Plus className="h-4 w-4" /> Add Property Listing
+              <Link to="/owner/properties/new">
+                <Button className="bg-brand-green text-white font-extrabold text-xs px-5 py-2.5 rounded-md flex items-center gap-2 border-0 cursor-pointer h-10 shadow-xs hover:bg-brand-green-hover transition-colors">
+                  <Plus className="h-4 w-4" /> Add Property Listing
+                </Button>
               </Link>
             )}
-          </div>
+          </Card>
         ) : (
           <div className="space-y-4">
             {filtered.map((prop) => (
-              <div
+              <Card
                 key={prop.id}
-                className="bg-white border border-slate-100 hover:border-slate-200 rounded-3xl p-4 sm:p-5 shadow-xs hover:shadow-md transition-all space-y-4"
+                className="border border-slate-100 hover:border-slate-200 rounded-xl p-4 sm:p-5 shadow-xs hover:shadow-md transition-all space-y-4 text-left"
               >
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   
@@ -260,17 +263,17 @@ export const OwnerPropertiesPage: React.FC = () => {
                     <img
                       src={prop.photos && prop.photos.length > 0 ? prop.photos[0] : "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=400&q=80"}
                       alt=""
-                      className="h-16 w-16 sm:h-24 sm:w-24 rounded-2xl object-cover shrink-0 border border-slate-100"
+                      className="h-16 w-16 sm:h-24 sm:w-24 rounded-lg object-cover shrink-0 border border-slate-100"
                     />
 
                     <div className="space-y-1 sm:space-y-1.5 min-w-0">
                       <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest bg-slate-100 px-2 py-0.5 rounded-md">
+                        <Badge variant="secondary" className="font-black text-slate-500 uppercase tracking-widest text-[9px] px-2 py-0.5">
                           {prop.ref}
-                        </span>
-                        <span className="text-[10px] font-extrabold text-brand-green uppercase tracking-wider bg-emerald-50 px-2 py-0.5 rounded-md">
+                        </Badge>
+                        <Badge variant="secondary" className="font-extrabold text-brand-green uppercase tracking-wider text-[9px] px-2 py-0.5 bg-emerald-50 border-emerald-100/50">
                           {prop.category.replace("_", " ")}
-                        </span>
+                        </Badge>
                         {getStatusBadge(prop.status)}
                       </div>
 
@@ -278,7 +281,7 @@ export const OwnerPropertiesPage: React.FC = () => {
                         {prop.title}
                       </h3>
 
-                      <p className="text-xs text-slate-500 font-semibold truncate">
+                      <p className="text-xs text-slate-500 font-semibold truncate my-0">
                         {prop.location_area}, {prop.location_city}
                       </p>
 
@@ -304,29 +307,28 @@ export const OwnerPropertiesPage: React.FC = () => {
 
                   {/* Actions Toolbar */}
                   <div className="flex items-center gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100 shrink-0">
-                    <Link
-                      to={`/owner/properties/${prop.id}`}
-                      className="flex-1 sm:flex-initial text-center bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs px-3.5 py-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" /> View
+                    <Link to={`/owner/properties/${prop.id}`} className="flex-1 sm:flex-initial">
+                      <Button variant="outline" className="w-full text-slate-700 hover:text-slate-900 border border-slate-200 font-extrabold text-xs px-3.5 py-2 rounded-md h-9 flex items-center justify-center gap-1.5 transition-colors">
+                        <ExternalLink className="h-3.5 w-3.5 text-slate-500" /> View
+                      </Button>
                     </Link>
 
-                    <Link
-                      to={`/owner/properties/${prop.id}/edit`}
-                      className="flex-1 sm:flex-initial text-center bg-emerald-50 hover:bg-emerald-100 text-brand-green font-extrabold text-xs px-3.5 py-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors"
-                    >
-                      <Edit className="h-3.5 w-3.5" /> Edit
+                    <Link to={`/owner/properties/${prop.id}/edit`} className="flex-1 sm:flex-initial">
+                      <Button className="w-full bg-emerald-50 hover:bg-emerald-100 text-brand-green font-extrabold text-xs px-3.5 py-2 rounded-md h-9 flex items-center justify-center gap-1.5 transition-colors border-0">
+                        <Edit className="h-3.5 w-3.5 text-brand-green" /> Edit
+                      </Button>
                     </Link>
 
                     {(prop.status === "draft" || prop.status === "rejected") && (
-                      <button
+                      <Button
+                        variant="destructive"
                         onClick={() => handleDelete(prop.id, prop.title)}
                         disabled={deletingId === prop.id}
-                        className="flex-1 sm:flex-initial bg-rose-50 hover:bg-rose-100 text-rose-600 font-extrabold text-xs px-3.5 py-2 rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
+                        className="flex-1 sm:flex-initial font-extrabold text-xs px-3.5 py-2 rounded-md h-9 flex items-center justify-center gap-1.5 transition-colors cursor-pointer disabled:opacity-50"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                         {deletingId === prop.id ? "Deleting..." : "Delete"}
-                      </button>
+                      </Button>
                     )}
                   </div>
 
@@ -334,7 +336,7 @@ export const OwnerPropertiesPage: React.FC = () => {
 
                 {/* Admin Rejection Reason Banner if rejected */}
                 {prop.status === "rejected" && prop.admin_review_reason && (
-                  <div className="bg-rose-50 border border-rose-200/80 rounded-2xl p-3 text-xs text-rose-800 flex items-start gap-2.5">
+                  <div className="bg-rose-50 border border-rose-200/80 rounded-lg p-3 text-xs text-rose-800 flex items-start gap-2.5">
                     <XCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
                     <div>
                       <strong className="font-extrabold">Rejection Reason:</strong>{" "}
@@ -342,7 +344,7 @@ export const OwnerPropertiesPage: React.FC = () => {
                     </div>
                   </div>
                 )}
-              </div>
+              </Card>
             ))}
           </div>
         )}

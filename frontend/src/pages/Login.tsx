@@ -133,7 +133,7 @@ export const Login: React.FC = () => {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-11 rounded-xl bg-[#308178] hover:bg-[#25645d] text-white font-semibold transition-colors"
+              className="w-full h-11 rounded-xl bg-brand-green hover:bg-brand-green-hover text-white font-semibold transition-colors border-0"
             >
               {isSubmitting ? "Signing In..." : "Sign In"}
             </Button>
@@ -143,7 +143,7 @@ export const Login: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate("/register/owner-agency")}
-                className="text-[#308178] font-bold hover:underline ml-1 focus:outline-none"
+                className="text-brand-green font-bold hover:underline ml-1 focus:outline-none"
               >
                 Create an Account
               </button>

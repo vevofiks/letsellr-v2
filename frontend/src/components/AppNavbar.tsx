@@ -61,6 +61,31 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
         .toUpperCase()
     : "?";
 
+  // Profile Image Resolution
+  const [profileImage, setProfileImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    const updateAvatar = () => {
+      if (user?.id) {
+        const savedAvatar = localStorage.getItem(`profile_avatar_${user.id}`);
+        const savedLogo = localStorage.getItem(`agency_logo_${user.id}`);
+        const apiLogo = user.agency_profile?.logo_key || (user as any).avatar_url || (user as any).profile_image || (user as any).logo_key;
+        setProfileImage(savedAvatar || savedLogo || apiLogo || null);
+      } else {
+        setProfileImage(null);
+      }
+    };
+
+    updateAvatar();
+
+    window.addEventListener("profile-updated", updateAvatar);
+    window.addEventListener("storage", updateAvatar);
+    return () => {
+      window.removeEventListener("profile-updated", updateAvatar);
+      window.removeEventListener("storage", updateAvatar);
+    };
+  }, [user]);
+
   return (
     <>
       <header className="sticky top-0 z-40 bg-white border-b border-slate-100 shadow-sm">
@@ -70,13 +95,18 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
           <div className="flex items-center gap-8">
             <Link to={logoHref} className="flex items-center gap-2 group">
               <div className="flex items-center justify-center transition-transform group-hover:scale-105">
-                    <img
-                      src="/logo.png"
-                      alt="Letsellr Logo"
-                      className="h-9 w-auto object-contain shrink-0 drop-shadow-sm"
-                    />
+                <img
+                  src="/logo.png"
+                  alt="Letsellr Logo"
+                  className="h-10 w-auto object-contain shrink-0 drop-shadow-sm"
+                />
               </div>
-              <span className="text-xl font-black tracking-tight text-brand-green">Letsellr</span>
+              <div className="flex flex-col text-left mt-1 gap-1">
+                <span className="text-xl font-black tracking-tight text-brand-green leading-none uppercase">LETSELLR</span>
+                <span className="text-[9px] font-extrabold text-black tracking-wider -mt-0.5 leading-none uppercase">
+                  choose your next home
+                </span>
+              </div>
             </Link>
           </div>
 
@@ -88,10 +118,14 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
               <button
                 id="profile-icon-btn"
                 onClick={() => setDropdownOpen((o) => !o)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100/50 hover:bg-slate-200/60 backdrop-blur-md border border-slate-200 text-slate-600 hover:text-slate-900 text-xs font-black transition-all shadow-sm cursor-pointer select-none"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100/50 hover:bg-slate-200/60 backdrop-blur-md border border-slate-200 text-slate-600 hover:text-slate-900 text-xs font-black transition-all shadow-sm cursor-pointer select-none overflow-hidden"
                 title={user.name}
               >
-                {initials}
+                {profileImage ? (
+                  <img src={profileImage} alt={user.name} className="h-full w-full object-cover" />
+                ) : (
+                  initials
+                )}
               </button>
             ) : (
               /* ── LOGGED OUT: user icon button ──────────────────────── */
@@ -115,8 +149,12 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
                     {/* User card */}
                     <div className="px-4 pt-2 pb-3 border-b border-slate-100">
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-green text-white text-xs font-black shrink-0">
-                          {initials}
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-brand-green text-white text-xs font-black shrink-0 overflow-hidden">
+                          {profileImage ? (
+                            <img src={profileImage} alt={user.name} className="h-full w-full object-cover" />
+                          ) : (
+                            initials
+                          )}
                         </div>
                         <div className="min-w-0">
                           <p className="text-sm font-bold text-slate-900 truncate">{user.name}</p>
@@ -173,7 +211,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
                       id="dropdown-register-client"
                       onClick={() => {
                         setDropdownOpen(false);
-                        setAuthModal({ open: true, mode: "register-client" });
+                        setAuthModal({ open: true, mode: "login" });
                       }}
                       className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors text-left"
                     >
@@ -194,9 +232,9 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
                         setDropdownOpen(false);
                         navigate('/register/type')
                       }}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:rounded-b-md hover:text-[#1b3b2b] transition-all text-left bg-slate-50/30"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:rounded-b-md hover:text-brand-deep-green transition-all text-left bg-slate-50/30"
                     >
-                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#1b3b2b] text-white shrink-0 shadow-sm">
+                      <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-deep-green text-white shrink-0 shadow-sm">
                         <LayoutDashboard className="h-4 w-4" />
                       </span>
                       <div>

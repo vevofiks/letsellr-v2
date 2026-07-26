@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
@@ -30,7 +30,8 @@ import {
   Mail,
   Star,
   Trash2,
-  Edit3
+  Edit3,
+  Building2
 } from "lucide-react";
 
 const getYoutubeEmbedUrl = (url: string | undefined): string | null => {
@@ -133,6 +134,7 @@ export const PropertyDetailsPage: React.FC = () => {
   const { user } = useAuth();
   
   const [property, setProperty] = useState<any | null>(null);
+  const [agency, setAgency] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [relatedProperties, setRelatedProperties] = useState<any[]>([]);
   const [showFullDescription, setShowFullDescription] = useState(false);
@@ -382,6 +384,23 @@ export const PropertyDetailsPage: React.FC = () => {
     fetchRelated();
   }, [property]);
 
+  // Fetch Agency Details if applicable
+  useEffect(() => {
+    const fetchAgencyDetails = async () => {
+      if (property && property.owner_role === "agency" && property.owner_id) {
+        try {
+          const res = await api.get(`/api/agencies/${property.owner_id}`);
+          setAgency(res.data);
+        } catch (err) {
+          console.error("Failed to load agency details", err);
+        }
+      } else {
+        setAgency(null);
+      }
+    };
+    fetchAgencyDetails();
+  }, [property]);
+
   // Leaflet Map Initialization
   useEffect(() => {
     if (property && property.latitude && property.longitude && mapRef.current) {
@@ -412,7 +431,7 @@ export const PropertyDetailsPage: React.FC = () => {
         .addTo(map)
         .bindPopup(`
           <div style="font-family: sans-serif; padding: 2px;">
-            <strong style="color: #1b3b2b;">${property.title}</strong><br/>
+            <strong style="color: #0B6E4F;">${property.title}</strong><br/>
             <span style="font-size: 11px; color: #64748b;">${property.location_area}, ${property.location_city}</span>
           </div>
         `)
@@ -468,9 +487,16 @@ export const PropertyDetailsPage: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f4f6f5] flex items-center justify-center">
-        <div className="space-y-4 text-center">
-          <div className="h-10 w-10 border-4 border-brand-green border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className="text-slate-500 font-bold text-sm">Loading Property details...</p>
+        <div className="flex flex-col items-center gap-6">
+          <div className="relative flex items-center justify-center h-20 w-20">
+            <div className="absolute inset-0 rounded-full border-[3px] border-slate-200 border-t-[#014645] animate-spin" />
+            <img 
+              src="/logo.png" 
+              alt="Letsellr Logo" 
+              className="h-9 w-auto z-10 animate-pulse" 
+            />
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 animate-pulse">Loading Property details...</p>
         </div>
       </div>
     );
@@ -557,11 +583,17 @@ export const PropertyDetailsPage: React.FC = () => {
                     </svg>
                   </button>
 
-                  {/* Agency listing badge overlay (top-right on mobile, top-left on desktop) */}
-                  {property.owner_role === "agency" && (
+                  {/* Agency vs Owner listing badge overlay (top-right on mobile, top-left on desktop) */}
+                  {property.owner_role === "agency" ? (
                     <div className="absolute top-4 right-4 z-10 md:left-4 md:right-auto">
-                      <span className="bg-amber-500 text-white px-3 py-1 rounded-[6px] text-[10px] font-bold uppercase tracking-wider shadow-sm">
-                        Agency Listing
+                      <span className="bg-amber-600/90 backdrop-blur-sm text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider shadow-md border border-amber-500/20 flex items-center gap-1.5">
+                        <Building2 className="h-3.5 w-3.5" /> Agency Partner
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="absolute top-4 right-4 z-10 md:left-4 md:right-auto">
+                      <span className="bg-emerald-600/90 backdrop-blur-sm text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider shadow-md border border-emerald-500/20 flex items-center gap-1.5">
+                        <Shield className="h-3.5 w-3.5" /> Direct Owner
                       </span>
                     </div>
                   )}
@@ -603,7 +635,7 @@ export const PropertyDetailsPage: React.FC = () => {
             {/* Title & Info Block */}
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="bg-teal-50 border border-teal-100 text-brand-green px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider">
+                <span className="bg-brand-light-green border border-brand-green/20 text-brand-green px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider">
                   {property.category.replace("_", " ")}
                 </span>
                 <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider">
@@ -633,19 +665,19 @@ export const PropertyDetailsPage: React.FC = () => {
                 </span>
               </div>
 
-              {/* Stats Block */}
-              {property.stats && (
-                <div className="flex items-center gap-4 text-xs font-semibold text-slate-400 pt-1">
+              {/* Stats Block (Visible ONLY to Owner/Agency of the listing) */}
+              {user && (user.role === "owner" || user.role === "agency") && user.id === property.owner_id && property.stats && (
+                <div className="flex items-center gap-3 text-xs font-semibold text-slate-400 pt-1">
                   {property.stats.views !== undefined && (
-                    <span className="flex items-center gap-1">
-                      <Eye className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                      <span>{property.stats.views} Views</span>
+                    <span className="flex items-center gap-1 bg-slate-100/80 px-2.5 py-1 rounded-lg border border-slate-200/60">
+                      <Eye className="h-3.5 w-3.5 text-slate-500 shrink-0" />
+                      <span className="text-slate-800 font-extrabold">{property.stats.views} Page Visits</span>
                     </span>
                   )}
                   {property.stats.enquiries !== undefined && (
-                    <span className="flex items-center gap-1">
-                      <Mail className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                      <span>{property.stats.enquiries} Enquiries</span>
+                    <span className="flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/60">
+                      <Mail className="h-3.5 w-3.5 text-brand-green shrink-0" />
+                      <span className="text-brand-deep-green font-extrabold">{property.stats.enquiries} WhatsApp Leads</span>
                     </span>
                   )}
                 </div>
@@ -731,7 +763,7 @@ export const PropertyDetailsPage: React.FC = () => {
           </div>
 
           {/* Right Sidebar: Cost widget and contact details */}
-          <div className="w-full lg:w-[380px] shrink-0 sticky top-24 space-y-6">
+          <div className="w-full lg:w-95 shrink-0 sticky top-24 space-y-6">
             <Card className="border border-slate-100 bg-white shadow-xl rounded-3xl p-6 relative overflow-hidden">
               
               {/* Cost widget title */}
@@ -755,21 +787,7 @@ export const PropertyDetailsPage: React.FC = () => {
               </div>
 
               {/* Cancellation policy box */}
-              <div className="my-5 space-y-3.5 text-xs text-slate-700 font-medium">
-                <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Pricing Policy</h4>
-                <div className="bg-slate-50 rounded-2xl p-4.5 space-y-3 border border-slate-100/60">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500">Refundable Deposit</span>
-                    <span className="font-extrabold text-slate-900">
-                      {property.deposit ? `₹${property.deposit.toLocaleString()}` : "N/A"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-t border-slate-200/50 pt-2.5">
-                    <span className="text-slate-500">Brokerage Commission</span>
-                    <span className="font-extrabold text-emerald-600">₹0 (Free)</span>
-                  </div>
-                </div>
-              </div>
+             
 
               {/* Total Calculation */}
               <div className="flex justify-between items-center py-2.5 font-bold text-sm text-slate-900 border-t border-slate-100">
@@ -810,16 +828,50 @@ export const PropertyDetailsPage: React.FC = () => {
 
             </Card>
 
-            {/* Direct owner badge */}
-            <div className="flex items-center gap-3 bg-white border border-slate-100 rounded-2xl p-4 shadow-sm text-left">
-              <div className="p-2 rounded-xl bg-teal-50 text-brand-green">
-                <Shield className="h-5 w-5" />
+            {/* Direct owner or agency partner badge */}
+            {property.owner_role === "agency" && agency ? (
+              <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-4 text-left">
+                <div className="flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-xl bg-[#014645]/5 border border-slate-100 flex items-center justify-center text-[#014645] shrink-0 overflow-hidden relative">
+                    {agency.logo_key ? (
+                      <img src={agency.logo_key} alt={agency.display_name} className="h-full w-full object-cover" />
+                    ) : (
+                      <Building2 className="h-6 w-6 text-[#014645]/40" />
+                    )}
+                  </div>
+                  <div className="min-w-0 space-y-0.5">
+                    <span className="text-[9px] font-black uppercase text-amber-600 tracking-wider">Agency Partner</span>
+                    <h4 className="text-sm font-black text-slate-900 truncate leading-snug my-0">
+                      {agency.display_name}
+                    </h4>
+                    {agency.verification_status === "verified" && (
+                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-600">
+                        <Shield className="h-3 w-3 fill-emerald-500 text-white" /> Verified
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="border-t border-slate-50 pt-3">
+                  <Link 
+                    to={`/agencies/${property.owner_id}`}
+                    className="w-full border border-slate-200 hover:bg-slate-50 text-slate-700 font-extrabold py-2.5 text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                  >
+                    View Agency Profile
+                  </Link>
+                </div>
               </div>
-              <div className="space-y-0.5">
-                <p className="text-xs font-black text-slate-900">Direct Owner Listing</p>
-                <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">No Broker commission</p>
+            ) : (
+              <div className="flex items-center gap-3 bg-white border border-slate-100 rounded-2xl p-4 shadow-sm text-left">
+                <div className="p-2 rounded-xl bg-brand-light-green text-brand-green">
+                  <Shield className="h-5 w-5" />
+                </div>
+                <div className="space-y-0.5">
+                  <p className="text-xs font-black text-slate-900">Direct Owner Listing</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">No Broker commission</p>
+                </div>
               </div>
-            </div>
+            )}
 
           </div>
 
@@ -925,7 +977,7 @@ export const PropertyDetailsPage: React.FC = () => {
                   </form>
                 )
               ) : (
-                <div className="bg-teal-50 border border-teal-100 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+                <div className="bg-brand-light-green border border-brand-green/20 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
                   <div>
                     <h4 className="text-sm font-bold text-slate-900">Logged in users can write reviews</h4>
                     <p className="text-xs font-semibold text-slate-500 mt-0.5">Please sign in to share your experience with this listing.</p>

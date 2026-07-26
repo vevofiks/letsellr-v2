@@ -7,13 +7,18 @@ import { RegisterOwnerAgency } from "@/pages/RegisterOwnerAgency";
 import { RegisterClient } from "@/pages/RegisterClient";
 import { Login } from "@/pages/Login";
 import { VerifyOTP } from "@/pages/VerifyOTP";
-import { ClientDashboard, AdminDashboard } from "@/pages/Dashboards";
+import { ClientDashboard } from "@/pages/Dashboards";
 import { OwnerDashboard } from "@/pages/OwnerDashboard";
 import { OwnerPropertiesPage } from "@/pages/OwnerPropertiesPage";
 import { OwnerPropertyFormPage } from "@/pages/OwnerPropertyFormPage";
 import { OwnerPropertyDetailPage } from "@/pages/OwnerPropertyDetailPage";
 import { OwnerSettingsPage } from "@/pages/OwnerSettingsPage";
 import { PropertyDetailsPage } from "@/pages/PropertyDetailsPage";
+import { AgencyProfilePage } from "@/pages/AgencyProfilePage";
+import { AdminRoute } from "@/components/AdminRoute";
+import { AdminLogin } from "@/pages/admin/AdminLogin";
+import { AdminLayout } from "@/pages/admin/AdminLayout";
+import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
 import { Toaster } from "@/components/ui/sonner";
 
 function App() {
@@ -72,6 +77,11 @@ function App() {
               element={<PropertyDetailsPage />}
             />
 
+            <Route
+              path="/agencies/:agencyId"
+              element={<AgencyProfilePage />}
+            />
+
             {/* Protected Owner/Agency Experience Routes */}
             <Route
               path="/owner/dashboard"
@@ -122,15 +132,30 @@ function App() {
               }
             />
 
-            {/* Protected Admin Dashboard Route */}
+            {/* Admin Platform Routes */}
+            <Route path="/admin-platform/login" element={<AdminLogin />} />
+            
             <Route
-              path="/admin"
+              path="/admin-platform/*"
               element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <AdminDashboard />
-                </ProtectedRoute>
+                <AdminRoute>
+                  <AdminLayout />
+                </AdminRoute>
               }
-            />
+            >
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<AdminDashboardPage />} />
+              <Route path="properties" element={<AdminDashboardPage />} />
+              <Route path="users" element={<AdminDashboardPage />} />
+              <Route path="reports" element={<AdminDashboardPage />} />
+              <Route path="categories" element={<AdminDashboardPage />} />
+              <Route path="locations" element={<AdminDashboardPage />} />
+              <Route path="settings" element={<AdminDashboardPage />} />
+              <Route path="*" element={<Navigate to="dashboard" replace />} />
+            </Route>
+
+            {/* Legacy Admin Redirect */}
+            <Route path="/admin" element={<Navigate to="/admin-platform/dashboard" replace />} />
 
              {/* Fallback Catch-all Route */}
             <Route path="*" element={<Navigate to="/register/type" replace />} />

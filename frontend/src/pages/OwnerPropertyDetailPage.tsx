@@ -102,9 +102,18 @@ export const OwnerPropertyDetailPage: React.FC = () => {
       <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
         <OwnerNavbar />
         <div className="flex-1 flex items-center justify-center">
-          <div className="flex flex-col items-center gap-3">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-brand-green" />
-            <p className="text-xs font-bold text-slate-500">Loading property details...</p>
+          <div className="flex flex-col items-center gap-6">
+            <div className="relative flex items-center justify-center h-20 w-20">
+              <div className="absolute inset-0 rounded-full border-[3px] border-slate-100 border-t-[#014645] animate-spin" />
+              <img 
+                src="/logo.png" 
+                alt="Letsellr Logo" 
+                className="h-9 w-auto z-10 animate-pulse" 
+              />
+            </div>
+            <p className="text-[10px] font-black uppercase tracking-widest text-slate-455 animate-pulse">
+              Loading property details...
+            </p>
           </div>
         </div>
       </div>
@@ -203,7 +212,7 @@ export const OwnerPropertyDetailPage: React.FC = () => {
           </div>
 
           <div className="bg-white border border-slate-100 rounded-3xl p-5 shadow-xs flex items-center gap-4">
-            <div className="h-12 w-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center shrink-0">
+            <div className="h-12 w-12 rounded-2xl bg-brand-light-green text-brand-green flex items-center justify-center shrink-0">
               <MessageSquare className="h-6 w-6" />
             </div>
             <div>
@@ -316,14 +325,7 @@ export const OwnerPropertyDetailPage: React.FC = () => {
               </div>
             </div>
           )}
-
-          {/* Owner Phone & WhatsApp */}
-          <div className="border-t border-slate-100 pt-6 space-y-2">
-            <h3 className="text-sm font-bold text-slate-900 my-0">Owner Contact Info</h3>
-            <p className="text-xs font-semibold text-slate-600">
-              Phone: <strong>{property.owner_phone}</strong> {property.owner_whatsapp && `• WhatsApp: ${property.owner_whatsapp}`}
-            </p>
-          </div>
+         
 
         </div>
 

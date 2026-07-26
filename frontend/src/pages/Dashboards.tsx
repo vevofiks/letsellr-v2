@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -42,7 +42,9 @@ import {
   X,
   SlidersHorizontal,
   LayoutGrid,
-  Map as MapIcon
+  Map as MapIcon,
+  Building2,
+  Shield
 } from "lucide-react";
 
 
@@ -67,6 +69,9 @@ export const ClientDashboard: React.FC = () => {
   const [radius, setRadius] = useState<number>(20);
   const [limit, setLimit] = useState<number>(12);
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [inputQuery, setInputQuery] = useState<string>("");
+  const [showDrawerSuggestions, setShowDrawerSuggestions] = useState<boolean>(false);
+  const [showTopSuggestions, setShowTopSuggestions] = useState<boolean>(false);
   const [showAdvancedPopover, setShowAdvancedPopover] = useState<boolean>(false);
   const [viewMode, setViewMode] = useState<"list" | "map">(
     () => (localStorage.getItem("dashboard_view_mode") as "list" | "map") || "list"
@@ -76,11 +81,120 @@ export const ClientDashboard: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [hasMore, setHasMore] = useState<boolean>(true);
 
+  const [searchMode, setSearchMode] = useState<"properties" | "agencies">("properties");
+  const [agencies, setAgencies] = useState<any[]>([]);
+
   const popoverRef = useRef<HTMLDivElement>(null);
   const filterBtnRef = useRef<HTMLButtonElement>(null);
+  const drawerSearchRef = useRef<HTMLDivElement>(null);
+  const topSearchRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
+
+  // Debounce inputQuery -> searchQuery (250ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchQuery(inputQuery);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [inputQuery]);
+
+  // Compute suggestions list based on active properties/agencies
+  const suggestions = useMemo(() => {
+    if (!inputQuery || inputQuery.trim().length < 1) return [];
+    const q = inputQuery.toLowerCase().trim();
+    const list: Array<{ type: "location" | "title" | "category"; label: string; subtext?: string; categoryValue?: string }> = [];
+    const seen = new Set<string>();
+
+    if (searchMode === "agencies") {
+      agencies.forEach((agency) => {
+        if (agency.display_name && agency.display_name.toLowerCase().includes(q)) {
+          const key = `agency-${agency.display_name}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            list.push({ type: "title", label: agency.display_name, subtext: `${agency.location_area || ""}, ${agency.location_city || ""}`.replace(/^, /, "") });
+          }
+        }
+        if (agency.location_city && agency.location_city.toLowerCase().includes(q)) {
+          const key = `city-${agency.location_city}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            list.push({ type: "location", label: agency.location_city, subtext: "City" });
+          }
+        }
+        if (agency.location_area && agency.location_area.toLowerCase().includes(q)) {
+          const key = `area-${agency.location_area}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            list.push({ type: "location", label: agency.location_area, subtext: agency.location_city });
+          }
+        }
+      });
+    } else {
+      const categoriesMap: Record<string, string> = {
+        apartment: "Apartment",
+        villa_house: "Villa / House",
+        land: "Land",
+        commercial: "Commercial",
+        pg: "PG",
+        hostel: "Hostel",
+      };
+      Object.entries(categoriesMap).forEach(([val, label]) => {
+        if (label.toLowerCase().includes(q) || val.toLowerCase().includes(q)) {
+          const key = `cat-${val}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            list.push({ type: "category", label: label, categoryValue: val, subtext: "Property Type" });
+          }
+        }
+      });
+
+      properties.forEach((prop) => {
+        if (prop.title && prop.title.toLowerCase().includes(q)) {
+          const key = `prop-${prop.title}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            list.push({ type: "title", label: prop.title, subtext: `${prop.location_area || ""}, ${prop.location_city || ""}`.replace(/^, /, "") });
+          }
+        }
+        if (prop.location_city && prop.location_city.toLowerCase().includes(q)) {
+          const key = `city-${prop.location_city}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            list.push({ type: "location", label: prop.location_city, subtext: "City" });
+          }
+        }
+        if (prop.location_area && prop.location_area.toLowerCase().includes(q)) {
+          const key = `area-${prop.location_area}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            list.push({ type: "location", label: prop.location_area, subtext: prop.location_city });
+          }
+        }
+      });
+    }
+    return list.slice(0, 5);
+  }, [inputQuery, searchMode, properties, agencies]);
+
+  const handleSelectSuggestion = (item: { type: string; label: string; categoryValue?: string }) => {
+    if (item.type === "category" && item.categoryValue) {
+      setCategory(item.categoryValue);
+      setInputQuery("");
+      setSearchQuery("");
+    } else if (item.type === "location") {
+      setCity(item.label);
+      setSearchCity(item.label);
+      setInputQuery(item.label);
+      setSearchQuery(item.label);
+    } else {
+      setInputQuery(item.label);
+      setSearchQuery(item.label);
+    }
+    setShowDrawerSuggestions(false);
+    setShowTopSuggestions(false);
+    setPage(1);
+  };
 
   const filteredProperties = properties.filter((prop) => {
     if (!searchQuery) return true;
@@ -93,12 +207,23 @@ export const ClientDashboard: React.FC = () => {
     );
   });
 
+  const filteredAgencies = agencies.filter((agency) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      (agency.display_name && agency.display_name.toLowerCase().includes(query)) ||
+      (agency.about && agency.about.toLowerCase().includes(query)) ||
+      (agency.location_area && agency.location_area.toLowerCase().includes(query)) ||
+      (agency.location_city && agency.location_city.toLowerCase().includes(query))
+    );
+  });
+
   // Persist viewMode preference
   useEffect(() => {
     localStorage.setItem("dashboard_view_mode", viewMode);
   }, [viewMode]);
 
-  // Close advanced filters popover when clicking outside
+  // Close popovers and search suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -108,6 +233,12 @@ export const ClientDashboard: React.FC = () => {
         !filterBtnRef.current.contains(event.target as Node)
       ) {
         setShowAdvancedPopover(false);
+      }
+      if (drawerSearchRef.current && !drawerSearchRef.current.contains(event.target as Node)) {
+        setShowDrawerSuggestions(false);
+      }
+      if (topSearchRef.current && !topSearchRef.current.contains(event.target as Node)) {
+        setShowTopSuggestions(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -220,7 +351,7 @@ export const ClientDashboard: React.FC = () => {
               width: 38px; 
               height: 38px; 
               border-radius: 50%; 
-              border: 3px solid #1b3b2b; 
+              border: 3px solid #23D283; 
               background-color: white; 
               box-shadow: 0 4px 8px rgba(0,0,0,0.25); 
               overflow: hidden;
@@ -237,7 +368,7 @@ export const ClientDashboard: React.FC = () => {
             <div style="
               width: 8px;
               height: 8px;
-              background-color: #1b3b2b;
+              background-color: #23D283;
               border-radius: 50%;
               border: 1.5px solid white;
               box-shadow: 0 2px 4px rgba(0,0,0,0.3);
@@ -282,10 +413,10 @@ export const ClientDashboard: React.FC = () => {
         .bindPopup(`
           <div style="font-family: sans-serif; padding: 2px; max-width: 200px;">
             <img src="${prop.photos && prop.photos.length > 0 ? prop.photos[0] : getCategoryFallbackImage(prop.category)}" style="width: 100%; height: 80px; border-radius: 8px; object-fit: cover; margin-bottom: 6px;" />
-            <strong style="color: #1b3b2b; font-size: 12px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${prop.title}</strong>
+            <strong style="color: #0B6E4F; font-size: 12px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${prop.title}</strong>
             <span style="font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase;">${prop.category.replace("_", " ")}</span>
             <div style="font-size: 12px; font-weight: 800; color: #0f172a; margin-top: 4px;">${formatPrice(prop.price, prop.price_unit)}</div>
-            <a href="/properties/${prop.id}" style="display: inline-block; font-size: 10px; color: #308178; font-weight: 700; text-decoration: none; margin-top: 6px;">VIEW DETAILS →</a>
+            <a href="/properties/${prop.id}" style="display: inline-block; font-size: 10px; color: #0B6E4F; font-weight: 700; text-decoration: none; margin-top: 6px;">VIEW DETAILS →</a>
           </div>
         `);
       
@@ -298,68 +429,94 @@ export const ClientDashboard: React.FC = () => {
     }
   }, [filteredProperties, viewMode, lat, lng]);
 
-  // Fetch properties from backend
-  const fetchProperties = async () => {
+  // Fetch properties or agencies from backend
+  const fetchData = async () => {
     if (page === 1) {
       setLoading(true);
     } else {
       setLoadingMore(true);
     }
     try {
-      const params: any = {
-        page,
-        limit,
-      };
-      if (intent) params.intent = intent;
-      if (category) params.category = category;
-      if (city && !gpsActive) params.city = city;
+      if (searchMode === "agencies") {
+        const params: any = {
+          page,
+        };
+        if (city) params.city = city;
 
-      // Map price range dropdown value to min_price and max_price API parameters
-      if (priceRange === "under-50k") {
-        params.max_price = 50000;
-      } else if (priceRange === "50k-5l") {
-        params.min_price = 50000;
-        params.max_price = 500000;
-      } else if (priceRange === "5l-15l") {
-        params.min_price = 500000;
-        params.max_price = 1500000;
-      } else if (priceRange === "15l-50l") {
-        params.min_price = 1500000;
-        params.max_price = 5000000;
-      } else if (priceRange === "50l-1cr") {
-        params.min_price = 5000000;
-        params.max_price = 10000000;
-      } else if (priceRange === "above-1cr") {
-        params.min_price = 10000000;
-      }
+        const res = await api.get("/api/agencies", { params });
+        const newItems = res.data.results || res.data || [];
 
-      if (sortBy) params.sort_by = sortBy;
-      if (lat !== null && lng !== null && gpsActive) {
-        params.lat = lat;
-        params.lng = lng;
-        params.radius = radius;
-      }
+        if (page === 1) {
+          setAgencies(newItems);
+        } else {
+          setAgencies((prev) => {
+            const existingIds = new Set(prev.map(a => a.id));
+            const filteredNew = newItems.filter((a: any) => !existingIds.has(a.id));
+            return [...prev, ...filteredNew];
+          });
+        }
 
-      const res = await api.get("/api/properties", { params });
-      const newItems = res.data.results || res.data || [];
-
-      if (page === 1) {
-        setProperties(newItems);
+        if (newItems.length < 20) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
       } else {
-        setProperties((prev) => {
-          const existingIds = new Set(prev.map(p => p.id));
-          const filteredNew = newItems.filter((p: any) => !existingIds.has(p.id));
-          return [...prev, ...filteredNew];
-        });
-      }
+        const params: any = {
+          page,
+          limit,
+        };
+        if (intent) params.intent = intent;
+        if (category) params.category = category;
+        if (city && !gpsActive) params.city = city;
 
-      if (newItems.length < limit) {
-        setHasMore(false);
-      } else {
-        setHasMore(true);
+        // Map price range dropdown value to min_price and max_price API parameters
+        if (priceRange === "under-50k") {
+          params.max_price = 50000;
+        } else if (priceRange === "50k-5l") {
+          params.min_price = 50000;
+          params.max_price = 500000;
+        } else if (priceRange === "5l-15l") {
+          params.min_price = 500000;
+          params.max_price = 1500000;
+        } else if (priceRange === "15l-50l") {
+          params.min_price = 1500000;
+          params.max_price = 5000000;
+        } else if (priceRange === "50l-1cr") {
+          params.min_price = 5000000;
+          params.max_price = 10000000;
+        } else if (priceRange === "above-1cr") {
+          params.min_price = 10000000;
+        }
+
+        if (sortBy) params.sort_by = sortBy;
+        if (lat !== null && lng !== null && gpsActive) {
+          params.lat = lat;
+          params.lng = lng;
+          params.radius = radius;
+        }
+
+        const res = await api.get("/api/properties", { params });
+        const newItems = res.data.results || res.data || [];
+
+        if (page === 1) {
+          setProperties(newItems);
+        } else {
+          setProperties((prev) => {
+            const existingIds = new Set(prev.map(p => p.id));
+            const filteredNew = newItems.filter((p: any) => !existingIds.has(p.id));
+            return [...prev, ...filteredNew];
+          });
+        }
+
+        if (newItems.length < limit) {
+          setHasMore(false);
+        } else {
+          setHasMore(true);
+        }
       }
     } catch (err) {
-      console.error("Failed to fetch properties", err);
+      console.error("Failed to fetch listings", err);
       toast.error("Failed to load listings");
     } finally {
       setLoading(false);
@@ -368,8 +525,8 @@ export const ClientDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchProperties();
-  }, [intent, category, city, lat, lng, gpsActive, page, priceRange, sortBy, radius, limit]);
+    fetchData();
+  }, [searchMode, intent, category, city, lat, lng, gpsActive, page, priceRange, sortBy, radius, limit]);
 
   const handleDrawerScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
@@ -475,6 +632,7 @@ export const ClientDashboard: React.FC = () => {
     setLng(null);
     setGpsActive(false);
     setSearchQuery("");
+    setInputQuery("");
     setPage(1);
     toast.success("Filters reset successfully");
   };
@@ -546,7 +704,9 @@ export const ClientDashboard: React.FC = () => {
               {/* Drawer Header with Title, Result count & inline Filters toggle */}
               <div className="p-4 border-b border-slate-100 flex flex-col gap-3 shrink-0">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-base font-extrabold text-slate-900 m-0">Properties Search</h2>
+                  <h2 className="text-base font-extrabold text-slate-900 m-0">
+                    {searchMode === "agencies" ? "Agencies Search" : "Properties Search"}
+                  </h2>
                   <button
                     type="button"
                     onClick={() => setLeftFiltersExpanded(!leftFiltersExpanded)}
@@ -562,8 +722,78 @@ export const ClientDashboard: React.FC = () => {
                   </button>
                 </div>
 
+                {/* Instant Search input for name & location with suggestions */}
+                <div ref={drawerSearchRef} className="relative w-full">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 z-10" />
+                  <input
+                    type="text"
+                    placeholder={searchMode === "agencies" ? "Search agency name or location..." : "Search name, area, or city..."}
+                    value={inputQuery}
+                    onFocus={() => setShowDrawerSuggestions(true)}
+                    onChange={(e) => {
+                      setInputQuery(e.target.value);
+                      setShowDrawerSuggestions(true);
+                    }}
+                    className="w-full pl-8 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-lg text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green transition-all"
+                  />
+                  {inputQuery && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setInputQuery("");
+                        setSearchQuery("");
+                      }}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer z-10"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+
+                  {/* Autocomplete Suggestions Dropdown */}
+                  {showDrawerSuggestions && suggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden text-left animate-in fade-in slide-in-from-top-1 duration-150">
+                      <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[9px] font-extrabold uppercase text-slate-400 tracking-wider">
+                        <span>Suggestions</span>
+                        <button type="button" onClick={() => setShowDrawerSuggestions(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                      <div className="max-h-80 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden divide-y divide-slate-50 py-1">
+                        {suggestions.map((item, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleSelectSuggestion(item)}
+                            className="w-full px-3 py-2 hover:bg-slate-50 flex items-center justify-between gap-2 text-left cursor-pointer transition-colors"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className={cn(
+                                "p-1 rounded-md shrink-0",
+                                item.type === "location" ? "bg-red-50 text-red-500" :
+                                item.type === "category" ? "bg-emerald-50 text-emerald-600" :
+                                "bg-blue-50 text-blue-600"
+                              )}>
+                                {item.type === "location" ? <MapPin className="h-3 w-3" /> :
+                                 item.type === "category" ? <Home className="h-3 w-3" /> :
+                                 searchMode === "agencies" ? <Building2 className="h-3 w-3" /> : <Search className="h-3 w-3" />}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-slate-800 truncate m-0">{item.label}</p>
+                                {item.subtext && <p className="text-[9px] text-slate-400 font-normal truncate m-0">{item.subtext}</p>}
+                              </div>
+                            </div>
+                            <span className="text-[8px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md uppercase shrink-0">
+                              {item.type}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
                 <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                  Showing {filteredProperties.length} results
+                  Showing {searchMode === "agencies" ? filteredAgencies.length : filteredProperties.length} results
                 </div>
 
                 {/* Collapsible Left Filters */}
@@ -720,7 +950,7 @@ export const ClientDashboard: React.FC = () => {
                             setRadius(Number(e.target.value));
                             setPage(1);
                           }}
-                          className="w-full accent-[#308178] h-1 bg-slate-200 rounded-lg cursor-pointer appearance-none"
+                          className="w-full accent-brand-green h-1 bg-slate-200 rounded-lg cursor-pointer appearance-none"
                         />
                       </div>
                     )}
@@ -769,7 +999,7 @@ export const ClientDashboard: React.FC = () => {
                             loading="lazy"
                           />
                           <div className="absolute top-1.5 left-1.5 flex flex-col">
-                            <span className="inline-flex rounded-lg bg-brand-green px-2 py-0.5 text-[8px] font-semibold text-white shadow-sm uppercase tracking-wider">
+                            <span className="inline-flex rounded-[8px] bg-brand-green px-2 py-[0.5px] text-[8px] text-center font-semibold text-white shadow-sm uppercase tracking-wider">
                               For {prop.intent === "buy" ? "Sale" : prop.intent === "rent" ? "Rent" : "Lease"}
                             </span>
                           </div>
@@ -815,12 +1045,22 @@ export const ClientDashboard: React.FC = () => {
                             </div>
                           </div>
 
-                          {/* Price Row */}
+                           {/* Price Row */}
                           <div className="flex items-center justify-between pt-1.5 border-t border-slate-100/60 mt-1">
                             <span className="font-extrabold text-[13px] text-slate-900 flex items-baseline gap-0.5">
                               {formatPrice(prop.price, prop.price_unit)}
                               {prop.intent === "rent" && <span className="text-[9px] font-medium text-slate-400">/ month</span>}
                             </span>
+                            
+                            {prop.owner_role === "agency" ? (
+                              <span className="inline-flex items-center gap-0.5 rounded-md bg-amber-50 border border-amber-100/50 px-1.5 py-0.5 text-[8px] font-black text-amber-700 uppercase tracking-wider">
+                                <Building2 className="h-2.5 w-2.5" /> Agency
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-0.5 rounded-md bg-emerald-50 border border-emerald-100/50 px-1.5 py-0.5 text-[8px] font-black text-emerald-700 uppercase tracking-wider">
+                                <Shield className="h-2.5 w-2.5" /> Owner
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -848,7 +1088,7 @@ export const ClientDashboard: React.FC = () => {
             <button
               type="button"
               onClick={() => setViewMode("list")}
-              className="bg-brand-green hover:bg-brand-green-hover text-white px-3.5 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5 hover:scale-105 active:scale-95 transition-all cursor-pointer border border-[#26533c]/60 animate-in fade-in slide-in-from-bottom-4 duration-300"
+              className="bg-brand-green hover:bg-brand-green-hover text-white px-3.5 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5 hover:scale-105 active:scale-95 transition-all cursor-pointer border border-brand-green animate-in fade-in slide-in-from-bottom-4 duration-300"
             >
               <LayoutGrid className="h-3.5 w-3.5" />
               <span>List View</span>
@@ -865,7 +1105,7 @@ export const ClientDashboard: React.FC = () => {
           style={{ backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0.85)), url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=80')` }}
         >
           <div className="relative z-10 text-center max-w-full md:max-w-3xl space-y-3 px-4 flex flex-col items-center justify-center">
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-md px-3.5 py-1 text-[10px] sm:text-xs font-bold text-teal-200 border border-white/10 uppercase tracking-normal md:tracking-widest whitespace-nowrap">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-md px-3.5 py-1 text-[10px] sm:text-xs font-bold text-brand-green border border-white/10 uppercase tracking-normal md:tracking-widest whitespace-nowrap">
               <span className="hidden sm:inline">Your Reliable Ally in Worldwide Real Estate</span>
               <span className="inline sm:hidden">Worldwide Real Estate</span>
             </span>
@@ -881,7 +1121,7 @@ export const ClientDashboard: React.FC = () => {
             <div className="flex flex-col lg:flex-row lg:items-end gap-3 w-full justify-between">
               
               {/* Looking For Dropdown - Hidden on mobile, shown on lg screens */}
-              <div className="hidden lg:flex flex-col text-left min-w-35 flex-1">
+              <div className={cn("hidden lg:flex flex-col text-left min-w-35 flex-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
                 <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">Looking For</label>
                 <Select
                   value={intent || undefined}
@@ -892,7 +1132,7 @@ export const ClientDashboard: React.FC = () => {
                 >
                   <SelectTrigger className={cn(
                     "w-full bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 font-semibold text-slate-800 text-[13px] shadow-sm cursor-pointer transition-all",
-                    "focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178]"
+                    "focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green"
                   )}>
                     <SelectValue placeholder="Buy / Rent / Lease">
                       {intent === "buy" ? "For Sale" : intent === "rent" ? "For Rent" : intent === "lease" ? "For Lease" : "Buy / Rent / Lease"}
@@ -908,7 +1148,7 @@ export const ClientDashboard: React.FC = () => {
               </div>
 
               {/* Type Dropdown - Hidden on mobile, shown on lg screens */}
-              <div className="hidden lg:flex flex-col text-left min-w-35 flex-1">
+              <div className={cn("hidden lg:flex flex-col text-left min-w-35 flex-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
                 <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">Type</label>
                 <Select
                   value={category || undefined}
@@ -919,7 +1159,7 @@ export const ClientDashboard: React.FC = () => {
                 >
                   <SelectTrigger className={cn(
                     "w-full bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 font-semibold text-slate-800 text-[13px] shadow-sm cursor-pointer transition-all",
-                    "focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178]"
+                    "focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green"
                   )}>
                     <SelectValue placeholder="Residence">
                       {category === "apartment" ? "Apartment" : category === "villa_house" ? "Villa / House" : category === "land" ? "Land" : category === "commercial" ? "Commercial" : category === "pg" ? "PG" : category === "hostel" ? "Hostel" : "Residence"}
@@ -938,7 +1178,7 @@ export const ClientDashboard: React.FC = () => {
               </div>
 
               {/* Price Dropdown - Hidden on mobile, shown on lg screens */}
-              <div className="hidden lg:flex flex-col text-left min-w-35 flex-1">
+              <div className={cn("hidden lg:flex flex-col text-left min-w-35 flex-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
                 <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">Price</label>
                 <Select
                   value={priceRange === "all" ? undefined : priceRange}
@@ -949,7 +1189,7 @@ export const ClientDashboard: React.FC = () => {
                 >
                   <SelectTrigger className={cn(
                     "w-full bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 font-semibold text-slate-800 text-[13px] shadow-sm cursor-pointer transition-all",
-                    "focus:ring-2 focus:ring-[#308178]/20 focus:border-[#308178]"
+                    "focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green"
                   )}>
                     <SelectValue placeholder="Any Price">
                       {priceRange === "under-50k" ? "Under ₹50k" : priceRange === "50k-5l" ? "₹50k - ₹5L" : priceRange === "5l-15l" ? "₹5L - ₹15L" : priceRange === "15l-50l" ? "₹15L - ₹50L" : priceRange === "50l-1cr" ? "₹50L - ₹1Cr" : priceRange === "above-1cr" ? "Above ₹1Cr" : "Any Price"}
@@ -973,7 +1213,7 @@ export const ClientDashboard: React.FC = () => {
                 <div className={cn(
                   "flex items-center gap-1.5 bg-white border rounded-lg h-10 px-3 transition-all shadow-sm",
                   gpsActive ? "border-emerald-500 bg-emerald-50/10" : "border-slate-200 hover:border-slate-300",
-                  "focus-within:ring-2 focus-within:ring-[#308178]/20 focus-within:border-[#308178]"
+                  "focus-within:ring-2 focus-within:ring-brand-green/20 focus-within:border-brand-green"
                 )}>
                   <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
                   <input
@@ -1001,26 +1241,84 @@ export const ClientDashboard: React.FC = () => {
               </div>
 
               {/* Combined search & filter button layout for horizontal row on mobile */}
-              <div className="flex items-end gap-3 flex-1 min-w-0 w-full lg:w-auto">
+              <div className="flex items-end gap-3 flex-1 min-w-0 w-full lg:contents">
                 {/* Find Specific Property Input */}
-                <div className="flex-1 min-w-0 flex flex-col text-left">
-                  <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">Find Specific Property</label>
+                <div ref={topSearchRef} className="flex-1 min-w-0 lg:min-w-35 flex flex-col text-left relative">
+                  <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">
+                    {searchMode === "agencies" ? "Find Specific Agency" : "Find Specific Property"}
+                  </label>
                   <div className={cn(
-                    "flex items-center gap-1.5 bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 transition-all shadow-sm",
-                    "focus-within:ring-2 focus-within:ring-[#308178]/20 focus-within:border-[#308178]"
+                    "flex items-center gap-1.5 bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 transition-all shadow-sm relative",
+                    "focus-within:ring-2 focus-within:ring-brand-green/20 focus-within:border-brand-green"
                   )}>
                     <input
                       type="text"
-                      placeholder="Ex. hunian apart"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder={searchMode === "agencies" ? "Ex. agency name" : "Ex. villa, apartment..."}
+                      value={inputQuery}
+                      onFocus={() => setShowTopSuggestions(true)}
+                      onChange={(e) => {
+                        setInputQuery(e.target.value);
+                        setShowTopSuggestions(true);
+                      }}
                       className={cn(
                         "w-full bg-transparent border-0 font-semibold text-slate-800 text-[13px] focus:outline-none focus:ring-0 p-0",
                         "placeholder:text-slate-400"
                       )}
                     />
-                    <Search className="h-4 w-4 text-slate-400 shrink-0" />
+                    {inputQuery ? (
+                      <X
+                        className="h-4 w-4 text-slate-400 hover:text-slate-600 cursor-pointer shrink-0"
+                        onClick={() => {
+                          setInputQuery("");
+                          setSearchQuery("");
+                        }}
+                      />
+                    ) : (
+                      <Search className="h-4 w-4 text-slate-400 shrink-0" />
+                    )}
                   </div>
+
+                  {/* Autocomplete Suggestions Dropdown */}
+                  {showTopSuggestions && suggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden text-left animate-in fade-in slide-in-from-top-1 duration-150">
+                      <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[9px] font-extrabold uppercase text-slate-400 tracking-wider">
+                        <span>Suggestions</span>
+                        <button type="button" onClick={() => setShowTopSuggestions(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                      <div className="max-h-80 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden divide-y divide-slate-50 py-1">
+                        {suggestions.map((item, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => handleSelectSuggestion(item)}
+                            className="w-full px-3 py-2 hover:bg-slate-50 flex items-center justify-between gap-2 text-left cursor-pointer transition-colors"
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className={cn(
+                                "p-1 rounded-md shrink-0",
+                                item.type === "location" ? "bg-red-50 text-red-500" :
+                                item.type === "category" ? "bg-emerald-50 text-emerald-600" :
+                                "bg-blue-50 text-blue-600"
+                              )}>
+                                {item.type === "location" ? <MapPin className="h-3 w-3" /> :
+                                 item.type === "category" ? <Home className="h-3 w-3" /> :
+                                 searchMode === "agencies" ? <Building2 className="h-3 w-3" /> : <Search className="h-3 w-3" />}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className="text-xs font-semibold text-slate-800 truncate m-0">{item.label}</p>
+                                {item.subtext && <p className="text-[9px] text-slate-400 font-normal truncate m-0">{item.subtext}</p>}
+                              </div>
+                            </div>
+                            <span className="text-[8px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md uppercase shrink-0">
+                              {item.type}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Filter Button with Absolute Popover */}
@@ -1086,15 +1384,46 @@ export const ClientDashboard: React.FC = () => {
                             </div>
                           </div>
 
+                          {/* Search Mode Selector */}
+                          <div className="flex flex-col gap-1 pb-2 border-b border-slate-100">
+                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Search For</span>
+                            <div className="grid grid-cols-2 gap-1 bg-slate-100 p-0.5 rounded-lg">
+                              <button
+                                type="button"
+                                onClick={() => { setSearchMode("properties"); setPage(1); }}
+                                className={cn(
+                                  "py-1 text-xs font-extrabold rounded-md transition-all cursor-pointer",
+                                  searchMode === "properties"
+                                    ? "bg-white text-slate-900 shadow-sm"
+                                    : "text-slate-500 hover:text-slate-700"
+                                )}
+                              >
+                                Properties
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => { setSearchMode("agencies"); setPage(1); setViewMode("list"); }}
+                                className={cn(
+                                  "py-1 text-xs font-extrabold rounded-md transition-all cursor-pointer",
+                                  searchMode === "agencies"
+                                    ? "bg-white text-slate-900 shadow-sm"
+                                    : "text-slate-500 hover:text-slate-700"
+                                )}
+                              >
+                                Agencies
+                              </button>
+                            </div>
+                          </div>
+
                           {/* Mobile-only: Looking For + Type in 2-col grid */}
-                          <div className="grid grid-cols-2 gap-2 lg:hidden">
+                          <div className={cn("grid grid-cols-2 gap-2 lg:hidden", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
                             <div className="flex flex-col gap-1">
                               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Intent</span>
                               <Select value={intent || undefined} onValueChange={(val) => { setIntent(val === "all" || !val ? "" : val); setPage(1); }}>
                                 <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
                                   <SelectValue placeholder="Any">{intent === "buy" ? "Sale" : intent === "rent" ? "Rent" : intent === "lease" ? "Lease" : "Any"}</SelectValue>
                                 </SelectTrigger>
-                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-[60]">
+                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
                                   <SelectItem value="all">Any</SelectItem>
                                   <SelectItem value="buy">For Sale</SelectItem>
                                   <SelectItem value="rent">For Rent</SelectItem>
@@ -1108,7 +1437,7 @@ export const ClientDashboard: React.FC = () => {
                                 <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
                                   <SelectValue placeholder="All">{category === "apartment" ? "Apt" : category === "villa_house" ? "Villa" : category === "land" ? "Land" : category === "commercial" ? "Comm" : category === "pg" ? "PG" : category === "hostel" ? "Hostel" : "All"}</SelectValue>
                                 </SelectTrigger>
-                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-[60]">
+                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
                                   <SelectItem value="all">All</SelectItem>
                                   <SelectItem value="apartment">Apartment</SelectItem>
                                   <SelectItem value="villa_house">Villa / House</SelectItem>
@@ -1123,13 +1452,13 @@ export const ClientDashboard: React.FC = () => {
 
                           {/* Mobile-only: Price + Location in 2-col grid */}
                           <div className="grid grid-cols-2 gap-2 lg:hidden">
-                            <div className="flex flex-col gap-1">
+                            <div className={cn("flex flex-col gap-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
                               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Price</span>
                               <Select value={priceRange === "all" ? undefined : priceRange} onValueChange={(val) => { setPriceRange(val || "all"); setPage(1); }}>
                                 <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
                                   <SelectValue placeholder="Any">{priceRange === "under-50k" ? "<₹50k" : priceRange === "50k-5l" ? "₹50k-5L" : priceRange === "5l-15l" ? "₹5-15L" : priceRange === "15l-50l" ? "₹15-50L" : priceRange === "50l-1cr" ? "₹50L-1Cr" : priceRange === "above-1cr" ? ">₹1Cr" : "Any"}</SelectValue>
                                 </SelectTrigger>
-                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-[60]">
+                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
                                   <SelectItem value="all">Any Price</SelectItem>
                                   <SelectItem value="under-50k">Under ₹50k</SelectItem>
                                   <SelectItem value="50k-5l">₹50k - ₹5L</SelectItem>
@@ -1171,13 +1500,13 @@ export const ClientDashboard: React.FC = () => {
 
                           {/* Radius + Limit in 2-col */}
                           <div className="grid grid-cols-2 gap-2">
-                            <div className="flex flex-col gap-1">
+                            <div className={cn("flex flex-col gap-1", !gpsActive && "opacity-30 pointer-events-none select-none relative")}>
                               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Radius</span>
                               <Select value={String(radius)} onValueChange={(val) => { setRadius(Number(val || "20")); setPage(1); }} disabled={!gpsActive}>
                                 <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px] disabled:opacity-50">
                                   <SelectValue placeholder="20 km" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-[60]">
+                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
                                   <SelectItem value="5">5 km</SelectItem>
                                   <SelectItem value="10">10 km</SelectItem>
                                   <SelectItem value="20">20 km</SelectItem>
@@ -1192,7 +1521,7 @@ export const ClientDashboard: React.FC = () => {
                                 <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
                                   <SelectValue placeholder="12" />
                                 </SelectTrigger>
-                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-[60]">
+                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
                                   <SelectItem value="12">12</SelectItem>
                                   <SelectItem value="24">24</SelectItem>
                                   <SelectItem value="48">48</SelectItem>
@@ -1222,7 +1551,7 @@ export const ClientDashboard: React.FC = () => {
         </div>
 
         {/* Active Filter Chips — visible on all screen sizes */}
-        {(intent || category || city || searchQuery || priceRange !== "all" || gpsActive || limit !== 12) && (
+        {(city || searchQuery || limit !== 12 || (searchMode !== "agencies" && (intent || category || priceRange !== "all" || gpsActive))) && (
           <div className="hidden lg:flex items-center gap-2 mt-4 flex-wrap relative z-20 w-full px-0">
             <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mr-1">Active:</span>
             
@@ -1233,28 +1562,28 @@ export const ClientDashboard: React.FC = () => {
               </span>
             )}
 
-            {intent && (
+            {intent && searchMode !== "agencies" && (
               <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
                 Intent: {intent === "buy" ? "For Sale" : intent === "rent" ? "For Rent" : "For Lease"}
                 <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => { setIntent(""); setPage(1); }} />
               </span>
             )}
 
-            {category && (
+            {category && searchMode !== "agencies" && (
               <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
                 Type: {category.replace("_", " ")}
                 <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => { setCategory(""); setPage(1); }} />
               </span>
             )}
 
-            {city && !gpsActive && (
+            {city && (
               <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
                 Location: {city}
                 <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => { setCity(""); setSearchCity(""); setPage(1); }} />
               </span>
             )}
 
-            {priceRange !== "all" && (
+            {priceRange !== "all" && searchMode !== "agencies" && (
               <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
                 Budget: {
                   priceRange === "under-50k" ? "Under ₹50k" :
@@ -1295,43 +1624,47 @@ export const ClientDashboard: React.FC = () => {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 mt-10 border-b border-slate-200/60 pb-4">
           <div className="text-left">
             <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight capitalize">
-              {category ? category.replace("_", " / ") : "Residence"}{city ? ` in ${city}` : ""}
+              {searchMode === "agencies" ? "Verified Agencies" : (category ? category.replace("_", " / ") : "Residence")}{city ? ` in ${city}` : ""}
             </h2>
             <p className="text-slate-500 text-xs mt-0.5 font-semibold">
-              We found <span className="font-extrabold text-slate-900">{filteredProperties.length}</span> {filteredProperties.length === 1 ? "property" : "properties"}
+              {searchMode === "agencies" ? (
+                <>We found <span className="font-extrabold text-slate-900">{filteredAgencies.length}</span> {filteredAgencies.length === 1 ? "agency" : "agencies"}</>
+              ) : (
+                <>We found <span className="font-extrabold text-slate-900">{filteredProperties.length}</span> {filteredProperties.length === 1 ? "property" : "properties"}</>
+              )}
             </p>
           </div>
 
           <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end shrink-0">
-            {properties.length > 0 && (
+            {((searchMode === "agencies" && agencies.length > 0) || (searchMode !== "agencies" && properties.length > 0)) && (
               <span className="text-[10px] text-brand-green px-2.5 py-1 rounded-full font-black uppercase tracking-wider">
                 PAGE {page}
               </span>
             )}
             
-            <div className="flex items-center gap-1 text-xs font-semibold text-slate-500 shrink-0 whitespace-nowrap">
-              <span className="shrink-0">Sort By:</span>
-              <Select
-                value={sortBy || "newest"}
-                onValueChange={(val) => {
-                  setSortBy(val || "newest");
-                  setPage(1);
-                }}
-              >
-                <SelectTrigger className="w-auto border-none bg-transparent hover:bg-slate-100/50 rounded-md h-7 px-1.5 font-bold text-slate-800 text-xs focus:ring-0 focus:ring-transparent focus:ring-offset-0 cursor-pointer flex items-center gap-1 shrink-0 whitespace-nowrap">
-                  <SelectValue placeholder="Default">
-                    {sortBy === "price_asc" ? "Low to High" : sortBy === "price_desc" ? "High to Low" : "newest"}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-30">
-                  <SelectItem value="newest">newest</SelectItem>
-                  <SelectItem value="price_asc">Low to High</SelectItem>
-                  <SelectItem value="price_desc">High to Low</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-
+            {searchMode !== "agencies" && (
+              <div className="flex items-center gap-1 text-xs font-semibold text-slate-500 shrink-0 whitespace-nowrap">
+                <span className="shrink-0">Sort By:</span>
+                <Select
+                  value={sortBy || "newest"}
+                  onValueChange={(val) => {
+                    setSortBy(val || "newest");
+                    setPage(1);
+                  }}
+                >
+                  <SelectTrigger className="w-auto border-none bg-transparent hover:bg-slate-100/50 rounded-md h-7 px-1.5 font-bold text-slate-800 text-xs focus:ring-0 focus:ring-transparent focus:ring-offset-0 cursor-pointer flex items-center gap-1 shrink-0 whitespace-nowrap">
+                    <SelectValue placeholder="Default">
+                      {sortBy === "price_asc" ? "Low to High" : sortBy === "price_desc" ? "High to Low" : "newest"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-30">
+                    <SelectItem value="newest">newest</SelectItem>
+                    <SelectItem value="price_asc">Low to High</SelectItem>
+                    <SelectItem value="price_desc">High to Low</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
           </div>
         </div>
 
@@ -1342,6 +1675,203 @@ export const ClientDashboard: React.FC = () => {
                 <SkeletonCard key={i} />
               ))}
             </div>
+          ) : searchMode === "agencies" ? (
+            filteredAgencies.length === 0 ? (
+              /* Contextual Empty State for Agencies */
+              <div className="flex flex-col items-center justify-center border border-slate-100 bg-white rounded-[32px] p-16 text-center shadow-sm">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-50 text-slate-400 mb-6">
+                  <Building2 className="h-10 w-10 text-brand-green" />
+                </div>
+                
+                {searchQuery ? (
+                  <>
+                    <h3 className="text-xl font-bold text-slate-900">No agencies matched "{searchQuery}"</h3>
+                    <p className="text-slate-500 max-w-sm mt-1 text-sm">
+                      Try typing a different name or resetting the search input.
+                    </p>
+                    <Button 
+                      onClick={() => setSearchQuery("")}
+                      className="mt-6 bg-brand-green hover:bg-brand-green-hover text-white text-xs font-semibold rounded-full px-6"
+                    >
+                      Clear Search
+                    </Button>
+                  </>
+                ) : city ? (
+                  <>
+                    <h3 className="text-xl font-bold text-slate-900">No agencies found in "{city}"</h3>
+                    <p className="text-slate-500 max-w-sm mt-1 text-sm">
+                      Try searching for a different city or clearing the text filter.
+                    </p>
+                    <Button 
+                      onClick={() => { setCity(""); setSearchCity(""); }}
+                      className="mt-6 bg-brand-green hover:bg-brand-green-hover text-white text-xs font-semibold rounded-full px-6"
+                    >
+                      Clear Search
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-xl font-bold text-slate-900">No agencies listed yet</h3>
+                    <p className="text-slate-500 max-w-sm mt-1 text-sm">
+                      No agencies are currently active on the platform.
+                    </p>
+                  </>
+                )}
+              </div>
+            ) : (
+              <>
+                {/* Agency Directory Grid */}
+                <div className="grid gap-4 grid-cols-1 md:grid-cols-3 lg:grid-cols-4">
+                  {filteredAgencies.map((agency) => {
+                    const savedBanner = localStorage.getItem(`agency_banner_${agency.id}`);
+                    const savedLogo   = localStorage.getItem(`agency_logo_${agency.id}`);
+
+                    return (
+                      <div
+                        key={agency.id}
+                        onClick={() => navigate(`/agencies/${agency.id}`)}
+                        className="border border-slate-200 bg-white hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col group rounded-xl text-left cursor-pointer"
+                      >
+                        {/* Banner */}
+                        <div className="relative h-28 sm:h-32 shrink-0 z-0">
+                          {savedBanner ? (
+                            <img src={savedBanner} alt="banner" className="h-full w-full object-cover" />
+                          ) : (
+                            <div className="h-full w-full bg-linear-to-r from-[#014645] to-emerald-600 relative">
+                              <div className="absolute inset-0 opacity-[0.07] bg-[radial-gradient(#fff_1px,transparent_1px)] bg-size-[16px_16px]" />
+                            </div>
+                          )}
+
+                          {/* Verified badge */}
+                          {agency.verification_status === "verified" && (
+                            <div className="absolute top-2.5 right-2.5 z-10">
+                              <span className="inline-flex items-center gap-1 rounded-md bg-white/95 text-emerald-700 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide border border-emerald-100 shadow-sm backdrop-blur-sm">
+                                <Shield className="h-3 w-3 fill-emerald-500 text-white shrink-0" /> Verified
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Logo + name row — relative z-10 so logo stays ON TOP of banner */}
+                        <div className="px-5 sm:px-6 pb-5 relative z-10 flex-1 flex flex-col justify-between">
+                          <div>
+                            {/* Logo avatar overlapping banner bottom-left with z-20 */}
+                            <div className="flex items-end justify-between relative z-20" style={{ marginTop: -28 }}>
+                              <div className="h-14 w-14 rounded-full border-3 border-white shadow-md overflow-hidden bg-slate-800 flex items-center justify-center shrink-0 relative z-20">
+                                {savedLogo ? (
+                                  <img src={savedLogo} alt={agency.display_name} className="h-full w-full object-cover" />
+                                ) : agency.logo_key ? (
+                                  <img src={agency.logo_key} alt={agency.display_name} className="h-full w-full object-cover" />
+                                ) : (
+                                  <Building2 className="h-6 w-6 text-white/60" />
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Name + location */}
+                            <h3 className="text-base font-bold text-slate-900 line-clamp-1 leading-snug mt-3 my-0 group-hover:text-brand-green transition-colors">
+                              {agency.display_name}
+                            </h3>
+                            <div className="text-xs text-slate-400 flex items-center gap-1 mt-1 font-medium">
+                              <MapPin className="h-3.5 w-3.5 shrink-0" />
+                              <span className="truncate">{agency.location_area}, {agency.location_city}</span>
+                            </div>
+
+                            {/* About snippet */}
+                            <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed mt-2.5">
+                              {agency.about || "Real estate agency on Letsellr."}
+                            </p>
+                          </div>
+
+                          {/* Footer row */}
+                          <div className="border-t border-slate-100 pt-3 mt-4 flex items-center justify-between">
+                            <div>
+                              <div className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Inventory</div>
+                              <div className="text-xs font-bold text-[#014645] mt-0.5">
+                                {agency.total_listings} {agency.total_listings === 1 ? "Property" : "Properties"}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              className="bg-brand-green hover:bg-brand-green-hover text-white text-xs font-bold px-5 py-2 rounded-md transition-all flex items-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
+                            >
+                              View <span className="font-mono text-xs leading-none">→</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Pagination Controls */}
+                <Pagination className="mt-12 border-t border-slate-200/80 pt-8">
+                  <PaginationContent>
+                    <PaginationItem>
+                      <PaginationPrevious
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (page > 1) setPage(p => p - 1);
+                        }}
+                        className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                    
+                    {page > 1 && (
+                      <PaginationItem>
+                        <PaginationLink
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setPage(page - 1);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          {page - 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    )}
+
+                    <PaginationItem>
+                      <PaginationLink
+                        href="#"
+                        isActive
+                        onClick={(e) => e.preventDefault()}
+                      >
+                        {page}
+                      </PaginationLink>
+                    </PaginationItem>
+
+                    {agencies.length >= 20 && (
+                      <PaginationItem>
+                        <PaginationLink
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            setPage(page + 1);
+                          }}
+                          className="cursor-pointer"
+                        >
+                          {page + 1}
+                        </PaginationLink>
+                      </PaginationItem>
+                    )}
+
+                    <PaginationItem>
+                      <PaginationNext
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          if (agencies.length >= 20) setPage(p => p + 1);
+                        }}
+                        className={agencies.length < 20 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      />
+                    </PaginationItem>
+                  </PaginationContent>
+                </Pagination>
+              </>
+            )
           ) : filteredProperties.length === 0 ? (
             /* Contextual Empty State */
             <div className="flex flex-col items-center justify-center border border-slate-100 bg-white rounded-[32px] p-16 text-center shadow-sm">
@@ -1457,10 +1987,16 @@ export const ClientDashboard: React.FC = () => {
                         </span>
                       </div>
                       
-                      {prop.owner_role === "agency" && (
+                      {prop.owner_role === "agency" ? (
                         <div className="absolute bottom-3 left-3">
-                          <span className="inline-flex items-center gap-1 rounded bg-amber-500 text-white px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-widest">
+                          <span className="inline-flex items-center gap-1 rounded bg-amber-600 text-white px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest shadow-sm">
                             Agency
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="absolute bottom-3 left-3">
+                          <span className="inline-flex items-center gap-1 rounded bg-emerald-600 text-white px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest shadow-sm">
+                            Direct Owner
                           </span>
                         </div>
                       )}
@@ -1584,12 +2120,12 @@ export const ClientDashboard: React.FC = () => {
       </main>
       )}
 
-      {viewMode === "list" && (
-        <div className={cn("fixed bottom-6 right-6 z-50", showAdvancedPopover && "hidden lg:block")}>
+      {viewMode === "list" && searchMode === "properties" && (
+        <div className={cn("fixed bottom-6 right-6 z-40", showAdvancedPopover && "hidden lg:block")}>
           <button
             type="button"
             onClick={() => setViewMode("map")}
-            className="bg-brand-green hover:bg-brand-green-hover text-white px-3.5 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5 hover:scale-105 active:scale-95 transition-all cursor-pointer border border-[#26533c]/60"
+            className="bg-brand-green hover:bg-brand-green-hover text-white px-3.5 py-2 rounded-full text-xs font-bold shadow-lg flex items-center gap-1.5 hover:scale-105 active:scale-95 transition-all cursor-pointer border border-brand-green"
           >
             <MapIcon className="h-3.5 w-3.5" />
             <span>Map View</span>
@@ -1611,7 +2147,7 @@ export const OwnerDashboard: React.FC = () => {
             <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Property Management</h1>
             <p className="mt-1 text-sm text-slate-500">List and manage your property portfolio.</p>
           </div>
-          <Button className="bg-[#308178] hover:bg-[#25645d] text-white flex items-center gap-1.5 self-start">
+          <Button className="bg-brand-green hover:bg-brand-green-hover text-white flex items-center gap-1.5 self-start">
             <PlusCircle className="h-4.5 w-4.5" />
             Add Property
           </Button>
@@ -1624,7 +2160,7 @@ export const OwnerDashboard: React.FC = () => {
               <CardDescription className="font-semibold uppercase tracking-wider text-slate-400">
                 Active Listings
               </CardDescription>
-              <CardTitle className="text-3xl font-extrabold text-[#308178]">0 Listings</CardTitle>
+              <CardTitle className="text-3xl font-extrabold text-brand-deep-green">0 Listings</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-xs text-slate-400">Properties visible on search.</p>
@@ -1635,7 +2171,7 @@ export const OwnerDashboard: React.FC = () => {
               <CardDescription className="font-semibold uppercase tracking-wider text-slate-400">
                 Leads / Inquiries
               </CardDescription>
-              <CardTitle className="text-3xl font-extrabold text-[#308178]">0 Leads</CardTitle>
+              <CardTitle className="text-3xl font-extrabold text-brand-deep-green">0 Leads</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-xs text-slate-400">Client messages waiting response.</p>
@@ -1646,7 +2182,7 @@ export const OwnerDashboard: React.FC = () => {
               <CardDescription className="font-semibold uppercase tracking-wider text-slate-400">
                 Total Views
               </CardDescription>
-              <CardTitle className="text-3xl font-extrabold text-[#308178]">0 Views</CardTitle>
+              <CardTitle className="text-3xl font-extrabold text-brand-deep-green">0 Views</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-xs text-slate-400">Number of users who saw listings.</p>
@@ -1656,14 +2192,14 @@ export const OwnerDashboard: React.FC = () => {
 
         {/* Empty state management panel */}
         <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 bg-white rounded-xl p-12 text-center">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-teal-50 text-[#308178] mb-4">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-brand-light-green text-brand-deep-green mb-4">
             <Home className="h-8 w-8" />
           </div>
           <h3 className="text-lg font-bold text-slate-900">No properties listed yet</h3>
           <p className="text-slate-500 max-w-sm mt-1 text-sm">
             Add properties to start showcasing them to active buyers and renters.
           </p>
-          <Button className="mt-6 bg-[#308178] hover:bg-[#25645d] text-white">
+          <Button className="mt-6 bg-brand-green hover:bg-brand-green-hover text-white">
             Add Your First Listing
           </Button>
         </div>
@@ -1688,25 +2224,25 @@ export const AdminDashboard: React.FC = () => {
           <Card className="border-slate-100 bg-white">
             <CardHeader className="pb-1">
               <CardDescription className="font-semibold uppercase tracking-wider text-slate-400">Total Users</CardDescription>
-              <CardTitle className="text-2xl font-bold text-[#308178]">42</CardTitle>
+              <CardTitle className="text-2xl font-bold text-brand-deep-green">42</CardTitle>
             </CardHeader>
           </Card>
           <Card className="border-slate-100 bg-white">
             <CardHeader className="pb-1">
               <CardDescription className="font-semibold uppercase tracking-wider text-slate-400">Agencies</CardDescription>
-              <CardTitle className="text-2xl font-bold text-[#308178]">6</CardTitle>
+              <CardTitle className="text-2xl font-bold text-brand-deep-green">6</CardTitle>
             </CardHeader>
           </Card>
           <Card className="border-slate-100 bg-white">
             <CardHeader className="pb-1">
               <CardDescription className="font-semibold uppercase tracking-wider text-slate-400">Owners</CardDescription>
-              <CardTitle className="text-2xl font-bold text-[#308178]">14</CardTitle>
+              <CardTitle className="text-2xl font-bold text-brand-deep-green">14</CardTitle>
             </CardHeader>
           </Card>
           <Card className="border-slate-100 bg-white">
             <CardHeader className="pb-1">
               <CardDescription className="font-semibold uppercase tracking-wider text-slate-400">Active Listings</CardDescription>
-              <CardTitle className="text-2xl font-bold text-[#308178]">112</CardTitle>
+              <CardTitle className="text-2xl font-bold text-brand-deep-green">112</CardTitle>
             </CardHeader>
           </Card>
         </div>
@@ -1741,7 +2277,7 @@ export const AdminDashboard: React.FC = () => {
                       <td className="px-6 py-4 capitalize">{u.role}</td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                          u.status === "Verified" ? "bg-teal-50 text-[#308178]" : "bg-amber-50 text-amber-800"
+                          u.status === "Verified" ? "bg-brand-light-green text-brand-deep-green" : "bg-amber-50 text-amber-800"
                         }`}>
                           {u.status}
                         </span>

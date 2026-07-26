@@ -71,9 +71,9 @@ export const RegisterOwnerAgency: React.FC = () => {
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center p-6 bg-white font-sans text-black">
-      {/* Outer Card Wrapper (32px padding, subtle border, shadow-sm) */}
-      <Card className="w-full max-w-2xl border border-slate-200 bg-white shadow-sm p-8 rounded-xl">
+    <div className="relative flex min-h-screen flex-col items-center justify-center px-3 py-6 sm:p-6 bg-white font-sans text-black">
+      {/* Outer Card Wrapper (responsive padding, subtle border, shadow-sm) */}
+      <Card className="w-full max-w-2xl border border-slate-200 bg-white shadow-sm p-4 sm:p-8 rounded-xl">
         {/* Content Header */}
         <div className="flex flex-col items-center justify-center text-center space-y-2 mb-6">
           <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 text-center">
@@ -90,27 +90,27 @@ export const RegisterOwnerAgency: React.FC = () => {
             {/* Role Selection */}
             <Field className="sm:col-span-2">
               <FieldLabel htmlFor="role-select">Partner Role</FieldLabel>
-              <div id="role-select" className="grid grid-cols-2 gap-4 mt-1">
+              <div id="role-select" className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
                 <div
                   onClick={() => setValue("role", "owner")}
                   className={`flex cursor-pointer items-center justify-center gap-2.5 rounded-xl border p-4 transition-all duration-200 h-14 ${
                     selectedRole === "owner"
-                      ? "border-[#308178] bg-[#308178]/10 text-[#308178]"
+                      ? "border-brand-green bg-brand-light-green text-brand-deep-green"
                       : "border-slate-200 hover:bg-slate-50 text-slate-500 bg-white"
                   }`}
                 >
-                  <User className={`h-5 w-5 ${selectedRole === "owner" ? "text-[#308178]" : "text-slate-500"}`} />
+                  <User className={`h-5 w-5 ${selectedRole === "owner" ? "text-brand-deep-green" : "text-slate-500"}`} />
                   <span className="font-semibold text-sm">Individual Owner</span>
                 </div>
                 <div
                   onClick={() => setValue("role", "agency")}
                   className={`flex cursor-pointer items-center justify-center gap-2.5 rounded-xl border p-4 transition-all duration-200 h-14 ${
                     selectedRole === "agency"
-                      ? "border-[#308178] bg-[#308178]/10 text-[#308178]"
+                      ? "border-brand-green bg-brand-light-green text-brand-deep-green"
                       : "border-slate-200 hover:bg-slate-50 text-slate-500 bg-white"
                   }`}
                 >
-                  <Building2 className={`h-5 w-5 ${selectedRole === "agency" ? "text-[#308178]" : "text-slate-500"}`} />
+                  <Building2 className={`h-5 w-5 ${selectedRole === "agency" ? "text-brand-deep-green" : "text-slate-500"}`} />
                   <span className="font-semibold text-sm">Agency / Broker</span>
                 </div>
               </div>
@@ -231,11 +231,11 @@ export const RegisterOwnerAgency: React.FC = () => {
             {/* Conditional Agency Fields */}
             {selectedRole === "agency" && (
               <div className="col-span-1 sm:col-span-2 mt-2">
-                {/* Agency Details Card (same border, radius, padding as outer form container) */}
-                <Card className="border border-slate-200 bg-white p-8 rounded-xl shadow-sm space-y-6">
+                {/* Agency Details Card (responsive padding, border, radius) */}
+                <Card className="border border-slate-200 bg-white p-4 sm:p-6 rounded-xl shadow-sm space-y-4 sm:space-y-6">
                   {/* Active-role style accent bar for header */}
-                  <div className="border-b-4 border-b-[#308178] pb-1.5 w-fit">
-                    <h3 className="text-xs font-bold text-[#308178] uppercase tracking-wider">
+                  <div className="border-b-4 border-b-brand-green pb-1.5 w-fit">
+                    <h3 className="text-xs font-bold text-brand-deep-green uppercase tracking-wider">
                       Agency Profile Details
                     </h3>
                   </div>
@@ -277,7 +277,7 @@ export const RegisterOwnerAgency: React.FC = () => {
                             }
                           }}
                         />
-                        <Button type="button" onClick={addArea} className="bg-[#308178] hover:bg-[#25645d] text-white h-11 px-4 rounded-xl">
+                        <Button type="button" onClick={addArea} className="bg-brand-green hover:bg-brand-green-hover text-white h-11 px-4 rounded-xl border-0">
                           <Plus className="h-4 w-4" />
                         </Button>
                       </div>
@@ -285,13 +285,13 @@ export const RegisterOwnerAgency: React.FC = () => {
                         {areas.map((area, index) => (
                           <span
                             key={index}
-                            className="inline-flex items-center gap-1 rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-[#308178]"
+                            className="inline-flex items-center gap-1 rounded-full bg-brand-light-green px-3 py-1 text-xs font-semibold text-brand-deep-green"
                           >
                             {area}
                             <button
                               type="button"
                               onClick={() => removeArea(index)}
-                              className="text-teal-600 hover:text-teal-800"
+                              className="text-brand-deep-green/80 hover:text-brand-deep-green"
                             >
                               <X className="h-3 w-3" />
                             </button>
@@ -310,7 +310,7 @@ export const RegisterOwnerAgency: React.FC = () => {
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-11 rounded-xl bg-[#308178] hover:bg-[#25645d] text-white font-semibold transition-colors"
+              className="w-full h-11 rounded-xl bg-brand-green hover:bg-brand-green-hover text-white font-semibold transition-colors border-0"
             >
               {isSubmitting ? "Sending OTP..." : "Register Account"}
             </Button>
@@ -320,7 +320,7 @@ export const RegisterOwnerAgency: React.FC = () => {
               <button
                 type="button"
                 onClick={() => navigate("/login")}
-                className="text-[#308178] font-bold hover:underline ml-1 focus:outline-none"
+                className="text-brand-deep-green font-bold hover:underline ml-1 focus:outline-none"
               >
                 Sign In
               </button>
