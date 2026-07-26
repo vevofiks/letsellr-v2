@@ -21,6 +21,7 @@ from app.modules.properties.schemas import (
     PropertyResponse,
     PropertyUpdate,
     NearbyLocationsResponse,
+    PropertyReportCreate,
 )
 from app.modules.properties.service import PropertyService
 from app.modules.users.models import User
@@ -95,10 +96,10 @@ async def get_nearby_locations(
     db: DbSession,
     lat: float = Query(..., description="Latitude"),
     lng: float = Query(..., description="Longitude"),
-    radius: int = Query(5000, description="Radius in meters (default 5000 = 5km)"),
+    radius: float = Query(5000, description="Radius in meters (e.g. 5000 = 5km) or kilometers"),
 ):
     """
-    Get up to 5 nearby locations (Places) within a given radius using Google Places API.
+    Get live properties and places within a given preferred radius (in meters or km) from coordinates.
     """
     service = PropertyService(db)
     return await service.get_nearby_locations(lat, lng, radius)
@@ -159,3 +160,29 @@ async def delete_property(
     """Remove own listing. Only the listing owner or an admin may delete."""
     service = PropertyService(db)
     await service.delete_property(property_id, current_user)
+
+
+@router.post("/{property_id}/report", status_code=status.HTTP_201_CREATED)
+async def report_property(
+    property_id: UUID,
+    data: PropertyReportCreate,
+    db: DbSession,
+    current_user: CurrentUser,
+):
+    """Report a property listing."""
+    service = PropertyService(db)
+    await service.report_property(property_id, data.reason, data.description, current_user.id)
+    return {"message": "Report submitted successfully"}
+
+@router.get("/config/types", tags=["Properties"])
+async def list_active_property_types(db: DbSession):
+    """Get active property types for listing form."""
+    from sqlalchemy import select
+    from app.modules.properties.models import PropertyType
+    from app.modules.admin.schemas import PropertyTypeResponse
+    
+    result = await db.execute(select(PropertyType).where(PropertyType.is_active == True).order_by(PropertyType.label.asc()))
+    types = result.scalars().all()
+    return [PropertyTypeResponse.model_validate(t) for t in types]
+
+

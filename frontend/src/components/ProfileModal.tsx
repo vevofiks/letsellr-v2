@@ -110,6 +110,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
       async (position) => {
         try {
           const { latitude, longitude } = position.coords;
+          localStorage.setItem("user_lat", latitude.toString());
+          localStorage.setItem("user_lng", longitude.toString());
+
           const response = await fetch(
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`
           );

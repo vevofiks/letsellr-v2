@@ -1,20 +1,22 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation, Outlet } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { adminService } from "@/services/adminService";
 import {
   LayoutDashboard,
   Building2,
   Users,
   ShieldAlert,
   Settings,
-  HelpCircle,
   Bell,
   LogOut,
   Search,
   ChevronDown,
-  Sparkles,
   Layers,
-  MapPin
+  MapPin,
+  CircleDot,
+  HelpCircle,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,6 +25,17 @@ export const AdminLayout: React.FC = () => {
   const location = useLocation();
   const { user, logout } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
+  const [pendingCount, setPendingCount] = useState<number>(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    adminService
+      .getDashboardStats()
+      .then((stats) => setPendingCount(stats.pending_property_reviews))
+      .catch((err) =>
+        console.error("Failed to fetch sidebar pending stats:", err)
+      );
+  }, [location.pathname]);
 
   const handleLogout = () => {
     logout();
@@ -31,261 +44,374 @@ export const AdminLayout: React.FC = () => {
   };
 
   const isActive = (path: string) => {
-    if (path === "/admin-platform/dashboard" && (location.pathname === "/admin-platform" || location.pathname === "/admin-platform/dashboard")) {
+    if (
+      path === "/admin-platform/dashboard" &&
+      (location.pathname === "/admin-platform" ||
+        location.pathname === "/admin-platform/dashboard")
+    ) {
       return true;
     }
-    return location.pathname.startsWith(path) && path !== "/admin-platform/dashboard";
+    return (
+      location.pathname.startsWith(path) &&
+      path !== "/admin-platform/dashboard"
+    );
   };
 
+  const currentSection =
+    location.pathname.split("/")[2]?.replace(/-/g, " ") || "dashboard";
+
+  const navItemClass = (path: string) =>
+    `group flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-150 cursor-pointer ${
+      isActive(path)
+        ? "bg-[#23D283]/10 text-[#0B6E4F] font-bold"
+        : "text-[#6b6375] hover:bg-[#f1f5f9] hover:text-[#08060d]"
+    }`;
+
   return (
-    <div className="min-h-screen bg-[#f0f2f5] p-3 sm:p-5 font-sans text-slate-800 flex flex-col">
-      
-      {/* Outer App Window Frame */}
-      <div className="bg-slate-100/70 border border-slate-200/80 rounded-3xl p-3 sm:p-4 flex-1 flex flex-col lg:flex-row gap-4 shadow-xs">
-        
-        {/* Left Navigation Sidebar */}
-        <aside className="bg-white border border-slate-200/70 rounded-2xl p-4 flex flex-col justify-between w-full lg:w-64 shrink-0 shadow-xs">
-          
-          <div className="space-y-5">
-            {/* App Brand Header */}
-            <div className="flex items-center justify-between pb-1 px-1">
-              <Link to="/admin-platform/dashboard" className="flex items-center gap-2.5">
-                <div className="bg-[#086942] text-white p-2 rounded-xl flex items-center justify-center shadow-xs">
-                  <img src="/logo.png" alt="Letsellr Logo" className="h-5 w-5 brightness-200" />
+    <div
+      className="min-h-screen flex"
+      style={{ background: "#f1f5f9", fontFamily: "'DM Sans', system-ui, 'Segoe UI', Roboto, sans-serif" }}
+    >
+      {/* ── Mobile Sidebar Overlay ── */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* ══════════════════════════════════════
+          UNIFIED APP SHELL — white card, full height
+          Sidebar + TopNav are ONE continuous surface
+      ══════════════════════════════════════ */}
+      <div
+        className="flex flex-1 m-3 rounded-2xl overflow-hidden shadow-lg"
+        style={{ background: "#ffffff", height: "calc(100vh - 24px)" }}
+      >
+        {/* ── LEFT SIDEBAR ── */}
+        <aside
+          className={`
+            fixed lg:static inset-y-0 left-0 z-50
+            flex flex-col w-64 shrink-0
+            border-r
+            transition-transform duration-200
+            ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+          `}
+          style={{
+            background: "oklch(0.985 0 0)",
+            borderColor: "oklch(0.922 0 0)",
+          }}
+        >
+          {/* Brand Logo */}
+          <div
+            className="flex items-center gap-3 px-5 py-5 border-b"
+            style={{ borderColor: "oklch(0.922 0 0)" }}
+          >
+            <div
+              className="h-8 w-8 rounded-xl flex items-center justify-center shadow-sm shrink-0"
+              style={{ background: "#23D283" }}
+            >
+              <img
+                src="/logo.png"
+                alt="Letsellr"
+                className="h-5 w-5 brightness-0 invert"
+              />
+            </div>
+            <div className="leading-none">
+              <span
+                className="text-[15px] font-black tracking-tight block"
+                style={{ color: "#08060d" }}
+              >
+                Letsellr
+              </span>
+              <span
+                className="text-[11px] font-semibold uppercase tracking-widest"
+                style={{ color: "#23D283" }}
+              >
+                Admin
+              </span>
+            </div>
+          </div>
+
+          {/* Search */}
+          <div className="px-4 pt-4 pb-2">
+            <div className="relative">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5"
+                style={{ color: "#6b6375" }}
+              />
+              <input
+                type="text"
+                placeholder="Search… ⌘K"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full rounded-xl pl-9 pr-3 py-2 text-[13px] font-medium transition-all focus:outline-none"
+                style={{
+                  background: "#f1f5f9",
+                  border: "1px solid #e2e8f0",
+                  color: "#08060d",
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.borderColor = "#23D283";
+                  e.currentTarget.style.boxShadow =
+                    "0 0 0 3px rgba(35,210,131,0.15)";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.background = "#f1f5f9";
+                  e.currentTarget.style.borderColor = "#e2e8f0";
+                  e.currentTarget.style.boxShadow = "none";
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Nav Groups — scrollable */}
+          <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-5">
+            {/* MAIN MENU */}
+            <div className="space-y-0.5">
+              <p
+                className="text-[10px] font-black uppercase tracking-widest px-3 mb-2"
+                style={{ color: "#6B7280" }}
+              >
+                Main Menu
+              </p>
+
+              <Link to="/admin-platform/dashboard" className={navItemClass("/admin-platform/dashboard")}>
+                <div className="flex items-center gap-2.5">
+                  {isActive("/admin-platform/dashboard") && (
+                    <span className="absolute left-3 w-0.5 h-5 rounded-full bg-[#23D283]" />
+                  )}
+                  <LayoutDashboard className="h-4 w-4 shrink-0" />
+                  <span>Dashboard</span>
                 </div>
-                <span className="text-lg font-black text-slate-900 tracking-tight">
-                  Letsellr <span className="text-[#086942]">Admin</span>
-                </span>
+              </Link>
+
+              <Link to="/admin-platform/properties" className={navItemClass("/admin-platform/properties")}>
+                <div className="flex items-center gap-2.5">
+                  <Building2 className="h-4 w-4 shrink-0" />
+                  <span>Properties & Queue</span>
+                </div>
+                {pendingCount > 0 && (
+                  <span
+                    className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                    style={{
+                      background: "#FDE68A",
+                      color: "#92400E",
+                    }}
+                  >
+                    {pendingCount}
+                  </span>
+                )}
+              </Link>
+
+              <Link to="/admin-platform/users" className={navItemClass("/admin-platform/users")}>
+                <div className="flex items-center gap-2.5">
+                  <Users className="h-4 w-4 shrink-0" />
+                  <span>Users & Agencies</span>
+                </div>
               </Link>
             </div>
 
-            {/* Quick Search */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search... ⌘K"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-100/70 border border-slate-200/60 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-800 font-medium placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-[#086942]/20 focus:border-[#086942] transition-all"
-              />
+            {/* MODERATION */}
+            <div className="space-y-0.5">
+              <p
+                className="text-[10px] font-black uppercase tracking-widest px-3 mb-2"
+                style={{ color: "#6B7280" }}
+              >
+                Moderation
+              </p>
+
+
+              <Link to="/admin-platform/categories" className={navItemClass("/admin-platform/categories")}>
+                <div className="flex items-center gap-2.5">
+                  <Layers className="h-4 w-4 shrink-0" />
+                  <span>Categories & Specs</span>
+                </div>
+              </Link>
+
+              <Link to="/admin-platform/locations" className={navItemClass("/admin-platform/locations")}>
+                <div className="flex items-center gap-2.5">
+                  <MapPin className="h-4 w-4 shrink-0" />
+                  <span>Location Management</span>
+                </div>
+              </Link>
+
+              <Link to="/admin-platform/reports" className={navItemClass("/admin-platform/reports")}>
+                <div className="flex items-center gap-2.5">
+                  <ShieldAlert className="h-4 w-4 shrink-0" />
+                  <span>Reports & Flags</span>
+                </div>
+              </Link>
+
             </div>
 
-            {/* Navigation Groups */}
-            <nav className="space-y-4 text-left">
-              
-              {/* Group 1: MAIN MENU */}
-              <div className="space-y-1">
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-3 block mb-1.5">
-                  Main Menu
-                </span>
+            {/* GENERAL */}
+            <div className="space-y-0.5">
+              <p
+                className="text-[10px] font-black uppercase tracking-widest px-3 mb-2"
+                style={{ color: "#6B7280" }}
+              >
+                General
+              </p>
 
-                <Link
-                  to="/admin-platform/dashboard"
-                  className={`group flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-all ${
-                    isActive("/admin-platform/dashboard")
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <LayoutDashboard className="h-4 w-4 shrink-0" />
-                    <span>Dashboard</span>
-                  </div>
-                </Link>
-
-                <Link
-                  to="/admin-platform/properties"
-                  className={`group flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    isActive("/admin-platform/properties")
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Building2 className="h-4 w-4 shrink-0" />
-                    <span>Properties & Queue</span>
-                  </div>
-                  <span className="bg-emerald-100 text-[#086942] font-black text-[10px] px-2 py-0.5 rounded-full">
-                    8
-                  </span>
-                </Link>
-
-                <Link
-                  to="/admin-platform/users"
-                  className={`group flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    isActive("/admin-platform/users")
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Users className="h-4 w-4 shrink-0" />
-                    <span>Users & Agencies</span>
-                  </div>
-                </Link>
-              </div>
-
-              {/* Group 2: MODERATION */}
-              <div className="space-y-1 pt-2">
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-3 block mb-1.5">
-                  Moderation
-                </span>
-
-                <Link
-                  to="/admin-platform/reports"
-                  className={`group flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    isActive("/admin-platform/reports")
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <ShieldAlert className="h-4 w-4 shrink-0" />
-                    <span>Reports & Flags</span>
-                  </div>
-                </Link>
-
-                <Link
-                  to="/admin-platform/categories"
-                  className={`group flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    isActive("/admin-platform/categories")
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Layers className="h-4 w-4 shrink-0" />
-                    <span>Categories & Specs</span>
-                  </div>
-                </Link>
-
-                <Link
-                  to="/admin-platform/locations"
-                  className={`group flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    isActive("/admin-platform/locations")
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <MapPin className="h-4 w-4 shrink-0" />
-                    <span>Location Management</span>
-                  </div>
-                </Link>
-              </div>
-
-              {/* Group 3: GENERAL */}
-              <div className="space-y-1 pt-2">
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-3 block mb-1.5">
-                  General
-                </span>
-
-                <Link
-                  to="/admin-platform/settings"
-                  className={`group flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    isActive("/admin-platform/settings")
-                      ? "bg-slate-900 text-white shadow-sm"
-                      : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-900"
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Settings className="h-4 w-4 shrink-0" />
-                    <span>Settings</span>
-                  </div>
-                </Link>
-
-                <button
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer text-left"
-                >
-                  <LogOut className="h-4 w-4 shrink-0" />
-                  <span>Log out</span>
-                </button>
-              </div>
-
-            </nav>
-          </div>
-
-          {/* Sidebar Bottom Banner Card */}
-          <div className="mt-6 bg-slate-50 border border-slate-200/60 rounded-2xl p-3.5 space-y-2.5 text-left">
-            <div className="flex items-center gap-2 text-xs font-extrabold text-slate-900">
-              <Sparkles className="h-4 w-4 text-[#086942]" />
-              <span>Admin System Active</span>
+              <Link to="/admin-platform/settings" className={navItemClass("/admin-platform/settings")}>
+                <div className="flex items-center gap-2.5">
+                  <Settings className="h-4 w-4 shrink-0" />
+                  <span>Settings</span>
+                </div>
+              </Link>
             </div>
-            <p className="text-[11px] font-medium text-slate-500 leading-tight">
-              Higher productivity with full platform moderation controls.
-            </p>
-            <div className="pt-1 flex items-center gap-2">
-              <span className="bg-[#086942] text-white font-extrabold text-[10px] px-2.5 py-1 rounded-lg flex items-center gap-1 shadow-2xs">
-                🟢 Live v2.4
-              </span>
-              <span className="text-[10px] font-bold text-slate-400">All services ok</span>
+          </nav>
+
+          {/* Sidebar Footer */}
+          <div
+            className="p-4 border-t space-y-3"
+            style={{ borderColor: "oklch(0.922 0 0)" }}
+          >
+
+
+            {/* Admin profile row */}
+            <div className="flex items-center gap-2.5 px-1">
+              <div
+                className="h-8 w-8 rounded-full flex items-center justify-center font-black text-sm shrink-0"
+                style={{ background: "#23D283", color: "#ffffff" }}
+              >
+                {user?.name ? user.name[0].toUpperCase() : "A"}
+              </div>
+              <div className="flex-1 min-w-0 text-left">
+                <p
+                  className="text-[13px] font-bold leading-tight truncate"
+                  style={{ color: "#08060d" }}
+                >
+                  {user?.name || "Administrator"}
+                </p>
+                <p
+                  className="text-[10px] font-semibold uppercase tracking-wider leading-tight"
+                  style={{ color: "#6b6375" }}
+                >
+                  Super Admin
+                </p>
+              </div>
+              <button
+                onClick={handleLogout}
+                title="Log out"
+                className="h-8 w-8 rounded-lg flex items-center justify-center transition-colors hover:bg-rose-50 cursor-pointer shrink-0"
+              >
+                <LogOut className="h-4 w-4 text-rose-500" />
+              </button>
             </div>
           </div>
-
         </aside>
 
-        {/* Main Content Area */}
-        <main className="flex-1 bg-white border border-slate-200/70 rounded-2xl p-5 sm:p-7 flex flex-col shadow-xs overflow-x-hidden">
-          
-          {/* Top Bar Header Header */}
-          <header className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pb-6 border-b border-slate-100">
-            
-            {/* Breadcrumb Navigation */}
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 text-left">
-              <span>Admin Platform</span>
-              <span>/</span>
-              <span className="font-extrabold text-slate-900 capitalize">
-                {location.pathname.split("/")[2] || "Dashboard"}
-              </span>
+        {/* ── RIGHT: TopNav + Content ── */}
+        <div className="flex flex-col flex-1 min-w-0">
+
+          {/* ── TOP NAV BAR ── */}
+          <header
+            className="flex items-center justify-between px-6 py-3.5 border-b shrink-0"
+            style={{
+              background: "#ffffff",
+              borderColor: "oklch(0.922 0 0)",
+            }}
+          >
+            {/* Left: Mobile hamburger + Breadcrumb */}
+            <div className="flex items-center gap-3">
+              {/* Mobile menu toggle */}
+              <button
+                className="lg:hidden h-8 w-8 rounded-lg flex items-center justify-center border transition-colors cursor-pointer"
+                style={{ borderColor: "#e2e8f0", color: "#6b6375" }}
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+
+              {/* Breadcrumb */}
+              <div className="flex items-center gap-1.5 text-[13px]">
+                <span style={{ color: "#6B7280" }} className="font-medium">
+                  Admin Platform
+                </span>
+                <span style={{ color: "#e2e8f0" }}>/</span>
+                <span
+                  className="font-bold capitalize"
+                  style={{ color: "#08060d" }}
+                >
+                  {currentSection}
+                </span>
+              </div>
             </div>
 
-            {/* Right Header Utilities */}
-            <div className="flex items-center justify-end gap-3">
-              <button className="h-9 w-9 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-full flex items-center justify-center text-slate-600 transition-colors cursor-pointer">
+            {/* Right: Utilities */}
+            <div className="flex items-center gap-2">
+              {/* Help */}
+              <button
+                className="h-8 w-8 rounded-xl flex items-center justify-center border transition-colors cursor-pointer"
+                style={{ borderColor: "#e2e8f0", color: "#6b6375", background: "#f1f5f9" }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#e2e8f0";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#f1f5f9";
+                }}
+              >
                 <HelpCircle className="h-4 w-4" />
               </button>
 
-              <button className="h-9 w-9 bg-slate-50 hover:bg-slate-100 border border-slate-200/60 rounded-full flex items-center justify-center text-slate-600 transition-colors relative cursor-pointer">
+              {/* Notifications */}
+              <button
+                className="h-8 w-8 rounded-xl flex items-center justify-center border relative transition-colors cursor-pointer"
+                style={{ borderColor: "#e2e8f0", color: "#6b6375", background: "#f1f5f9" }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#e2e8f0";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#f1f5f9";
+                }}
+              >
                 <Bell className="h-4 w-4" />
-                <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-[#086942] rounded-full ring-2 ring-white" />
+                <span
+                  className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full ring-2 ring-white"
+                  style={{ background: "#23D283" }}
+                />
               </button>
 
-              {/* Admin Profile Pill */}
-              <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-200/60 rounded-full pl-1.5 pr-3 py-1">
-                <div className="h-7 w-7 rounded-full bg-[#086942] text-white flex items-center justify-center font-black text-xs">
+              {/* Admin profile chip */}
+              <div
+                className="flex items-center gap-2 pl-1.5 pr-3 py-1 rounded-full border cursor-pointer select-none"
+                style={{
+                  background: "#f1f5f9",
+                  borderColor: "#e2e8f0",
+                }}
+              >
+                <div
+                  className="h-6 w-6 rounded-full flex items-center justify-center text-[11px] font-black shrink-0"
+                  style={{ background: "#23D283", color: "#ffffff" }}
+                >
                   {user?.name ? user.name[0].toUpperCase() : "A"}
                 </div>
-                <div className="text-left hidden sm:block">
-                  <span className="text-xs font-extrabold text-slate-900 block leading-tight">
-                    {user?.name || "Administrator"}
-                  </span>
-                  <span className="text-[10px] font-bold text-[#086942] uppercase block leading-tight">
-                    Super Admin
+                <div className="hidden sm:block text-left leading-none">
+                  <span
+                    className="text-[12px] font-bold block"
+                    style={{ color: "#08060d" }}
+                  >
+                    {user?.name?.split(" ")[0] || "Admin"}
                   </span>
                 </div>
-                <ChevronDown className="h-3.5 w-3.5 text-slate-400 ml-1" />
+                <ChevronDown className="h-3 w-3 ml-0.5" style={{ color: "#6B7280" }} />
               </div>
-
-              {/* Status Green CTA Button */}
-              <button className="bg-[#086942] hover:bg-[#065334] text-white font-extrabold text-xs px-4 py-2 rounded-xl shadow-xs transition-all flex items-center gap-1.5 cursor-pointer">
-                <span>System Status</span>
-                <span className="bg-emerald-300/30 text-emerald-100 text-[10px] px-1.5 py-0.5 rounded-full font-black">
-                  ONLINE
-                </span>
-              </button>
             </div>
-
           </header>
 
-          {/* Dynamic Nested Page Content */}
-          <div className="pt-6 flex-1 text-left">
+          {/* ── PAGE CONTENT ── */}
+          <main
+            className="flex-1 overflow-y-auto p-6 sm:p-8 text-left"
+            style={{ background: "#f1f5f9" }}
+          >
             <Outlet />
-          </div>
-
-        </main>
-
+          </main>
+        </div>
       </div>
     </div>
   );

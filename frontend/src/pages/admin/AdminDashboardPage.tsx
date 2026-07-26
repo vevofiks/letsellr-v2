@@ -1,21 +1,46 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   ArrowUpRight,
   MoreHorizontal,
   Building2,
   Users,
-  RotateCcw,
   Search,
   Filter,
   Plus,
   Clock,
-  ChevronDown
+  ChevronDown,
+  RefreshCw,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { toast } from "sonner";
+import { adminService, type AdminDashboardStats } from "@/services/adminService";
 
 export const AdminDashboardPage: React.FC = () => {
   const [timeFilter] = useState("This Month");
   const [chartRange, setChartRange] = useState<"Monthly" | "Yearly">("Yearly");
+  const [stats, setStats] = useState<AdminDashboardStats | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [refreshing, setRefreshing] = useState<boolean>(false);
+
+  const fetchStats = async (isManualRefresh = false) => {
+    try {
+      if (isManualRefresh) setRefreshing(true);
+      else setLoading(true);
+
+      const data = await adminService.getDashboardStats();
+      setStats(data);
+    } catch (err: any) {
+      console.error("Failed to load dashboard stats:", err);
+      toast.error("Failed to load platform statistics.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
 
   // Sample data for recent activities matching reference table styling
   const recentActivities = [
@@ -88,10 +113,14 @@ export const AdminDashboardPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Reset View Button */}
-          <button className="bg-white border border-slate-200/80 hover:bg-slate-50 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs flex items-center gap-1.5 cursor-pointer">
-            <RotateCcw className="h-3.5 w-3.5 text-slate-400" />
-            <span>Reset Data</span>
+          {/* Refresh View Button */}
+          <button
+            onClick={() => fetchStats(true)}
+            disabled={refreshing}
+            className="bg-white border border-slate-200/80 hover:bg-slate-50 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-[#086942]" : "text-slate-400"}`} />
+            <span>Refresh Stats</span>
           </button>
         </div>
       </div>
@@ -118,10 +147,10 @@ export const AdminDashboardPage: React.FC = () => {
             </div>
             <div className="flex items-baseline gap-2.5">
               <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                112
+                {loading ? "..." : (stats?.total_properties ?? 0)}
               </span>
               <span className="bg-white/20 backdrop-blur-md text-emerald-100 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                +15.4% <ArrowUpRight className="h-3 w-3" />
+                {stats?.active_properties ?? 0} Live
               </span>
             </div>
             <span className="text-[11px] text-emerald-100/70 font-medium block">
@@ -157,10 +186,10 @@ export const AdminDashboardPage: React.FC = () => {
             </span>
             <div className="flex items-baseline gap-2.5">
               <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                8
+                {loading ? "..." : (stats?.pending_property_reviews ?? 0)}
               </span>
               <span className="bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                Action Required
+                {(stats?.pending_property_reviews ?? 0) > 0 ? "Action Required" : "All Clear"}
               </span>
             </div>
             <span className="text-[11px] text-slate-400 font-medium block">
@@ -193,10 +222,10 @@ export const AdminDashboardPage: React.FC = () => {
             </span>
             <div className="flex items-baseline gap-2.5">
               <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                58
+                {loading ? "..." : (stats?.total_users ?? 0)}
               </span>
               <span className="bg-emerald-50 text-[#086942] border border-emerald-200 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                +4.7% <ArrowUpRight className="h-3 w-3" />
+                Total Users
               </span>
             </div>
             <span className="text-[11px] text-slate-400 font-medium block">
@@ -245,7 +274,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <button className="text-slate-400 hover:text-slate-600">⋮</button>
               </div>
               <div>
-                <span className="text-lg font-black text-slate-900 block">32</span>
+                <span className="text-lg font-black text-slate-900 block">{stats?.seekers_count ?? 0}</span>
                 <span className="text-[10px] text-slate-400 font-semibold block">Property Buyers & Renters</span>
               </div>
               <span className="inline-block bg-emerald-100 text-[#086942] font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider">
@@ -262,7 +291,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <button className="text-slate-400 hover:text-slate-600">⋮</button>
               </div>
               <div>
-                <span className="text-lg font-black text-slate-900 block">12</span>
+                <span className="text-lg font-black text-slate-900 block">{stats?.agencies_count ?? 0}</span>
                 <span className="text-[10px] text-slate-400 font-semibold block">Verified Firms</span>
               </div>
               <span className="inline-block bg-emerald-100 text-[#086942] font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider">
@@ -279,7 +308,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <button className="text-slate-400 hover:text-slate-600">⋮</button>
               </div>
               <div>
-                <span className="text-lg font-black text-slate-900 block">12</span>
+                <span className="text-lg font-black text-slate-900 block">{stats?.owners_count ?? 0}</span>
                 <span className="text-[10px] text-slate-400 font-semibold block">Direct Landlords</span>
               </div>
               <span className="inline-block bg-emerald-100 text-[#086942] font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider">
@@ -296,7 +325,7 @@ export const AdminDashboardPage: React.FC = () => {
                 <button className="text-slate-400 hover:text-slate-600">⋮</button>
               </div>
               <div>
-                <span className="text-lg font-black text-slate-900 block">2</span>
+                <span className="text-lg font-black text-slate-900 block">{stats?.admins_count ?? 0}</span>
                 <span className="text-[10px] text-slate-400 font-semibold block">Super Administrators</span>
               </div>
               <span className="inline-block bg-rose-100 text-rose-700 font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider">

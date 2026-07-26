@@ -60,8 +60,9 @@ export const OwnerPropertyFormPage: React.FC = () => {
   // Form State
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [category, setCategory] = useState(isOwner ? "pg" : "apartment");
+  const [category, setCategory] = useState("");
   const [intent, setIntent] = useState<"rent" | "buy" | "lease">("rent");
+  const [propertyTypes, setPropertyTypes] = useState<any[]>([]);
   
   const [price, setPrice] = useState<number | "">("");
   const [priceUnit, setPriceUnit] = useState<"per_month" | "total">("per_month");
@@ -332,6 +333,29 @@ export const OwnerPropertyFormPage: React.FC = () => {
   }, [isOwner, navigate]);
 
   useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const res = await api.get("/api/properties/config/types");
+        const types = res.data;
+        setPropertyTypes(types);
+        
+        // Filter types based on user role
+        const userRole = user?.role || "owner";
+        const allowedTypes = types.filter((t: any) => t.allowed_roles.includes(userRole));
+        
+        // If not editing and we have allowed types, default to the first one
+        if (!isEdit && allowedTypes.length > 0 && !category) {
+          setCategory(allowedTypes[0].slug);
+        }
+      } catch (err) {
+        console.error("Failed to load property types", err);
+      }
+    };
+    
+    fetchConfig();
+  }, [user?.role, isEdit, category]);
+
+  useEffect(() => {
     if (isEdit && propertyId) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       fetchExistingProperty(propertyId);
@@ -522,39 +546,37 @@ export const OwnerPropertyFormPage: React.FC = () => {
                 <span>Property Category</span>
                 {isOwner && (
                   <span className="text-[10px] text-brand-green font-black flex items-center gap-1">
-                    <Lock className="h-3 w-3" /> Category Locked
+                    <Lock className="h-3 w-3" /> Restricted
                   </span>
                 )}
               </label>
 
-              {isOwner ? (
-                <div className="space-y-2">
-                  <select
-                    value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="w-full bg-slate-100 border border-slate-200 rounded-md px-3 py-2 text-xs font-bold text-slate-900 cursor-not-allowed"
-                    disabled={isOwner}
-                  >
-                    <option value="pg">PG (Paying Guest)</option>
-                    <option value="hostel">Hostel</option>
-                  </select>
-                  <p className="text-[10px] font-medium bg-emerald-50/70 text-emerald-800 p-2 rounded-lg border border-emerald-100">
-                    <Info className="h-3 w-3 inline mr-1" />
-                    Individual self-listing owners are restricted to <strong>PG & Hostel</strong> listings.
-                  </p>
-                </div>
-              ) : (
+              <div className="space-y-2">
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20"
+                  className={`w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20 ${isOwner ? 'cursor-not-allowed bg-slate-100' : ''}`}
+                  disabled={isOwner && propertyTypes.filter((t: any) => t.allowed_roles.includes("owner")).length <= 1}
                 >
-                  <option value="apartment">Apartment</option>
-                  <option value="villa_house">Villa / House</option>
-                  <option value="land">Land / Plot</option>
-                  <option value="commercial">Commercial Space</option>
+                  {propertyTypes.length > 0 ? (
+                    propertyTypes
+                      .filter((t: any) => t.allowed_roles.includes(user?.role || "owner"))
+                      .map((t: any) => (
+                        <option key={t.id} value={t.slug}>
+                          {t.label}
+                        </option>
+                      ))
+                  ) : (
+                    <option value="">Loading categories...</option>
+                  )}
                 </select>
-              )}
+                {isOwner && (
+                  <p className="text-[10px] font-medium bg-emerald-50/70 text-emerald-800 p-2 rounded-lg border border-emerald-100">
+                    <Info className="h-3 w-3 inline mr-1" />
+                    Individual self-listing owners are restricted to specific property categories.
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Listing Intent */}

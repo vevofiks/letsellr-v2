@@ -24,6 +24,9 @@ export const RegisterClient: React.FC = () => {
   } = useForm<ClientRegisterInput>({
     resolver: zodResolver(clientRegisterSchema),
     mode: "onChange",
+    defaultValues: {
+      preference_type: "",
+    }
   });
 
   const onSubmit = async (data: ClientRegisterInput) => {

@@ -114,6 +114,21 @@ async def login(payload: LoginRequest, db: DbSession) -> Union[TokenResponse, Me
 
 
 @router.post(
+    "/admin/login",
+    response_model=Union[TokenResponse, MessageResponse],
+    summary="Sign in to Admin portal (Admin role required)",
+)
+async def admin_login(payload: LoginRequest, db: DbSession) -> Union[TokenResponse, MessageResponse]:
+    """
+    **Admin Login flow.**
+
+    Authenticates administrator accounts. Rejects non-admin accounts prior to issuing tokens.
+    """
+    service = AuthService(db)
+    return await service.admin_login(payload)
+
+
+@router.post(
     "/verify-login",
     response_model=TokenResponse,
     summary="Complete login — verify OTP",
