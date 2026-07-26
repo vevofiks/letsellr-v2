@@ -52,13 +52,21 @@ import {
 export const ClientDashboard: React.FC = () => {
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [intent, setIntent] = useState<string>("");
-  const [category, setCategory] = useState<string>("");
+  const [intent, setIntent] = useState<string>(() => sessionStorage.getItem("dashboard_intent") || "");
+  const [category, setCategory] = useState<string>(() => sessionStorage.getItem("dashboard_category") || "");
   const [city, setCity] = useState<string>("");
   const [searchCity, setSearchCity] = useState<string>("");
-  const [lat, setLat] = useState<number | null>(null);
-  const [lng, setLng] = useState<number | null>(null);
-  const [gpsActive, setGpsActive] = useState(false);
+  const [lat, setLat] = useState<number | null>(() => {
+    const saved = localStorage.getItem("user_lat");
+    return saved ? parseFloat(saved) : null;
+  });
+  const [lng, setLng] = useState<number | null>(() => {
+    const saved = localStorage.getItem("user_lng");
+    return saved ? parseFloat(saved) : null;
+  });
+  const [gpsActive, setGpsActive] = useState<boolean>(() => {
+    return !!(localStorage.getItem("user_lat") && localStorage.getItem("user_lng"));
+  });
   const [gpsLoading, setGpsLoading] = useState(false);
   const [detectedLocation, setDetectedLocation] = useState<string>("");
   const [page, setPage] = useState(1);
@@ -68,8 +76,8 @@ export const ClientDashboard: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>("newest");
   const [radius, setRadius] = useState<number>(20);
   const [limit, setLimit] = useState<number>(12);
-  const [searchQuery, setSearchQuery] = useState<string>("");
-  const [inputQuery, setInputQuery] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState<string>(() => sessionStorage.getItem("dashboard_searchQuery") || "");
+  const [inputQuery, setInputQuery] = useState<string>(() => sessionStorage.getItem("dashboard_searchQuery") || "");
   const [showDrawerSuggestions, setShowDrawerSuggestions] = useState<boolean>(false);
   const [showTopSuggestions, setShowTopSuggestions] = useState<boolean>(false);
   const [showAdvancedPopover, setShowAdvancedPopover] = useState<boolean>(false);
@@ -81,8 +89,18 @@ export const ClientDashboard: React.FC = () => {
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [hasMore, setHasMore] = useState<boolean>(true);
 
-  const [searchMode, setSearchMode] = useState<"properties" | "agencies">("properties");
+  const [searchMode, setSearchMode] = useState<"properties" | "agencies">(
+    () => (sessionStorage.getItem("dashboard_searchMode") as "properties" | "agencies") || "properties"
+  );
   const [agencies, setAgencies] = useState<any[]>([]);
+
+  // Persist filters to sessionStorage
+  useEffect(() => {
+    sessionStorage.setItem("dashboard_intent", intent);
+    sessionStorage.setItem("dashboard_category", category);
+    sessionStorage.setItem("dashboard_searchMode", searchMode);
+    sessionStorage.setItem("dashboard_searchQuery", searchQuery);
+  }, [intent, category, searchMode, searchQuery]);
 
   const popoverRef = useRef<HTMLDivElement>(null);
   const filterBtnRef = useRef<HTMLButtonElement>(null);
@@ -490,7 +508,7 @@ export const ClientDashboard: React.FC = () => {
         }
 
         if (sortBy) params.sort_by = sortBy;
-        if (lat !== null && lng !== null && gpsActive) {
+        if (lat !== null && lng !== null) {
           params.lat = lat;
           params.lng = lng;
           params.radius = radius;
@@ -543,6 +561,8 @@ export const ClientDashboard: React.FC = () => {
       setGpsActive(false);
       setLat(null);
       setLng(null);
+      localStorage.removeItem("user_lat");
+      localStorage.removeItem("user_lng");
       setDetectedLocation("");
       if (searchCity === "My Location") {
         setSearchCity("");
@@ -566,6 +586,8 @@ export const ClientDashboard: React.FC = () => {
         const longitude = position.coords.longitude;
         setLat(latitude);
         setLng(longitude);
+        localStorage.setItem("user_lat", latitude.toString());
+        localStorage.setItem("user_lng", longitude.toString());
         setGpsActive(true);
         setGpsLoading(false);
         setPage(1);

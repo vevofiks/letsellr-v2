@@ -203,47 +203,79 @@ class PropertyService:
     async def list_owner_properties(self, owner_id: uuid.UUID) -> List[Property]:
         return await self.repo.list_by_owner(owner_id)
 
-    async def get_nearby_locations(self, lat: float, lng: float, radius: int) -> NearbyLocationsResponse:
-        if not settings.PLACES_API_KEY:
-            raise HTTPException(status_code=500, detail="Google Places API key not configured")
+    async def get_nearby_locations(self, lat: float, lng: float, radius: float | int = 5000) -> NearbyLocationsResponse:
+        # Normalize radius: if radius >= 100 treat as meters, else treat as kilometers
+        radius_km = float(radius) / 1000.0 if radius >= 100 else float(radius)
+        if radius_km <= 0:
+            radius_km = 5.0
 
-        url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json"
-        params = {
-            "location": f"{lat},{lng}",
-            "radius": radius,
-            "key": settings.PLACES_API_KEY,
-        }
+        # Query live properties with lat & lng within preferred radius
+        db_props = await self.repo.get_properties_near_location(lat=lat, lng=lng, radius_km=radius_km, limit=50)
 
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, params=params)
-            
-            if response.status_code != 200:
-                raise HTTPException(status_code=502, detail="Failed to fetch nearby locations from Google API")
-                
-            data = response.json()
-            if data.get("status") not in ("OK", "ZERO_RESULTS"):
-                error_msg = data.get("error_message", "Unknown error from Google Places API")
-                raise HTTPException(status_code=502, detail=f"Google Places API Error: {error_msg}")
-
-            results = data.get("results", [])
-            
-            # Sort by distance isn't strictly necessary if it returns by prominence, but the prompt says 
-            # "return 5 best locations nearest it's lat and lot in 5km radious".
-            # Nearby search ranks by prominence by default if radius is specified.
-            # We'll take the top 5 results.
-            top_results = results[:5]
-
-            suggestions = []
-            for place in top_results:
-                location = place.get("geometry", {}).get("location", {})
-                suggestions.append(
-                    LocationSuggestion(
-                        name=place.get("name", "Unknown"),
-                        address=place.get("vicinity"),
-                        latitude=location.get("lat", 0.0),
-                        longitude=location.get("lng", 0.0),
-                        types=place.get("types", [])
-                    )
+        suggestions: list[LocationSuggestion] = []
+        for prop in db_props:
+            photo_url = prop.photos[0] if prop.photos and len(prop.photos) > 0 else None
+            addr = prop.location_address or f"{prop.location_area}, {prop.location_city}"
+            suggestions.append(
+                LocationSuggestion(
+                    name=prop.title,
+                    address=addr,
+                    latitude=prop.latitude or 0.0,
+                    longitude=prop.longitude or 0.0,
+                    types=[prop.category, prop.intent],
+                    property_id=prop.id,
+                    price=prop.price,
+                    category=prop.category,
+                    intent=prop.intent,
+                    photo=photo_url,
                 )
+            )
 
-            return NearbyLocationsResponse(results=suggestions)
+        # Optionally query Geoapify API if key is present
+        if getattr(settings, "PLACES_API_KEY", None):
+            try:
+                url = "https://api.geoapify.com/v2/places"
+                params = {
+                    "categories": "commercial,building,accommodation",
+                    "filter": f"circle:{lng},{lat},{int(radius_km * 1000)}",
+                    "limit": 5,
+                    "apiKey": settings.PLACES_API_KEY,
+                }
+                async with httpx.AsyncClient() as client:
+                    resp = await client.get(url, params=params)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        features = data.get("features", [])
+                        for feature in features:
+                            props = feature.get("properties", {})
+                            suggestions.append(
+                                LocationSuggestion(
+                                    name=props.get("name") or props.get("street") or "Unknown Place",
+                                    address=props.get("formatted"),
+                                    latitude=props.get("lat", 0.0),
+                                    longitude=props.get("lon", 0.0),
+                                    types=props.get("categories", []),
+                                )
+                            )
+            except Exception as e:
+                print(f"Geoapify Error: {e}")
+
+        return NearbyLocationsResponse(results=suggestions)
+
+    async def report_property(self, property_id: uuid.UUID, reason: str, description: Optional[str], user_id: Optional[uuid.UUID]):
+        prop = await self.repo.get_by_id(property_id)
+        if not prop:
+            raise HTTPException(status_code=404, detail="Property not found")
+        
+        from app.modules.properties.models import PropertyReport
+        report = PropertyReport(
+            property_id=property_id,
+            reporter_id=user_id,
+            reason=reason,
+            description=description,
+            status="pending"
+        )
+        self.repo.db.add(report)
+        await self.repo.db.commit()
+        await self.repo.db.refresh(report)
+        return report

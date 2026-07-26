@@ -33,6 +33,7 @@ export const RegisterOwnerAgency: React.FC = () => {
     defaultValues: {
       role: defaultRole,
       agency_areas_served: [],
+      preference_type: "",
     },
   });
 

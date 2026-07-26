@@ -19,6 +19,11 @@ import { AdminRoute } from "@/components/AdminRoute";
 import { AdminLogin } from "@/pages/admin/AdminLogin";
 import { AdminLayout } from "@/pages/admin/AdminLayout";
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
+import { AdminPropertiesQueuePage } from "@/pages/admin/AdminPropertiesQueuePage";
+import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
+import { AdminReportsPage } from "@/pages/admin/AdminReportsPage";
+import { AdminCategoriesPage } from "@/pages/admin/AdminCategoriesPage";
+import { AdminLocationsPage } from "@/pages/admin/AdminLocationsPage";
 import { Toaster } from "@/components/ui/sonner";
 
 function App() {
@@ -145,11 +150,11 @@ function App() {
             >
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboardPage />} />
-              <Route path="properties" element={<AdminDashboardPage />} />
-              <Route path="users" element={<AdminDashboardPage />} />
-              <Route path="reports" element={<AdminDashboardPage />} />
-              <Route path="categories" element={<AdminDashboardPage />} />
-              <Route path="locations" element={<AdminDashboardPage />} />
+              <Route path="properties" element={<AdminPropertiesQueuePage />} />
+              <Route path="users" element={<AdminUsersPage />} />
+              <Route path="reports" element={<AdminReportsPage />} />
+              <Route path="categories" element={<AdminCategoriesPage />} />
+              <Route path="locations" element={<AdminLocationsPage />} />
               <Route path="settings" element={<AdminDashboardPage />} />
               <Route path="*" element={<Navigate to="dashboard" replace />} />
             </Route>

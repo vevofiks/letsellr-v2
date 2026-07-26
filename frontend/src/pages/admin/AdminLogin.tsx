@@ -7,7 +7,7 @@ import { toast } from "sonner";
 export const AdminLogin: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, login, logout } = useAuth();
+  const { user, adminLogin } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -46,29 +46,9 @@ export const AdminLogin: React.FC = () => {
 
     try {
       setLoading(true);
-      const success = await login(email, password);
+      const success = await adminLogin(email, password);
 
       if (success) {
-        // Retrieve fresh user state right after login
-        // Check if role is admin
-        const token = localStorage.getItem("access_token");
-        if (token) {
-          // Verify role from current response
-          const meRes = await fetch("/api/auth/me", {
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (meRes.ok) {
-            const userData = await meRes.json();
-            if (userData.role !== "admin") {
-              // Log out the non-admin user
-              logout();
-              setErrorMessage("Access Denied: Account is not authorized for Administrator access.");
-              toast.error("Unauthorized: Only platform administrators can log in here.");
-              return;
-            }
-          }
-        }
-        
         toast.success("Administrator authentication successful!");
         const from = (location.state as any)?.from?.pathname || "/admin-platform/dashboard";
         navigate(from, { replace: true });
@@ -77,7 +57,7 @@ export const AdminLogin: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Admin login error:", err);
-      const detail = err.response?.data?.detail || "Invalid email or password. Please try again.";
+      const detail = err.response?.data?.detail || "Invalid email or password. Access denied.";
       setErrorMessage(detail);
       toast.error(detail);
     } finally {
@@ -91,18 +71,13 @@ export const AdminLogin: React.FC = () => {
         
         {/* Top Header Card */}
         <div className="text-center space-y-2">
-          <div className="inline-flex items-center gap-2 bg-[#086942]/10 border border-[#086942]/20 px-3.5 py-1.5 rounded-full text-[#086942] font-extrabold text-xs tracking-wider uppercase shadow-xs">
-            <ShieldCheck className="h-4 w-4" /> Secure Admin Portal
-          </div>
+
           <div className="flex items-center justify-center gap-3 pt-2">
             <img src="/logo.png" alt="Letsellr Logo" className="h-10 w-auto" />
             <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
               Letsellr <span className="text-[#086942]">Admin</span>
             </span>
           </div>
-          <p className="text-xs text-slate-500 font-medium">
-            Enter your credentials to access system moderation & platform controls.
-          </p>
         </div>
 
         {/* Main Form Container Card */}

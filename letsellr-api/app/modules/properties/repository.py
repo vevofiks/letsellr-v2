@@ -135,3 +135,37 @@ class PropertyRepository:
         )
         result = await self.db.execute(stmt)
         return list(result.scalars().all())
+
+    async def get_properties_near_location(
+        self, lat: float, lng: float, radius_km: float = 20.0, limit: int = 50
+    ) -> List[Property]:
+        stmt = (
+            select(Property)
+            .where(Property.status == "live")
+            .where(Property.latitude.isnot(None))
+            .where(Property.longitude.isnot(None))
+        )
+        d_lat = radius_km / 111.0
+        cos_lat = math.cos(math.radians(lat))
+        d_lng = radius_km / (111.0 * cos_lat) if cos_lat > 0.01 else 360.0
+
+        stmt = stmt.where(
+            Property.latitude >= lat - d_lat,
+            Property.latitude <= lat + d_lat,
+            Property.longitude >= lng - d_lng,
+            Property.longitude <= lng + d_lng
+        )
+
+        rad_lat = func.radians(lat)
+        rad_lng = func.radians(lng)
+        inner_expr = (
+            func.cos(rad_lat) * func.cos(func.radians(Property.latitude)) *
+            func.cos(func.radians(Property.longitude) - rad_lng) +
+            func.sin(rad_lat) * func.sin(func.radians(Property.latitude))
+        )
+        clamped_inner = func.greatest(-1.0, func.least(1.0, inner_expr))
+        distance_expr = 6371.0 * func.acos(clamped_inner)
+
+        stmt = stmt.where(distance_expr <= radius_km).order_by(distance_expr.asc()).limit(limit)
+        result = await self.db.execute(stmt)
+        return list(result.scalars().all())

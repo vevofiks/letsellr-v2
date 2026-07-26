@@ -36,6 +36,44 @@ class PropertyType(UUIDMixin, TimestampMixin, Base):
         return f"<PropertyType slug={self.slug}>"
 
 
+class LocationData(UUIDMixin, TimestampMixin, Base):
+    """Admin-managed list of important locations."""
+    __tablename__ = "location_data"
+
+    title: Mapped[str] = mapped_column(String(200), nullable=False)
+    google_map_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    is_important: Mapped[bool] = mapped_column(default=False, nullable=False)
+
+    def __repr__(self) -> str:
+        return f"<LocationData title={self.title}>"
+
+
+class PropertyReport(UUIDMixin, TimestampMixin, Base):
+    """Reports submitted by users for fake, rogue, or unavailable properties."""
+    __tablename__ = "property_reports"
+
+    property_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("properties.id", ondelete="CASCADE"),
+        nullable=False, index=True
+    )
+    reporter_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True, index=True
+    )
+    reason: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(
+        String(50), nullable=False, default="pending", index=True,
+        comment="pending | resolved | dismissed"
+    )
+
+    property: Mapped["Property"] = relationship("Property", backref="reports")
+    reporter: Mapped["User"] = relationship("User", foreign_keys=[reporter_id])
+
+    def __repr__(self) -> str:
+        return f"<PropertyReport property_id={self.property_id} reason={self.reason}>"
+
+
 class Property(UUIDMixin, TimestampMixin, Base):
     """A property listing posted by an owner or agency."""
     __tablename__ = "properties"

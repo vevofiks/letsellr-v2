@@ -211,7 +211,7 @@ class AuthService:
                 preference_type=pending_user.preference_type,
                 location_city=pending_user.location,
                 location_area="N/A",
-                verification_status="pending",
+                verification_status="unverified",
                 status="active",
             )
         elif pending:
@@ -225,8 +225,8 @@ class AuthService:
                 preference_type=pending.preference_type,
                 location_city=pending.location_city,
                 location_area=pending.location_area,
-                verification_status="pending",
-                status="active",
+                verification_status="review_request" if pending.role == "agency" else "unverified",
+                status="suspended" if pending.role == "agency" else "active",
             )
 
             if pending.role == "agency":
@@ -242,6 +242,16 @@ class AuthService:
             )
 
         created = await self.repo.create(user)
+        
+        if pending and pending.role == "agency":
+            from app.modules.admin.models import VerificationRequest
+            req = VerificationRequest(
+                user_id=created.id,
+                status="pending",
+                document_keys=[]  # Agencies can upload docs later, or just wait for admin review
+            )
+            self.db.add(req)
+            
         await self.db.commit()
         logger.info("User created in local DB via Supabase Auth: %s", created.email)
 
@@ -313,6 +323,74 @@ class AuthService:
                 ) from e
 
             logger.info("OTP sent for login: %s", user.email)
+            return MessageResponse(message="OTP sent to your email. Please verify to log in.")
+
+    async def admin_login(self, payload: LoginRequest) -> TokenResponse | MessageResponse:
+        user = await self.repo.get_by_email(payload.email)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No account found with this email.",
+            )
+
+        if user.role != "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied. Account is not authorized for Administrator access.",
+            )
+
+        if user.status == "suspended":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account has been suspended. Please contact support.",
+            )
+
+        supabase = get_supabase_client()
+        if payload.password:
+            try:
+                res = supabase.auth.sign_in_with_password({
+                    "email": payload.email,
+                    "password": payload.password
+                })
+            except Exception as e:
+                logger.error("Supabase admin login error: %s", e)
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid email or password.",
+                ) from e
+            if not res.user or not res.session:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to retrieve user session from Supabase.",
+                )
+            if not user.auth_provider_uid or user.auth_provider_uid != res.user.id:
+                user.auth_provider_uid = res.user.id
+                await self.db.commit()
+            logger.info("Admin logged in via Supabase password: %s", user.email)
+            return TokenResponse(
+                access_token=res.session.access_token,
+                refresh_token=res.session.refresh_token,
+                user=UserPublic.model_validate(user),
+            )
+        else:
+            try:
+                res = supabase.auth.admin.generate_link({
+                    "type": "magiclink",
+                    "email": payload.email,
+                })
+                if hasattr(res, "properties") and res.properties.email_otp:
+                    from app.core.email import send_otp_email
+                    await send_otp_email(payload.email, res.properties.email_otp, "login")
+                else:
+                    raise Exception("Failed to retrieve OTP from Supabase.")
+            except Exception as e:
+                logger.error("Supabase admin login magiclink error: %s", e)
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to send OTP for login. Please try again later.",
+                ) from e
+
+            logger.info("OTP sent for admin login: %s", user.email)
             return MessageResponse(message="OTP sent to your email. Please verify to log in.")
 
     async def verify_login(self, payload: VerifyLoginRequest) -> TokenResponse:
@@ -442,6 +520,11 @@ class AuthService:
 
         user = await self.repo.get_by_provider_uid(res.user.id)
         if not user:
+            if not res.user.email:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Account not found in local database.",
+                )
             user = await self.repo.get_by_email(res.user.email)
             if not user:
                 raise HTTPException(

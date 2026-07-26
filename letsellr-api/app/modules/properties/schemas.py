@@ -147,6 +147,35 @@ class LocationSuggestion(BaseModel):
     latitude: float
     longitude: float
     types: list[str] = Field(default_factory=list)
+    property_id: Optional[UUID] = None
+    price: Optional[int] = None
+    category: Optional[str] = None
+    intent: Optional[str] = None
+    photo: Optional[str] = None
 
 class NearbyLocationsResponse(BaseModel):
     results: list[LocationSuggestion]
+
+
+# ── Property Reports ───────────────────────────────────────────────────────────
+
+class PropertyReportCreate(BaseModel):
+    reason: str = Field(..., max_length=100)
+    description: Optional[str] = None
+
+
+class PropertyReportResponse(BaseModel):
+    id: UUID
+    property_id: UUID
+    reporter_id: Optional[UUID]
+    reason: str
+    description: Optional[str]
+    status: str
+    created_at: datetime
+    updated_at: datetime
+    
+    # We might want some nested data for admin view
+    property: Optional[PropertyResponse] = None
+
+    class Config:
+        from_attributes = True
