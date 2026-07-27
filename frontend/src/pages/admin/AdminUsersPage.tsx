@@ -584,7 +584,7 @@ export const AdminUsersPage: React.FC = () => {
         <div className="fixed inset-0 z-50 bg-slate-950/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200 text-left animate-in fade-in zoom-in-95 duration-150 my-8">
             {/* Modal Header Banner */}
-            <div className="relative bg-gradient-to-r from-[#013534] via-[#014645] to-slate-900 text-white p-6">
+            <div className="relative bg-linear-to-r from-[#013534] via-[#014645] to-slate-900 text-white p-6">
               <button
                 onClick={() => setUserModalOpen(false)}
                 className="absolute top-4 right-4 h-8 w-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition-colors"
@@ -699,7 +699,7 @@ export const AdminUsersPage: React.FC = () => {
 
                     {selectedUser.agency_profile?.areas_served && selectedUser.agency_profile.areas_served.length > 0 && (
                       <div className="pt-2 border-t border-emerald-200/50">
-                        <span className="text-[10px] font-extrabold uppercase text-slate-400 block mb-1.5 flex items-center gap-1">
+                        <span className="text-[10px] font-extrabold uppercase text-slate-400 block mb-1.5 items-center gap-1">
                           <Globe className="size-3 text-slate-400" /> Coverage / Areas Served
                         </span>
                         <div className="flex flex-wrap gap-1.5">
