@@ -97,3 +97,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     asyncio.run(create_admin_user(args.email, args.password, args.name, args.phone))
+    

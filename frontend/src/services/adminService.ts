@@ -244,5 +244,17 @@ export const adminService = {
     const res = await api.get("/api/admin/properties/rejected");
     return res.data;
   },
+
+  // ── USER LIMITS ──────────────────────────────────────────
+
+  getUserLimit: async (userId: string): Promise<any> => {
+    const res = await api.get(`/api/admin/users/${userId}/limit`);
+    return res.data;
+  },
+
+  updateUserLimit: async (userId: string, payload: { msg_limit: number, reset_usage?: boolean, note: string, payment_ref?: string }): Promise<any> => {
+    const res = await api.patch(`/api/admin/users/${userId}/limit`, payload);
+    return res.data;
+  },
 };
 

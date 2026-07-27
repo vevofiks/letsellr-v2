@@ -235,7 +235,17 @@ export const OwnerPropertyFormPage: React.FC = () => {
     if (result.address) {
       const cityVal = result.address.city || result.address.town || result.address.village || result.address.county || "";
       const stateVal = result.address.state || "";
-      const areaVal = result.address.suburb || result.address.neighbourhood || result.address.residential || "";
+      let areaVal = result.address.suburb || result.address.neighbourhood || result.address.residential || result.address.quarter || result.address.hamlet || result.address.city_district || "";
+      
+      // If we couldn't find a specific area, try to use the primary name of the location
+      if (!areaVal && result.name && result.name !== cityVal && result.name !== stateVal) {
+        areaVal = result.name;
+      }
+      
+      // Ultimate fallback: take the first part of display_name
+      if (!areaVal && result.display_name) {
+        areaVal = result.display_name.split(",")[0].trim();
+      }
 
       if (cityVal) setCity(cityVal);
       if (stateVal) setState(stateVal);
@@ -269,7 +279,15 @@ export const OwnerPropertyFormPage: React.FC = () => {
           if (data && data.address) {
             const cityVal = data.address.city || data.address.town || data.address.village || data.address.county || "";
             const stateVal = data.address.state || "";
-            const areaVal = data.address.suburb || data.address.neighbourhood || data.address.residential || "";
+            let areaVal = data.address.suburb || data.address.neighbourhood || data.address.residential || data.address.quarter || data.address.hamlet || data.address.city_district || "";
+            
+            if (!areaVal && data.name && data.name !== cityVal && data.name !== stateVal) {
+              areaVal = data.name;
+            }
+            
+            if (!areaVal && data.display_name) {
+              areaVal = data.display_name.split(",")[0].trim();
+            }
 
             if (cityVal) setCity(cityVal);
             if (stateVal) setState(stateVal);
@@ -378,7 +396,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
     );
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
@@ -387,20 +405,39 @@ export const OwnerPropertyFormPage: React.FC = () => {
       return;
     }
 
-    Array.from(files).forEach((file) => {
+    setSubmitting(true);
+    const uploadPromises = Array.from(files).map(async (file) => {
       if (file.size > 2 * 1024 * 1024) {
         toast.error(`${file.name} is too large. Max size is 2MB.`);
-        return;
+        return null;
       }
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        if (dataUrl) {
-          setPhotos((prev) => [...prev, dataUrl]);
-        }
-      };
-      reader.readAsDataURL(file);
+
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("folder", "properties");
+
+      try {
+        const res = await api.post("/api/media/upload", formData, {
+          headers: { "Content-Type": "multipart/form-data" }
+        });
+        return res.data.url;
+      } catch (err) {
+        console.error("Upload failed for", file.name, err);
+        toast.error(`Failed to upload ${file.name}`);
+        return null;
+      }
     });
+
+    const uploadedUrls = await Promise.all(uploadPromises);
+    const validUrls = uploadedUrls.filter((url): url is string => Boolean(url));
+    
+    if (validUrls.length > 0) {
+      setPhotos((prev) => [...prev, ...validUrls]);
+      toast.success(`${validUrls.length} photo(s) uploaded successfully.`);
+    }
+    setSubmitting(false);
+    
+    e.target.value = "";
   };
 
   const handleRemovePhoto = (index: number) => {

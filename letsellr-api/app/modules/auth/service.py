@@ -350,6 +350,12 @@ class AuthService:
                 detail="Access denied. Account is not authorized for Administrator access.",
             )
 
+        if user.status == "pending":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account is currently under review by our administrators. You will be notified once approved.",
+            )
+
         if user.status == "suspended":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

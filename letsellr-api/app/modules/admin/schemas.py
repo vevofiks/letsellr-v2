@@ -100,3 +100,20 @@ class LocationDataUpdate(BaseModel):
     title: str | None = None
     google_map_url: str | None = None
     is_important: bool | None = None
+
+
+class UserLimitResponse(BaseModel):
+    user_id: uuid.UUID
+    name: str
+    phone: str
+    msg_limit: int
+    msg_usage: int
+    remaining: int
+    limit_reached: bool
+
+class UserLimitUpdate(BaseModel):
+    msg_limit: int
+    reset_usage: bool = False
+    note: str
+    payment_ref: str | None = None
+

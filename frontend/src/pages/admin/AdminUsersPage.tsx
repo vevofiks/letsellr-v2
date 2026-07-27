@@ -19,6 +19,7 @@ import {
   Globe,
   ChevronLeft,
   ChevronRight,
+  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { adminService, type AdminUser } from "@/services/adminService";
@@ -44,10 +45,54 @@ export const AdminUsersPage: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
   const [userModalOpen, setUserModalOpen] = useState<boolean>(false);
 
-  // Status Change Confirmation Modal state
   const [statusModalOpen, setStatusModalOpen] = useState<boolean>(false);
   const [targetStatus, setTargetStatus] = useState<"active" | "suspended" | "inactive">("active");
   const [actionLoading, setActionLoading] = useState<boolean>(false);
+
+  // Limits Modal state
+  const [limitsModalOpen, setLimitsModalOpen] = useState<boolean>(false);
+  const [limitsData, setLimitsData] = useState<any>(null);
+  const [limitsLoading, setLimitsLoading] = useState<boolean>(false);
+
+  const fetchUserLimits = async (userId: string) => {
+    try {
+      setLimitsLoading(true);
+      setLimitsModalOpen(true);
+      const data = await adminService.getUserLimit(userId);
+      setLimitsData({ ...data, note: "", reset_usage: false });
+    } catch (err: any) {
+      toast.error("Failed to load user limits");
+      setLimitsModalOpen(false);
+    } finally {
+      setLimitsLoading(false);
+    }
+  };
+
+  const handleUpdateLimit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedUser || !limitsData) return;
+    try {
+      setActionLoading(true);
+      const payload = {
+        msg_limit: Number(limitsData.msg_limit),
+        reset_usage: limitsData.reset_usage || false,
+        note: limitsData.note,
+      };
+      if (!payload.note || payload.note.length < 5) {
+        toast.error("Please provide a note (min 5 characters).");
+        setActionLoading(false);
+        return;
+      }
+      const updated = await adminService.updateUserLimit(selectedUser.id, payload);
+      setLimitsData({ ...updated, note: "", reset_usage: false });
+      toast.success("Limits updated successfully.");
+      setLimitsModalOpen(false);
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Failed to update limits.");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   // Load Users and Verifications from API
   const fetchData = async (isManualRefresh = false) => {
@@ -82,7 +127,7 @@ export const AdminUsersPage: React.FC = () => {
       );
 
       setUsers((prev) =>
-        prev.map((u) => (u.id === updated.id ? { ...u, status: updated.status } : u))
+        prev.map((u) => (u.id === updated.id ? { ...u, ...updated } : u))
       );
       setStatusModalOpen(false);
       setSelectedUser(null);
@@ -467,6 +512,17 @@ export const AdminUsersPage: React.FC = () => {
                           title="View Profile Details"
                         >
                           <Eye className="h-3.5 w-3.5" />
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            setSelectedUser(u);
+                            fetchUserLimits(u.id);
+                          }}
+                          className="h-8 w-8 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-600 flex items-center justify-center cursor-pointer transition-colors"
+                          title="Manage Message Limits"
+                        >
+                          <MessageSquare className="h-3.5 w-3.5" />
                         </button>
 
                         {u.role !== "admin" && (
@@ -857,6 +913,84 @@ export const AdminUsersPage: React.FC = () => {
           </div>
         </div>
       )}
+      {/* Modal 3: Limits Modal */}
+      {limitsModalOpen && selectedUser && (
+        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 text-left">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-black text-slate-900 my-0">
+                Manage Limits: {selectedUser.name}
+              </h3>
+              <button
+                onClick={() => setLimitsModalOpen(false)}
+                className="text-slate-400 hover:text-slate-600 cursor-pointer"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            {limitsLoading ? (
+              <div className="py-8 text-center text-slate-500 text-sm">Loading limits...</div>
+            ) : limitsData ? (
+              <form onSubmit={handleUpdateLimit} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <span className="text-[10px] font-extrabold uppercase text-slate-400">Current Usage</span>
+                    <p className="text-lg font-black text-slate-900">{limitsData.msg_usage}</p>
+                  </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <span className="text-[10px] font-extrabold uppercase text-slate-400">Remaining</span>
+                    <p className="text-lg font-black text-[#014645]">{limitsData.remaining}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700">Message Limit</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={limitsData.msg_limit}
+                    onChange={(e) => setLimitsData({...limitsData, msg_limit: e.target.value})}
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-[#014645]"
+                    required
+                  />
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="checkbox" 
+                    id="resetUsage"
+                    checked={limitsData.reset_usage}
+                    onChange={(e) => setLimitsData({...limitsData, reset_usage: e.target.checked})}
+                    className="rounded border-slate-300 text-[#014645] focus:ring-[#014645]"
+                  />
+                  <label htmlFor="resetUsage" className="text-xs font-bold text-slate-700 cursor-pointer">Reset usage to 0</label>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs font-bold text-slate-700">Reason for Update</label>
+                  <input
+                    type="text"
+                    value={limitsData.note}
+                    onChange={(e) => setLimitsData({...limitsData, note: e.target.value})}
+                    placeholder="e.g. Paid for standard package"
+                    className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-[#014645]"
+                    required
+                  />
+                </div>
+
+                <div className="flex justify-end pt-2 gap-2">
+                  <button type="button" onClick={() => setLimitsModalOpen(false)} className="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-4 py-2 rounded-lg cursor-pointer">Cancel</button>
+                  <button type="submit" disabled={actionLoading} className="bg-[#014645] hover:bg-[#013534] text-white text-xs font-bold px-4 py-2 rounded-lg cursor-pointer disabled:opacity-50">
+                    {actionLoading ? "Saving..." : "Save Limits"}
+                  </button>
+                </div>
+              </form>
+            ) : null}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
+
