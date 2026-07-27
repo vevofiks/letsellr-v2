@@ -271,6 +271,18 @@ export const OwnerPropertyDetailPage: React.FC = () => {
           </div>
         )}
 
+        {property.status === "live" && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 space-y-2 shadow-2xs text-left">
+            <div className="flex items-center gap-2 text-emerald-800 font-black text-sm my-0">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+              <span>Listing is Live</span>
+            </div>
+            <p className="text-xs text-emerald-800 font-medium leading-relaxed pl-7 my-0">
+              Your property is live and receiving active buyer & tenant traffic on Letsellr.
+            </p>
+          </div>
+        )}
+
         {/* Analytics & Performance Metrics */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
           <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-2xs flex items-center justify-between hover:border-slate-300 transition-all">

@@ -162,7 +162,7 @@ export const OwnerSettingsPage: React.FC = () => {
           <input ref={logoInputRef}   type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
 
           {/* Banner */}
-          <div className="relative h-44 sm:h-52 group/banner z-0">
+          <div className="relative h-44 sm:h-52 group/banner">
             {agencyBanner ? (
               <img src={agencyBanner} alt="Banner" className="h-full w-full object-cover" />
             ) : (
@@ -173,7 +173,7 @@ export const OwnerSettingsPage: React.FC = () => {
             <button
               type="button"
               onClick={() => bannerInputRef.current?.click()}
-              className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/60 hover:bg-black/80 text-white text-[10px] font-extrabold px-3 py-1.5 rounded-lg transition-all cursor-pointer opacity-0 group-hover/banner:opacity-100 z-10 shadow-sm"
+              className="absolute bottom-3 right-3 flex items-center gap-1.5 bg-black/60 hover:bg-black/80 text-white text-[10px] font-extrabold px-3 py-1.5 rounded-lg transition-all cursor-pointer opacity-0 group-hover/banner:opacity-100 z-30 shadow-sm"
             >
               <Camera className="h-3.5 w-3.5" />
               {agencyBanner ? "Change Banner" : "Add Banner"}
@@ -183,11 +183,11 @@ export const OwnerSettingsPage: React.FC = () => {
           {/* Identity section — logo uses negative-mt to overlap banner */}
           <div className="px-6 pb-6 relative z-10">
             {/* Logo row */}
-            <div className="flex items-end justify-between relative z-20" style={{ marginTop: -44 }}>
+            <div className="flex items-end justify-between relative z-20 pointer-events-none" style={{ marginTop: -44 }}>
               {/* Logo avatar — relative z-20 ensures it stays on top of banner */}
               <div
                 onClick={() => logoInputRef.current?.click()}
-                className="relative z-20 cursor-pointer group/logo shrink-0"
+                className="relative z-20 cursor-pointer group/logo shrink-0 pointer-events-auto"
                 style={{ width: 96, height: 96 }}
               >
                 <div className="h-full w-full rounded-xl border-4 border-white shadow-md overflow-hidden bg-slate-900 flex items-center justify-center">
@@ -206,11 +206,11 @@ export const OwnerSettingsPage: React.FC = () => {
 
               {/* Verified / unverified pill */}
               {isVerified ? (
-                <span className="mb-1 flex items-center gap-1.5 bg-emerald-50 text-brand-green border border-emerald-200/80 rounded-lg px-3 py-1 text-xs font-extrabold">
+                <span className="mb-1 flex items-center gap-1.5 bg-emerald-50 text-brand-green border border-emerald-200/80 rounded-lg px-3 py-1 text-xs font-extrabold pointer-events-auto">
                   <BadgeCheck className="h-4 w-4" /> Verified
                 </span>
               ) : (
-                <span className="mb-1 flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200/80 rounded-lg px-3 py-1 text-xs font-extrabold">
+                <span className="mb-1 flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200/80 rounded-lg px-3 py-1 text-xs font-extrabold pointer-events-auto">
                   Not Verified
                 </span>
               )}

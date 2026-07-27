@@ -106,7 +106,8 @@ async def approve_verification_request(
     if user:
         user.verification_status = "verified"
         user.verification_note = payload.note
-        user.status = "active"
+        if user.status in ("suspended", "pending"):
+            user.status = "active"
 
     await db.commit()
     return {"message": "Request approved"}
@@ -399,3 +400,84 @@ async def delete_location(
     await db.delete(location)
     await db.commit()
     return {"message": "Location deleted successfully"}
+
+
+# ── User Limits Management ──────────────────────────────────────
+
+from app.modules.users.models import User, LimitOverride
+from app.modules.admin.schemas import UserLimitResponse, UserLimitUpdate
+
+@router.get("/users/{user_id}/limit", response_model=UserLimitResponse, tags=["Admin - Users"])
+async def get_user_limit(
+    user_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+):
+    require_admin(current_user)
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    return {
+        "user_id": user.id,
+        "name": user.name,
+        "phone": user.phone,
+        "msg_limit": user.msg_limit,
+        "msg_usage": user.msg_usage,
+        "remaining": user.msg_limit - user.msg_usage,
+        "limit_reached": user.msg_usage >= user.msg_limit
+    }
+
+@router.patch("/users/{user_id}/limit", response_model=UserLimitResponse, tags=["Admin - Users"])
+async def update_user_limit(
+    user_id: uuid.UUID,
+    payload: UserLimitUpdate,
+    current_user: CurrentUser,
+    db: DbSession,
+):
+    require_admin(current_user)
+    user = await db.get(User, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+        
+    if not payload.reset_usage and payload.msg_limit < user.msg_usage:
+        raise HTTPException(
+            status_code=400, 
+            detail="msg_limit cannot be less than current usage unless reset_usage is true"
+        )
+        
+    old_limit = user.msg_limit
+    old_usage = user.msg_usage
+    
+    new_limit = payload.msg_limit
+    new_usage = 0 if payload.reset_usage else old_usage
+    
+    user.msg_limit = new_limit
+    user.msg_usage = new_usage
+    
+    override = LimitOverride(
+        user_id=user.id,
+        old_limit=old_limit,
+        new_limit=new_limit,
+        old_usage=old_usage,
+        new_usage=new_usage,
+        reset_usage=payload.reset_usage,
+        note=payload.note,
+        payment_ref=payload.payment_ref,
+        done_by=current_user.id
+    )
+    db.add(override)
+    await db.commit()
+    await db.refresh(user)
+    
+    return {
+        "user_id": user.id,
+        "name": user.name,
+        "phone": user.phone,
+        "msg_limit": user.msg_limit,
+        "msg_usage": user.msg_usage,
+        "remaining": user.msg_limit - user.msg_usage,
+        "limit_reached": user.msg_usage >= user.msg_limit
+    }
+
+

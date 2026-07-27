@@ -8,7 +8,7 @@ Uses SQLAlchemy 2.0 mapped_column style with full type hints.
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, ForeignKey, String, Text
+from sqlalchemy import Boolean, ForeignKey, String, Text, Integer
 from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -60,6 +60,8 @@ class User(UUIDMixin, TimestampMixin, Base):
         String(20), nullable=False, default="active", index=True,
         comment="active | suspended",
     )
+    msg_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=3, server_default="3")
+    msg_usage: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
 
     # ── Relationships ─────────────────────────────────────────────────────────
     agency_profile: Mapped["AgencyProfile | None"] = relationship(
@@ -100,3 +102,25 @@ class AgencyProfile(UUIDMixin, TimestampMixin, Base):
 
     def __repr__(self) -> str:
         return f"<AgencyProfile user_id={self.user_id} name={self.display_name}>"
+
+
+class LimitOverride(UUIDMixin, TimestampMixin, Base):
+    """Audit log for when an admin overrides a user's message limit."""
+    __tablename__ = "limit_overrides"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False, index=True
+    )
+    old_limit: Mapped[int] = mapped_column(Integer, nullable=False)
+    new_limit: Mapped[int] = mapped_column(Integer, nullable=False)
+    old_usage: Mapped[int] = mapped_column(Integer, nullable=False)
+    new_usage: Mapped[int] = mapped_column(Integer, nullable=False)
+    reset_usage: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    note: Mapped[str] = mapped_column(Text, nullable=False)
+    payment_ref: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    done_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True
+    )
+
