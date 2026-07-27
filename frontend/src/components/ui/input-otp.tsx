@@ -15,10 +15,13 @@ function InputOTP({
     <OTPInput
       data-slot="input-otp"
       containerClassName={cn(
-        "cn-input-otp flex items-center has-disabled:opacity-50",
+        "cn-input-otp relative flex items-center has-disabled:opacity-50 [&_input]:absolute [&_input]:inset-0 [&_input]:w-full [&_input]:h-full [&_input]:opacity-0! [&_input]:text-transparent! [&_input]:bg-transparent! [&_input]:caret-transparent [&_input::-webkit-contacts-auto-fill-button]:hidden! [&_input::-webkit-credentials-auto-fill-button]:hidden! [&_input::-webkit-autofill-button]:hidden!",
         containerClassName
       )}
       spellCheck={false}
+      data-1p-ignore="true"
+      data-lpignore="true"
+      data-bwignore="true"
       className={cn("disabled:cursor-not-allowed", className)}
       {...props}
     />

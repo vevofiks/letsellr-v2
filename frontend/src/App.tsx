@@ -159,8 +159,12 @@ function App() {
               <Route path="*" element={<Navigate to="dashboard" replace />} />
             </Route>
 
-            {/* Legacy Admin Redirect */}
+            {/* Legacy & Alias Admin Redirects */}
             <Route path="/admin" element={<Navigate to="/admin-platform/dashboard" replace />} />
+            <Route path="/admin/login" element={<Navigate to="/admin-platform/login" replace />} />
+            <Route path="/admin-portal" element={<Navigate to="/admin-platform/dashboard" replace />} />
+            <Route path="/admin-portal/login" element={<Navigate to="/admin-platform/login" replace />} />
+            <Route path="/admin-portal/*" element={<Navigate to="/admin-platform/dashboard" replace />} />
 
              {/* Fallback Catch-all Route */}
             <Route path="*" element={<Navigate to="/register/type" replace />} />

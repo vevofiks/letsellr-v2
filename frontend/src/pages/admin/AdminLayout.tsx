@@ -8,15 +8,13 @@ import {
   Users,
   ShieldAlert,
   Settings,
-  Bell,
   LogOut,
-  Search,
-  ChevronDown,
   Layers,
   MapPin,
-  CircleDot,
-  HelpCircle,
-  Zap,
+  Menu,
+  X,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -24,14 +22,24 @@ export const AdminLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [pendingCount, setPendingCount] = useState<number>(0);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [pendingPropertyCount, setPendingPropertyCount] = useState<number>(0);
+  const [pendingKycCount, setPendingKycCount] = useState<number>(0);
+  const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile drawer toggle
+  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
+    return localStorage.getItem("admin_sidebar_collapsed") === "true";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("admin_sidebar_collapsed", String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   useEffect(() => {
     adminService
       .getDashboardStats()
-      .then((stats) => setPendingCount(stats.pending_property_reviews))
+      .then((stats) => {
+        setPendingPropertyCount(stats.pending_property_reviews || 0);
+        setPendingKycCount(stats.pending_kyc_reviews || 0);
+      })
       .catch((err) =>
         console.error("Failed to fetch sidebar pending stats:", err)
       );
@@ -60,358 +68,304 @@ export const AdminLayout: React.FC = () => {
   const currentSection =
     location.pathname.split("/")[2]?.replace(/-/g, " ") || "dashboard";
 
-  const navItemClass = (path: string) =>
-    `group flex items-center justify-between px-3 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-150 cursor-pointer ${
-      isActive(path)
-        ? "bg-[#23D283]/10 text-[#0B6E4F] font-bold"
-        : "text-[#6b6375] hover:bg-[#f1f5f9] hover:text-[#08060d]"
+  const navItemClass = (path: string) => {
+    const active = isActive(path);
+    return `group flex items-center ${
+      sidebarCollapsed ? "justify-center px-2" : "justify-between px-3.5"
+    } py-2 rounded-md text-xs font-extrabold transition-all cursor-pointer ${
+      active
+        ? "bg-[#014645] text-white shadow-2xs"
+        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
     }`;
+  };
 
   return (
-    <div
-      className="min-h-screen flex"
-      style={{ background: "#f1f5f9", fontFamily: "'DM Sans', system-ui, 'Segoe UI', Roboto, sans-serif" }}
-    >
-      {/* ── Mobile Sidebar Overlay ── */}
+    <div className="min-h-screen flex bg-slate-50 text-slate-900 font-sans">
+      {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/30 lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/40 backdrop-blur-xs lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* ══════════════════════════════════════
-          UNIFIED APP SHELL — white card, full height
-          Sidebar + TopNav are ONE continuous surface
-      ══════════════════════════════════════ */}
-      <div
-        className="flex flex-1 m-3 rounded-2xl overflow-hidden shadow-lg"
-        style={{ background: "#ffffff", height: "calc(100vh - 24px)" }}
+      {/* ── LEFT SIDEBAR ── */}
+      <aside
+        className={`
+          fixed lg:sticky top-0 inset-y-0 left-0 z-50
+          flex flex-col shrink-0 h-screen
+          bg-white border-r border-slate-200/80
+          transition-all duration-200 ease-in-out
+          ${sidebarCollapsed ? "lg:w-16" : "lg:w-56"}
+          w-56
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
+        `}
       >
-        {/* ── LEFT SIDEBAR ── */}
-        <aside
-          className={`
-            fixed lg:static inset-y-0 left-0 z-50
-            flex flex-col w-64 shrink-0
-            border-r
-            transition-transform duration-200
-            ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
-          `}
-          style={{
-            background: "oklch(0.985 0 0)",
-            borderColor: "oklch(0.922 0 0)",
-          }}
-        >
-          {/* Brand Logo */}
-          <div
-            className="flex items-center gap-3 px-5 py-5 border-b"
-            style={{ borderColor: "oklch(0.922 0 0)" }}
-          >
-            <div
-              className="h-8 w-8 rounded-xl flex items-center justify-center shadow-sm shrink-0"
-              style={{ background: "#23D283" }}
-            >
+        {/* Brand Logo */}
+        <div className={`flex items-center ${sidebarCollapsed ? "lg:justify-center px-2" : "justify-between px-4"} py-4 border-b border-slate-100 shrink-0`}>
+          <div className="flex items-center gap-2.5">
+            <div className="h-8 w-8 rounded-md bg-[#014645] flex items-center justify-center shadow-2xs shrink-0">
               <img
                 src="/logo.png"
                 alt="Letsellr"
-                className="h-5 w-5 brightness-0 invert"
+                className="h-4.5 w-auto brightness-0 invert"
               />
             </div>
-            <div className="leading-none">
-              <span
-                className="text-[15px] font-black tracking-tight block"
-                style={{ color: "#08060d" }}
-              >
-                Letsellr
-              </span>
-              <span
-                className="text-[11px] font-semibold uppercase tracking-widest"
-                style={{ color: "#23D283" }}
-              >
-                Admin
-              </span>
-            </div>
-          </div>
-
-          {/* Search */}
-          <div className="px-4 pt-4 pb-2">
-            <div className="relative">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5"
-                style={{ color: "#6b6375" }}
-              />
-              <input
-                type="text"
-                placeholder="Search… ⌘K"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-xl pl-9 pr-3 py-2 text-[13px] font-medium transition-all focus:outline-none"
-                style={{
-                  background: "#f1f5f9",
-                  border: "1px solid #e2e8f0",
-                  color: "#08060d",
-                }}
-                onFocus={(e) => {
-                  e.currentTarget.style.background = "#ffffff";
-                  e.currentTarget.style.borderColor = "#23D283";
-                  e.currentTarget.style.boxShadow =
-                    "0 0 0 3px rgba(35,210,131,0.15)";
-                }}
-                onBlur={(e) => {
-                  e.currentTarget.style.background = "#f1f5f9";
-                  e.currentTarget.style.borderColor = "#e2e8f0";
-                  e.currentTarget.style.boxShadow = "none";
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Nav Groups — scrollable */}
-          <nav className="flex-1 overflow-y-auto px-3 py-2 space-y-5">
-            {/* MAIN MENU */}
-            <div className="space-y-0.5">
-              <p
-                className="text-[10px] font-black uppercase tracking-widest px-3 mb-2"
-                style={{ color: "#6B7280" }}
-              >
-                Main Menu
-              </p>
-
-              <Link to="/admin-platform/dashboard" className={navItemClass("/admin-platform/dashboard")}>
-                <div className="flex items-center gap-2.5">
-                  {isActive("/admin-platform/dashboard") && (
-                    <span className="absolute left-3 w-0.5 h-5 rounded-full bg-[#23D283]" />
-                  )}
-                  <LayoutDashboard className="h-4 w-4 shrink-0" />
-                  <span>Dashboard</span>
-                </div>
-              </Link>
-
-              <Link to="/admin-platform/properties" className={navItemClass("/admin-platform/properties")}>
-                <div className="flex items-center gap-2.5">
-                  <Building2 className="h-4 w-4 shrink-0" />
-                  <span>Properties & Queue</span>
-                </div>
-                {pendingCount > 0 && (
-                  <span
-                    className="text-[10px] font-black px-2 py-0.5 rounded-full"
-                    style={{
-                      background: "#FDE68A",
-                      color: "#92400E",
-                    }}
-                  >
-                    {pendingCount}
-                  </span>
-                )}
-              </Link>
-
-              <Link to="/admin-platform/users" className={navItemClass("/admin-platform/users")}>
-                <div className="flex items-center gap-2.5">
-                  <Users className="h-4 w-4 shrink-0" />
-                  <span>Users & Agencies</span>
-                </div>
-              </Link>
-            </div>
-
-            {/* MODERATION */}
-            <div className="space-y-0.5">
-              <p
-                className="text-[10px] font-black uppercase tracking-widest px-3 mb-2"
-                style={{ color: "#6B7280" }}
-              >
-                Moderation
-              </p>
-
-
-              <Link to="/admin-platform/categories" className={navItemClass("/admin-platform/categories")}>
-                <div className="flex items-center gap-2.5">
-                  <Layers className="h-4 w-4 shrink-0" />
-                  <span>Categories & Specs</span>
-                </div>
-              </Link>
-
-              <Link to="/admin-platform/locations" className={navItemClass("/admin-platform/locations")}>
-                <div className="flex items-center gap-2.5">
-                  <MapPin className="h-4 w-4 shrink-0" />
-                  <span>Location Management</span>
-                </div>
-              </Link>
-
-              <Link to="/admin-platform/reports" className={navItemClass("/admin-platform/reports")}>
-                <div className="flex items-center gap-2.5">
-                  <ShieldAlert className="h-4 w-4 shrink-0" />
-                  <span>Reports & Flags</span>
-                </div>
-              </Link>
-
-            </div>
-
-            {/* GENERAL */}
-            <div className="space-y-0.5">
-              <p
-                className="text-[10px] font-black uppercase tracking-widest px-3 mb-2"
-                style={{ color: "#6B7280" }}
-              >
-                General
-              </p>
-
-              <Link to="/admin-platform/settings" className={navItemClass("/admin-platform/settings")}>
-                <div className="flex items-center gap-2.5">
-                  <Settings className="h-4 w-4 shrink-0" />
-                  <span>Settings</span>
-                </div>
-              </Link>
-            </div>
-          </nav>
-
-          {/* Sidebar Footer */}
-          <div
-            className="p-4 border-t space-y-3"
-            style={{ borderColor: "oklch(0.922 0 0)" }}
-          >
-
-
-            {/* Admin profile row */}
-            <div className="flex items-center gap-2.5 px-1">
-              <div
-                className="h-8 w-8 rounded-full flex items-center justify-center font-black text-sm shrink-0"
-                style={{ background: "#23D283", color: "#ffffff" }}
-              >
-                {user?.name ? user.name[0].toUpperCase() : "A"}
-              </div>
-              <div className="flex-1 min-w-0 text-left">
-                <p
-                  className="text-[13px] font-bold leading-tight truncate"
-                  style={{ color: "#08060d" }}
-                >
-                  {user?.name || "Administrator"}
-                </p>
-                <p
-                  className="text-[10px] font-semibold uppercase tracking-wider leading-tight"
-                  style={{ color: "#6b6375" }}
-                >
-                  Super Admin
-                </p>
-              </div>
-              <button
-                onClick={handleLogout}
-                title="Log out"
-                className="h-8 w-8 rounded-lg flex items-center justify-center transition-colors hover:bg-rose-50 cursor-pointer shrink-0"
-              >
-                <LogOut className="h-4 w-4 text-rose-500" />
-              </button>
-            </div>
-          </div>
-        </aside>
-
-        {/* ── RIGHT: TopNav + Content ── */}
-        <div className="flex flex-col flex-1 min-w-0">
-
-          {/* ── TOP NAV BAR ── */}
-          <header
-            className="flex items-center justify-between px-6 py-3.5 border-b shrink-0"
-            style={{
-              background: "#ffffff",
-              borderColor: "oklch(0.922 0 0)",
-            }}
-          >
-            {/* Left: Mobile hamburger + Breadcrumb */}
-            <div className="flex items-center gap-3">
-              {/* Mobile menu toggle */}
-              <button
-                className="lg:hidden h-8 w-8 rounded-lg flex items-center justify-center border transition-colors cursor-pointer"
-                style={{ borderColor: "#e2e8f0", color: "#6b6375" }}
-                onClick={() => setSidebarOpen(!sidebarOpen)}
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </button>
-
-              {/* Breadcrumb */}
-              <div className="flex items-center gap-1.5 text-[13px]">
-                <span style={{ color: "#6B7280" }} className="font-medium">
+            {!sidebarCollapsed && (
+              <div className="leading-tight text-left hidden lg:block">
+                <span className="text-xs font-black tracking-tight text-slate-900 block">
+                  Letsellr
+                </span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-emerald-800 block">
                   Admin Platform
                 </span>
-                <span style={{ color: "#e2e8f0" }}>/</span>
-                <span
-                  className="font-bold capitalize"
-                  style={{ color: "#08060d" }}
-                >
-                  {currentSection}
-                </span>
               </div>
+            )}
+            <div className="leading-tight text-left lg:hidden">
+              <span className="text-xs font-black tracking-tight text-slate-900 block">
+                Letsellr
+              </span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-emerald-800 block">
+                Admin Platform
+              </span>
             </div>
+          </div>
 
-            {/* Right: Utilities */}
-            <div className="flex items-center gap-2">
-              {/* Help */}
-              <button
-                className="h-8 w-8 rounded-xl flex items-center justify-center border transition-colors cursor-pointer"
-                style={{ borderColor: "#e2e8f0", color: "#6b6375", background: "#f1f5f9" }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#e2e8f0";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#f1f5f9";
-                }}
-              >
-                <HelpCircle className="h-4 w-4" />
-              </button>
-
-              {/* Notifications */}
-              <button
-                className="h-8 w-8 rounded-xl flex items-center justify-center border relative transition-colors cursor-pointer"
-                style={{ borderColor: "#e2e8f0", color: "#6b6375", background: "#f1f5f9" }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = "#e2e8f0";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = "#f1f5f9";
-                }}
-              >
-                <Bell className="h-4 w-4" />
-                <span
-                  className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full ring-2 ring-white"
-                  style={{ background: "#23D283" }}
-                />
-              </button>
-
-              {/* Admin profile chip */}
-              <div
-                className="flex items-center gap-2 pl-1.5 pr-3 py-1 rounded-full border cursor-pointer select-none"
-                style={{
-                  background: "#f1f5f9",
-                  borderColor: "#e2e8f0",
-                }}
-              >
-                <div
-                  className="h-6 w-6 rounded-full flex items-center justify-center text-[11px] font-black shrink-0"
-                  style={{ background: "#23D283", color: "#ffffff" }}
-                >
-                  {user?.name ? user.name[0].toUpperCase() : "A"}
-                </div>
-                <div className="hidden sm:block text-left leading-none">
-                  <span
-                    className="text-[12px] font-bold block"
-                    style={{ color: "#08060d" }}
-                  >
-                    {user?.name?.split(" ")[0] || "Admin"}
-                  </span>
-                </div>
-                <ChevronDown className="h-3 w-3 ml-0.5" style={{ color: "#6B7280" }} />
-              </div>
-            </div>
-          </header>
-
-          {/* ── PAGE CONTENT ── */}
-          <main
-            className="flex-1 overflow-y-auto p-6 sm:p-8 text-left"
-            style={{ background: "#f1f5f9" }}
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden h-8 w-8 rounded-md text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center cursor-pointer"
           >
-            <Outlet />
-          </main>
+            <X className="h-4 w-4" />
+          </button>
         </div>
+
+        {/* Navigation Section */}
+        <nav className="flex-1 overflow-y-auto px-2.5 py-3 space-y-4 custom-scrollbar text-left">
+          {/* OVERVIEW */}
+          <div className="space-y-1">
+            {!sidebarCollapsed && (
+              <p className="text-[9.5px] font-black uppercase tracking-widest px-2.5 mb-1 text-slate-400">
+                Overview
+              </p>
+            )}
+
+            <Link
+              to="/admin-platform/dashboard"
+              className={navItemClass("/admin-platform/dashboard")}
+              onClick={() => setSidebarOpen(false)}
+              title="Dashboard"
+            >
+              <div className="flex items-center gap-2.5">
+                <LayoutDashboard className="h-4 w-4 shrink-0" />
+                {!sidebarCollapsed && <span>Dashboard</span>}
+              </div>
+            </Link>
+          </div>
+
+          {/* MANAGEMENT */}
+          <div className="space-y-1">
+            {!sidebarCollapsed && (
+              <p className="text-[9.5px] font-black uppercase tracking-widest px-2.5 mb-1 text-slate-400">
+                Management
+              </p>
+            )}
+
+            <Link
+              to="/admin-platform/properties"
+              className={navItemClass("/admin-platform/properties")}
+              onClick={() => setSidebarOpen(false)}
+              title="Properties Queue"
+            >
+              <div className="flex items-center gap-2.5 relative">
+                <Building2 className="h-4 w-4 shrink-0" />
+                {!sidebarCollapsed && <span>Properties</span>}
+                {sidebarCollapsed && pendingPropertyCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600" />
+                  </span>
+                )}
+              </div>
+              {!sidebarCollapsed && pendingPropertyCount > 0 && (
+                <span className={`h-5 min-w-5 ${pendingPropertyCount < 10 ? "w-5" : "px-1.5"} rounded-full bg-rose-600 text-white font-black text-[10px] flex items-center justify-center shrink-0 leading-none shadow-2xs`}>
+                  {pendingPropertyCount}
+                </span>
+              )}
+            </Link>
+
+            <Link
+              to="/admin-platform/users"
+              className={navItemClass("/admin-platform/users")}
+              onClick={() => setSidebarOpen(false)}
+              title="Users & Agencies"
+            >
+              <div className="flex items-center gap-2.5 relative">
+                <Users className="h-4 w-4 shrink-0" />
+                {!sidebarCollapsed && <span>Users & Agencies</span>}
+                {sidebarCollapsed && pendingKycCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600" />
+                  </span>
+                )}
+              </div>
+              {!sidebarCollapsed && pendingKycCount > 0 && (
+                <span className={`h-5 min-w-5 ${pendingKycCount < 10 ? "w-5" : "px-1.5"} rounded-full bg-rose-600 text-white font-black text-[10px] flex items-center justify-center shrink-0 leading-none shadow-2xs`}>
+                  {pendingKycCount}
+                </span>
+              )}
+            </Link>
+          </div>
+
+          {/* MODERATION */}
+          <div className="space-y-1">
+            {!sidebarCollapsed && (
+              <p className="text-[9.5px] font-black uppercase tracking-widest px-3 mb-1 text-slate-400">
+                Moderation
+              </p>
+            )}
+
+            <Link
+              to="/admin-platform/categories"
+              className={navItemClass("/admin-platform/categories")}
+              onClick={() => setSidebarOpen(false)}
+              title="Categories & Specs"
+            >
+              <div className="flex items-center gap-2.5">
+                <Layers className="h-4 w-4 shrink-0" />
+                {!sidebarCollapsed && <span>Categories & Specs</span>}
+              </div>
+            </Link>
+
+            <Link
+              to="/admin-platform/locations"
+              className={navItemClass("/admin-platform/locations")}
+              onClick={() => setSidebarOpen(false)}
+              title="Location Manager"
+            >
+              <div className="flex items-center gap-2.5">
+                <MapPin className="h-4 w-4 shrink-0" />
+                {!sidebarCollapsed && <span>Location Manager</span>}
+              </div>
+            </Link>
+
+            <Link
+              to="/admin-platform/reports"
+              className={navItemClass("/admin-platform/reports")}
+              onClick={() => setSidebarOpen(false)}
+              title="Reports & Flags"
+            >
+              <div className="flex items-center gap-2.5">
+                <ShieldAlert className="h-4 w-4 shrink-0" />
+                {!sidebarCollapsed && <span>Reports & Flags</span>}
+              </div>
+            </Link>
+          </div>
+
+          {/* SYSTEM */}
+          <div className="space-y-1">
+            {!sidebarCollapsed && (
+              <p className="text-[9.5px] font-black uppercase tracking-widest px-3 mb-1 text-slate-400">
+                System
+              </p>
+            )}
+
+            <Link
+              to="/admin-platform/settings"
+              className={navItemClass("/admin-platform/settings")}
+              onClick={() => setSidebarOpen(false)}
+              title="Settings"
+            >
+              <div className="flex items-center gap-2.5">
+                <Settings className="h-4 w-4 shrink-0" />
+                {!sidebarCollapsed && <span>Settings</span>}
+              </div>
+            </Link>
+          </div>
+        </nav>
+
+        {/* Sidebar Footer Profile */}
+        <div className="p-3 border-t border-slate-100 bg-slate-50/50 shrink-0">
+          <div className={`flex items-center ${sidebarCollapsed ? "justify-center" : "gap-2.5 p-2"} rounded-md bg-white border border-slate-200/60 shadow-2xs`}>
+            <div className="h-8 w-8 rounded-md bg-[#014645] text-white flex items-center justify-center font-black text-xs shrink-0 shadow-2xs">
+              {user?.name ? user.name[0].toUpperCase() : "A"}
+            </div>
+            {!sidebarCollapsed && (
+              <>
+                <div className="flex-1 min-w-0 text-left">
+                  <p className="text-xs font-extrabold text-slate-900 truncate leading-tight my-0">
+                    {user?.name || "Administrator"}
+                  </p>
+                  <p className="text-[9.5px] font-bold text-emerald-800 uppercase tracking-wider leading-tight my-0">
+                    Super Admin
+                  </p>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  title="Log out"
+                  className="h-7 w-7 rounded-md flex items-center justify-center text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer shrink-0"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </aside>
+
+      {/* ── RIGHT MAIN PANEL ── */}
+      <div className="flex flex-col flex-1 min-w-0 min-h-screen">
+        {/* Top Header Bar */}
+        <header className="h-16 px-6 sm:px-8 bg-white border-b border-slate-200/80 flex items-center justify-between shrink-0 sticky top-0 z-30 shadow-2xs">
+          <div className="flex items-center gap-3">
+            {/* Mobile Drawer Button */}
+            <button
+              className="lg:hidden h-9 w-9 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center cursor-pointer transition-colors"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+
+            {/* Desktop Collapse/Expand Sidebar Toggle Button */}
+            <button
+              className="hidden lg:flex h-9 w-9 rounded-md bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200/80 items-center justify-center cursor-pointer transition-colors"
+              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {sidebarCollapsed ? (
+                <PanelLeftOpen className="h-4 w-4" />
+              ) : (
+                <PanelLeftClose className="h-4 w-4" />
+              )}
+            </button>
+
+            {/* Breadcrumb Navigation */}
+            <div className="flex items-center gap-2 text-xs text-left">
+              <span className="font-extrabold text-slate-400 uppercase tracking-wider text-[10px]">
+                Admin Portal
+              </span>
+              <span className="text-slate-300">/</span>
+              <span className="font-black text-slate-900 capitalize text-xs">
+                {currentSection}
+              </span>
+            </div>
+          </div>
+
+          {/* Right Header User Avatar */}
+          <div className="flex items-center gap-2 pl-2 pr-3 py-1 rounded-md bg-slate-50 border border-slate-200/80 select-none">
+            <div className="h-6 w-6 rounded-md bg-[#014645] text-white flex items-center justify-center text-[10px] font-black shrink-0">
+              {user?.name ? user.name[0].toUpperCase() : "A"}
+            </div>
+            <span className="hidden sm:block text-xs font-extrabold text-slate-900">
+              {user?.name || "System Admin"}
+            </span>
+          </div>
+        </header>
+
+        {/* Main Content Area */}
+        <main className="flex-1 p-6 sm:p-8 text-left max-w-7xl w-full mx-auto">
+          <Outlet />
+        </main>
       </div>
     </div>
   );

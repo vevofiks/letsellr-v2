@@ -251,7 +251,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
       {/* Click outside to close overlay */}
       <div className="absolute inset-0 cursor-default" onClick={onClose} />
 

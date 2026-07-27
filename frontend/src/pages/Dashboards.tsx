@@ -29,15 +29,15 @@ import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 
-import { 
-  Home, 
-  PlusCircle, 
-  Search, 
-  MapPin, 
-  ChevronLeft, 
-  ChevronRight, 
-  Bed, 
-  Bath, 
+import {
+  Home,
+  PlusCircle,
+  Search,
+  MapPin,
+  ChevronLeft,
+  ChevronRight,
+  Bed,
+  Bath,
   Maximize,
   X,
   SlidersHorizontal,
@@ -70,7 +70,7 @@ export const ClientDashboard: React.FC = () => {
   const [gpsLoading, setGpsLoading] = useState(false);
   const [detectedLocation, setDetectedLocation] = useState<string>("");
   const [page, setPage] = useState(1);
-  
+
   // Advanced Filter state variables
   const [priceRange, setPriceRange] = useState<string>("all");
   const [sortBy, setSortBy] = useState<string>("newest");
@@ -358,10 +358,10 @@ export const ClientDashboard: React.FC = () => {
 
     // Helper for creating custom circular pin marker
     const createCustomIcon = (prop: any) => {
-      const photoUrl = prop.photos && prop.photos.length > 0 
-        ? prop.photos[0] 
+      const photoUrl = prop.photos && prop.photos.length > 0
+        ? prop.photos[0]
         : getCategoryFallbackImage(prop.category);
-      
+
       return L.divIcon({
         html: `
           <div class="custom-map-pin flex flex-col items-center justify-center" style="position: relative; width: 44px; height: 50px;">
@@ -437,7 +437,7 @@ export const ClientDashboard: React.FC = () => {
             <a href="/properties/${prop.id}" style="display: inline-block; font-size: 10px; color: #0B6E4F; font-weight: 700; text-decoration: none; margin-top: 6px;">VIEW DETAILS →</a>
           </div>
         `);
-      
+
       markersRef.current.push(marker);
       bounds.extend([prop.latitude, prop.longitude]);
     });
@@ -599,11 +599,11 @@ export const ClientDashboard: React.FC = () => {
             `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=10`
           );
           const data = await response.json();
-          const cityVal = 
-            data.address?.city || 
-            data.address?.town || 
-            data.address?.village || 
-            data.address?.county || 
+          const cityVal =
+            data.address?.city ||
+            data.address?.town ||
+            data.address?.village ||
+            data.address?.county ||
             "";
           const stateVal = data.address?.state || "";
 
@@ -699,13 +699,13 @@ export const ClientDashboard: React.FC = () => {
         /* Immersive Map mode */
         <div className="flex-1 w-full relative overflow-hidden flex z-10">
           {/* Background Map */}
-          <div 
-            ref={mapRef} 
-            className="absolute inset-0 w-full h-full z-0" 
+          <div
+            ref={mapRef}
+            className="absolute inset-0 w-full h-full z-0"
           />
 
           {/* Floating Listings side drawer */}
-          <div 
+          <div
             className={cn(
               "absolute top-0 left-0 h-full w-95 sm:w-110 max-w-[85vw] bg-white/95 backdrop-blur-md shadow-2xl border-r border-slate-200/80 z-20 transition-transform duration-300 ease-in-out flex flex-col",
               drawerOpen ? "translate-x-0" : "-translate-x-full"
@@ -722,7 +722,7 @@ export const ClientDashboard: React.FC = () => {
 
             {/* Listings Sidebar Content Pane */}
             <div className="flex-1 flex flex-col min-h-0 bg-white">
-              
+
               {/* Drawer Header with Title, Result count & inline Filters toggle */}
               <div className="p-4 border-b border-slate-100 flex flex-col gap-3 shrink-0">
                 <div className="flex items-center justify-between">
@@ -780,7 +780,7 @@ export const ClientDashboard: React.FC = () => {
                           <X className="h-3 w-3" />
                         </button>
                       </div>
-                      <div className="max-h-80 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden divide-y divide-slate-50 py-1">
+                      <div className="max-h-80 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden divide-y divide-slate-50 py-1">
                         {suggestions.map((item, idx) => (
                           <button
                             key={idx}
@@ -792,12 +792,12 @@ export const ClientDashboard: React.FC = () => {
                               <div className={cn(
                                 "p-1 rounded-md shrink-0",
                                 item.type === "location" ? "bg-red-50 text-red-500" :
-                                item.type === "category" ? "bg-emerald-50 text-emerald-600" :
-                                "bg-blue-50 text-blue-600"
+                                  item.type === "category" ? "bg-emerald-50 text-emerald-600" :
+                                    "bg-blue-50 text-blue-600"
                               )}>
                                 {item.type === "location" ? <MapPin className="h-3 w-3" /> :
-                                 item.type === "category" ? <Home className="h-3 w-3" /> :
-                                 searchMode === "agencies" ? <Building2 className="h-3 w-3" /> : <Search className="h-3 w-3" />}
+                                  item.type === "category" ? <Home className="h-3 w-3" /> :
+                                    searchMode === "agencies" ? <Building2 className="h-3 w-3" /> : <Search className="h-3 w-3" />}
                               </div>
                               <div className="min-w-0 flex-1">
                                 <p className="text-xs font-semibold text-slate-800 truncate m-0">{item.label}</p>
@@ -938,11 +938,10 @@ export const ClientDashboard: React.FC = () => {
                           type="button"
                           onClick={toggleGPS}
                           disabled={gpsLoading}
-                          className={`flex items-center justify-center gap-1.5 px-3 h-8 rounded-md border text-[10px] font-bold transition-all cursor-pointer ${
-                            gpsActive 
-                              ? "border-emerald-500 text-emerald-700 bg-emerald-50/50" 
+                          className={`flex items-center justify-center gap-1.5 px-3 h-8 rounded-md border text-[10px] font-bold transition-all cursor-pointer ${gpsActive
+                              ? "border-emerald-500 text-emerald-700 bg-emerald-50/50"
                               : "border-slate-200 text-slate-600 bg-white hover:bg-slate-50"
-                          }`}
+                            }`}
                         >
                           {gpsLoading ? (
                             <span className="h-3 w-3 border-2 border-slate-500 border-t-transparent rounded-full animate-spin" />
@@ -963,7 +962,7 @@ export const ClientDashboard: React.FC = () => {
                           <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Search Radius</span>
                           <span className="text-[9px] font-bold text-slate-600 bg-slate-200/60 px-1.5 py-0.2 rounded">{radius} km</span>
                         </div>
-                        <input 
+                        <input
                           type="range"
                           min="2"
                           max="50"
@@ -981,7 +980,7 @@ export const ClientDashboard: React.FC = () => {
               </div>
 
               {/* Scrollable Listings Column inside Drawer */}
-              <div 
+              <div
                 className="flex-1 overflow-y-auto p-4 flex flex-col gap-3.5 scrollbar-none"
                 onScroll={handleDrawerScroll}
               >
@@ -1035,9 +1034,9 @@ export const ClientDashboard: React.FC = () => {
                               <MapPin className="h-3 w-3 text-red-500 shrink-0" />
                               <span className="truncate">{prop.location_area || prop.location_city}</span>
                             </div>
-                            
+
                             {/* Title */}
-                            <h3 
+                            <h3
                               className="text-sm font-extrabold text-slate-900 line-clamp-1 hover:text-brand-green transition-colors leading-tight m-0 pr-16"
                             >
                               {prop.title}
@@ -1067,13 +1066,13 @@ export const ClientDashboard: React.FC = () => {
                             </div>
                           </div>
 
-                           {/* Price Row */}
+                          {/* Price Row */}
                           <div className="flex items-center justify-between pt-1.5 border-t border-slate-100/60 mt-1">
                             <span className="font-extrabold text-[13px] text-slate-900 flex items-baseline gap-0.5">
                               {formatPrice(prop.price, prop.price_unit)}
                               {prop.intent === "rent" && <span className="text-[9px] font-medium text-slate-400">/ month</span>}
                             </span>
-                            
+
                             {prop.owner_role === "agency" ? (
                               <span className="inline-flex items-center gap-0.5 rounded-md bg-amber-50 border border-amber-100/50 px-1.5 py-0.5 text-[8px] font-black text-amber-700 uppercase tracking-wider">
                                 <Building2 className="h-2.5 w-2.5" /> Agency
@@ -1119,10 +1118,10 @@ export const ClientDashboard: React.FC = () => {
         </div>
       ) : (
         /* Main Container */
-        <main className="mx-auto max-w-9xl px-5 ">
-        
-        {/* Full-width Hero Banner Section */}
-        {/* <div 
+        <main className="mx-auto max-w-9xl px-5 py-8 pb-5 sm:pb-5">
+
+          {/* Full-width Hero Banner Section */}
+          {/* <div 
           className="relative overflow-hidden -mx-5 md:mx-0 rounded-none md:rounded-[32px] text-white py-12 md:py-20 px-4 md:px-16 shadow-lg bg-cover bg-center mb-8 flex flex-col items-center justify-center min-h-60 md:min-h-95"
           style={{ backgroundImage: `linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0.85)), url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1920&q=80')` }}
         >
@@ -1137,561 +1136,559 @@ export const ClientDashboard: React.FC = () => {
           </div>
         </div> */}
 
-        {/* Custom Search Filter Bar from Reference UI */}
-        <div className="w-full relative z-20 mt-6 pb-6 border-b border-slate-200">
-          <form onSubmit={handleSearchSubmit} className="w-full">
-            <div className="flex flex-col lg:flex-row lg:items-end gap-3 w-full justify-between">
-              
-              {/* Looking For Dropdown - Hidden on mobile, shown on lg screens */}
-              <div className={cn("hidden lg:flex flex-col text-left min-w-35 flex-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
-                <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">Looking For</label>
-                <Select
-                  value={intent || undefined}
-                  onValueChange={(val) => {
-                    setIntent(val === "all" || !val ? "" : val);
-                    setPage(1);
-                  }}
-                >
-                  <SelectTrigger className={cn(
-                    "w-full bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 font-semibold text-slate-800 text-[13px] shadow-sm cursor-pointer transition-all",
-                    "focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green"
-                  )}>
-                    <SelectValue placeholder="Buy / Rent / Lease">
-                      {intent === "buy" ? "For Sale" : intent === "rent" ? "For Rent" : intent === "lease" ? "For Lease" : "Buy / Rent / Lease"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border border-slate-100 shadow-md rounded-lg p-1 z-30">
-                    <SelectItem value="all">Buy / Rent / Lease</SelectItem>
-                    <SelectItem value="buy">For Sale</SelectItem>
-                    <SelectItem value="rent">For Rent</SelectItem>
-                    <SelectItem value="lease">For Lease</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+          {/* Custom Search Filter Bar from Reference UI */}
+          <div className="w-full relative z-20 mt-6 pb-6 border-b border-slate-200">
+            <form onSubmit={handleSearchSubmit} className="w-full">
+              <div className="flex flex-col lg:flex-row lg:items-end gap-3 w-full justify-between">
 
-              {/* Type Dropdown - Hidden on mobile, shown on lg screens */}
-              <div className={cn("hidden lg:flex flex-col text-left min-w-35 flex-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
-                <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">Type</label>
-                <Select
-                  value={category || undefined}
-                  onValueChange={(val) => {
-                    setCategory(val === "all" || !val ? "" : val);
-                    setPage(1);
-                  }}
-                >
-                  <SelectTrigger className={cn(
-                    "w-full bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 font-semibold text-slate-800 text-[13px] shadow-sm cursor-pointer transition-all",
-                    "focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green"
-                  )}>
-                    <SelectValue placeholder="Residence">
-                      {category === "apartment" ? "Apartment" : category === "villa_house" ? "Villa / House" : category === "land" ? "Land" : category === "commercial" ? "Commercial" : category === "pg" ? "PG" : category === "hostel" ? "Hostel" : "Residence"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border border-slate-100 shadow-md rounded-lg p-1 z-30">
-                    <SelectItem value="all">All Categories</SelectItem>
-                    <SelectItem value="apartment">Apartment</SelectItem>
-                    <SelectItem value="villa_house">Villa / House</SelectItem>
-                    <SelectItem value="land">Land</SelectItem>
-                    <SelectItem value="commercial">Commercial</SelectItem>
-                    <SelectItem value="pg">PG</SelectItem>
-                    <SelectItem value="hostel">Hostel</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Price Dropdown - Hidden on mobile, shown on lg screens */}
-              <div className={cn("hidden lg:flex flex-col text-left min-w-35 flex-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
-                <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">Price</label>
-                <Select
-                  value={priceRange === "all" ? undefined : priceRange}
-                  onValueChange={(val) => {
-                    setPriceRange(val || "all");
-                    setPage(1);
-                  }}
-                >
-                  <SelectTrigger className={cn(
-                    "w-full bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 font-semibold text-slate-800 text-[13px] shadow-sm cursor-pointer transition-all",
-                    "focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green"
-                  )}>
-                    <SelectValue placeholder="Any Price">
-                      {priceRange === "under-50k" ? "Under ₹50k" : priceRange === "50k-5l" ? "₹50k - ₹5L" : priceRange === "5l-15l" ? "₹5L - ₹15L" : priceRange === "15l-50l" ? "₹15L - ₹50L" : priceRange === "50l-1cr" ? "₹50L - ₹1Cr" : priceRange === "above-1cr" ? "Above ₹1Cr" : "Any Price"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border border-slate-100 shadow-md rounded-lg p-1 z-30">
-                    <SelectItem value="all">Any Price</SelectItem>
-                    <SelectItem value="under-50k">Under ₹50k</SelectItem>
-                    <SelectItem value="50k-5l">₹50k - ₹5L</SelectItem>
-                    <SelectItem value="5l-15l">₹5L - ₹15L</SelectItem>
-                    <SelectItem value="15l-50l">₹15L - ₹50L</SelectItem>
-                    <SelectItem value="50l-1cr">₹50L - ₹1Cr</SelectItem>
-                    <SelectItem value="above-1cr">Above ₹1Cr</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Location Input - Hidden on mobile, shown on lg screens */}
-              <div className="hidden lg:flex flex-col text-left min-w-42.5 flex-1">
-                <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">Location</label>
-                <div className={cn(
-                  "flex items-center gap-1.5 bg-white border rounded-lg h-10 px-3 transition-all shadow-sm",
-                  gpsActive ? "border-emerald-500 bg-emerald-50/10" : "border-slate-200 hover:border-slate-300",
-                  "focus-within:ring-2 focus-within:ring-brand-green/20 focus-within:border-brand-green"
-                )}>
-                  <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
-                  <input
-                    type="text"
-                    placeholder="City..."
-                    value={searchCity}
-                    onChange={(e) => setSearchCity(e.target.value)}
-                    onBlur={() => {
-                      setCity(searchCity);
+                {/* Looking For Dropdown - Hidden on mobile, shown on lg screens */}
+                <div className={cn("hidden lg:flex flex-col text-left min-w-35 flex-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
+                  <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">Looking For</label>
+                  <Select
+                    value={intent || undefined}
+                    onValueChange={(val) => {
+                      setIntent(val === "all" || !val ? "" : val);
                       setPage(1);
                     }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        setCity(searchCity);
-                        setPage(1);
-                      }
-                    }}
-                    className={cn(
-                      "w-full bg-transparent border-0 font-semibold text-slate-800 text-[13px] focus:outline-none focus:ring-0 p-0",
-                      "placeholder:text-slate-400"
-                    )}
-                  />
+                  >
+                    <SelectTrigger className={cn(
+                      "w-full bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 font-semibold text-slate-800 text-[13px] shadow-sm cursor-pointer transition-all",
+                      "focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green"
+                    )}>
+                      <SelectValue placeholder="Buy / Rent / Lease">
+                        {intent === "buy" ? "For Sale" : intent === "rent" ? "For Rent" : intent === "lease" ? "For Lease" : "Buy / Rent / Lease"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border border-slate-100 shadow-md rounded-lg p-1 z-30">
+                      <SelectItem value="all">Buy / Rent / Lease</SelectItem>
+                      <SelectItem value="buy">For Sale</SelectItem>
+                      <SelectItem value="rent">For Rent</SelectItem>
+                      <SelectItem value="lease">For Lease</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
 
-              {/* Combined search & filter button layout for horizontal row on mobile */}
-              <div className="flex items-end gap-3 flex-1 min-w-0 w-full lg:contents">
-                {/* Find Specific Property Input */}
-                <div ref={topSearchRef} className="flex-1 min-w-0 lg:min-w-35 flex flex-col text-left relative">
-                  <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">
-                    {searchMode === "agencies" ? "Find Specific Agency" : "Find Specific Property"}
-                  </label>
+                {/* Type Dropdown - Hidden on mobile, shown on lg screens */}
+                <div className={cn("hidden lg:flex flex-col text-left min-w-35 flex-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
+                  <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">Type</label>
+                  <Select
+                    value={category || undefined}
+                    onValueChange={(val) => {
+                      setCategory(val === "all" || !val ? "" : val);
+                      setPage(1);
+                    }}
+                  >
+                    <SelectTrigger className={cn(
+                      "w-full bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 font-semibold text-slate-800 text-[13px] shadow-sm cursor-pointer transition-all",
+                      "focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green"
+                    )}>
+                      <SelectValue placeholder="Residence">
+                        {category === "apartment" ? "Apartment" : category === "villa_house" ? "Villa / House" : category === "land" ? "Land" : category === "commercial" ? "Commercial" : category === "pg" ? "PG" : category === "hostel" ? "Hostel" : "Residence"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border border-slate-100 shadow-md rounded-lg p-1 z-30">
+                      <SelectItem value="all">All Categories</SelectItem>
+                      <SelectItem value="apartment">Apartment</SelectItem>
+                      <SelectItem value="villa_house">Villa / House</SelectItem>
+                      <SelectItem value="land">Land</SelectItem>
+                      <SelectItem value="commercial">Commercial</SelectItem>
+                      <SelectItem value="pg">PG</SelectItem>
+                      <SelectItem value="hostel">Hostel</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Price Dropdown - Hidden on mobile, shown on lg screens */}
+                <div className={cn("hidden lg:flex flex-col text-left min-w-35 flex-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
+                  <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">Price</label>
+                  <Select
+                    value={priceRange === "all" ? undefined : priceRange}
+                    onValueChange={(val) => {
+                      setPriceRange(val || "all");
+                      setPage(1);
+                    }}
+                  >
+                    <SelectTrigger className={cn(
+                      "w-full bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 font-semibold text-slate-800 text-[13px] shadow-sm cursor-pointer transition-all",
+                      "focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green"
+                    )}>
+                      <SelectValue placeholder="Any Price">
+                        {priceRange === "under-50k" ? "Under ₹50k" : priceRange === "50k-5l" ? "₹50k - ₹5L" : priceRange === "5l-15l" ? "₹5L - ₹15L" : priceRange === "15l-50l" ? "₹15L - ₹50L" : priceRange === "50l-1cr" ? "₹50L - ₹1Cr" : priceRange === "above-1cr" ? "Above ₹1Cr" : "Any Price"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border border-slate-100 shadow-md rounded-lg p-1 z-30">
+                      <SelectItem value="all">Any Price</SelectItem>
+                      <SelectItem value="under-50k">Under ₹50k</SelectItem>
+                      <SelectItem value="50k-5l">₹50k - ₹5L</SelectItem>
+                      <SelectItem value="5l-15l">₹5L - ₹15L</SelectItem>
+                      <SelectItem value="15l-50l">₹15L - ₹50L</SelectItem>
+                      <SelectItem value="50l-1cr">₹50L - ₹1Cr</SelectItem>
+                      <SelectItem value="above-1cr">Above ₹1Cr</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Location Input - Hidden on mobile, shown on lg screens */}
+                <div className="hidden lg:flex flex-col text-left min-w-42.5 flex-1">
+                  <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">Location</label>
                   <div className={cn(
-                    "flex items-center gap-1.5 bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 transition-all shadow-sm relative",
+                    "flex items-center gap-1.5 bg-white border rounded-lg h-10 px-3 transition-all shadow-sm",
+                    gpsActive ? "border-emerald-500 bg-emerald-50/10" : "border-slate-200 hover:border-slate-300",
                     "focus-within:ring-2 focus-within:ring-brand-green/20 focus-within:border-brand-green"
                   )}>
+                    <MapPin className="h-4 w-4 text-slate-400 shrink-0" />
                     <input
                       type="text"
-                      placeholder={searchMode === "agencies" ? "Ex. agency name" : "Ex. villa, apartment..."}
-                      value={inputQuery}
-                      onFocus={() => setShowTopSuggestions(true)}
-                      onChange={(e) => {
-                        setInputQuery(e.target.value);
-                        setShowTopSuggestions(true);
+                      placeholder="City..."
+                      value={searchCity}
+                      onChange={(e) => setSearchCity(e.target.value)}
+                      onBlur={() => {
+                        setCity(searchCity);
+                        setPage(1);
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          setCity(searchCity);
+                          setPage(1);
+                        }
                       }}
                       className={cn(
                         "w-full bg-transparent border-0 font-semibold text-slate-800 text-[13px] focus:outline-none focus:ring-0 p-0",
                         "placeholder:text-slate-400"
                       )}
                     />
-                    {inputQuery ? (
-                      <X
-                        className="h-4 w-4 text-slate-400 hover:text-slate-600 cursor-pointer shrink-0"
-                        onClick={() => {
-                          setInputQuery("");
-                          setSearchQuery("");
+                  </div>
+                </div>
+
+                {/* Combined search & filter button layout for horizontal row on mobile */}
+                <div className="flex items-end gap-3 flex-1 min-w-0 w-full lg:contents">
+                  {/* Find Specific Property Input */}
+                  <div ref={topSearchRef} className="flex-1 min-w-0 lg:min-w-35 flex flex-col text-left relative">
+                    <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">
+                      {searchMode === "agencies" ? "Find Specific Agency" : "Find Specific Property"}
+                    </label>
+                    <div className={cn(
+                      "flex items-center gap-1.5 bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 transition-all shadow-sm relative",
+                      "focus-within:ring-2 focus-within:ring-brand-green/20 focus-within:border-brand-green"
+                    )}>
+                      <input
+                        type="text"
+                        placeholder={searchMode === "agencies" ? "Ex. agency name" : "Ex. villa, apartment..."}
+                        value={inputQuery}
+                        onFocus={() => setShowTopSuggestions(true)}
+                        onChange={(e) => {
+                          setInputQuery(e.target.value);
+                          setShowTopSuggestions(true);
                         }}
+                        className={cn(
+                          "w-full bg-transparent border-0 font-semibold text-slate-800 text-[13px] focus:outline-none focus:ring-0 p-0",
+                          "placeholder:text-slate-400"
+                        )}
                       />
-                    ) : (
-                      <Search className="h-4 w-4 text-slate-400 shrink-0" />
+                      {inputQuery ? (
+                        <X
+                          className="h-4 w-4 text-slate-400 hover:text-slate-600 cursor-pointer shrink-0"
+                          onClick={() => {
+                            setInputQuery("");
+                            setSearchQuery("");
+                          }}
+                        />
+                      ) : (
+                        <Search className="h-4 w-4 text-slate-400 shrink-0" />
+                      )}
+                    </div>
+
+                    {/* Autocomplete Suggestions Dropdown */}
+                    {showTopSuggestions && suggestions.length > 0 && (
+                      <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden text-left animate-in fade-in slide-in-from-top-1 duration-150">
+                        <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[9px] font-extrabold uppercase text-slate-400 tracking-wider">
+                          <span>Suggestions</span>
+                          <button type="button" onClick={() => setShowTopSuggestions(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                        <div className="max-h-80 overflow-y-auto scrollbar-none [&::-webkit-scrollbar]:hidden divide-y divide-slate-50 py-1">
+                          {suggestions.map((item, idx) => (
+                            <button
+                              key={idx}
+                              type="button"
+                              onClick={() => handleSelectSuggestion(item)}
+                              className="w-full px-3 py-2 hover:bg-slate-50 flex items-center justify-between gap-2 text-left cursor-pointer transition-colors"
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <div className={cn(
+                                  "p-1 rounded-md shrink-0",
+                                  item.type === "location" ? "bg-red-50 text-red-500" :
+                                    item.type === "category" ? "bg-emerald-50 text-emerald-600" :
+                                      "bg-blue-50 text-blue-600"
+                                )}>
+                                  {item.type === "location" ? <MapPin className="h-3 w-3" /> :
+                                    item.type === "category" ? <Home className="h-3 w-3" /> :
+                                      searchMode === "agencies" ? <Building2 className="h-3 w-3" /> : <Search className="h-3 w-3" />}
+                                </div>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-semibold text-slate-800 truncate m-0">{item.label}</p>
+                                  {item.subtext && <p className="text-[9px] text-slate-400 font-normal truncate m-0">{item.subtext}</p>}
+                                </div>
+                              </div>
+                              <span className="text-[8px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md uppercase shrink-0">
+                                {item.type}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </div>
 
-                  {/* Autocomplete Suggestions Dropdown */}
-                  {showTopSuggestions && suggestions.length > 0 && (
-                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-xl z-50 overflow-hidden text-left animate-in fade-in slide-in-from-top-1 duration-150">
-                      <div className="px-3 py-1.5 bg-slate-50 border-b border-slate-100 flex items-center justify-between text-[9px] font-extrabold uppercase text-slate-400 tracking-wider">
-                        <span>Suggestions</span>
-                        <button type="button" onClick={() => setShowTopSuggestions(false)} className="text-slate-400 hover:text-slate-600 cursor-pointer">
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                      <div className="max-h-80 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden divide-y divide-slate-50 py-1">
-                        {suggestions.map((item, idx) => (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => handleSelectSuggestion(item)}
-                            className="w-full px-3 py-2 hover:bg-slate-50 flex items-center justify-between gap-2 text-left cursor-pointer transition-colors"
-                          >
-                            <div className="flex items-center gap-2 min-w-0">
-                              <div className={cn(
-                                "p-1 rounded-md shrink-0",
-                                item.type === "location" ? "bg-red-50 text-red-500" :
-                                item.type === "category" ? "bg-emerald-50 text-emerald-600" :
-                                "bg-blue-50 text-blue-600"
-                              )}>
-                                {item.type === "location" ? <MapPin className="h-3 w-3" /> :
-                                 item.type === "category" ? <Home className="h-3 w-3" /> :
-                                 searchMode === "agencies" ? <Building2 className="h-3 w-3" /> : <Search className="h-3 w-3" />}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="text-xs font-semibold text-slate-800 truncate m-0">{item.label}</p>
-                                {item.subtext && <p className="text-[9px] text-slate-400 font-normal truncate m-0">{item.subtext}</p>}
-                              </div>
-                            </div>
-                            <span className="text-[8px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md uppercase shrink-0">
-                              {item.type}
-                            </span>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                  {/* Filter Button with Absolute Popover */}
+                  <div className="relative flex flex-col text-left justify-end shrink-0">
+                    <button
+                      ref={filterBtnRef}
+                      type="button"
+                      onClick={() => setShowAdvancedPopover(!showAdvancedPopover)}
+                      className={`flex items-center justify-center gap-1.5 h-10 px-4 rounded-lg border font-semibold text-xs transition-all duration-200 cursor-pointer shadow-sm ${showAdvancedPopover
+                          ? "bg-slate-100 border-slate-300 text-slate-900"
+                          : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                        }`}
+                    >
+                      <SlidersHorizontal className="h-4 w-4 shrink-0" />
+                      <span>Filter</span>
+                    </button>
 
-                {/* Filter Button with Absolute Popover */}
-                <div className="relative flex flex-col text-left justify-end shrink-0">
-                  <button
-                    ref={filterBtnRef}
-                    type="button"
-                    onClick={() => setShowAdvancedPopover(!showAdvancedPopover)}
-                    className={`flex items-center justify-center gap-1.5 h-10 px-4 rounded-lg border font-semibold text-xs transition-all duration-200 cursor-pointer shadow-sm ${
-                      showAdvancedPopover
-                        ? "bg-slate-100 border-slate-300 text-slate-900"
-                        : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
-                    }`}
-                  >
-                    <SlidersHorizontal className="h-4 w-4 shrink-0" />
-                    <span>Filter</span>
-                  </button>
+                    {/* Popover — bottom sheet on mobile, dropdown on desktop */}
+                    {showAdvancedPopover && (
+                      <>
+                        {/* Mobile backdrop */}
+                        <div className="fixed inset-0 bg-black/30 z-40 lg:hidden" onClick={() => setShowAdvancedPopover(false)} />
+                        <div
+                          ref={popoverRef}
+                          className={cn(
+                            "z-50 bg-white border border-slate-200 shadow-xl",
+                            // Mobile: full-width bottom sheet
+                            "fixed bottom-0 left-0 right-0 rounded-t-2xl p-4 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-200",
+                            // Desktop: dropdown
+                            "lg:absolute lg:fixed-[unset] lg:bottom-auto lg:left-auto lg:right-0 lg:top-full lg:mt-2 lg:w-72 lg:rounded-lg lg:max-h-none lg:overflow-visible lg:slide-in-from-bottom-0 lg:slide-in-from-top-2"
+                          )}
+                        >
+                          {/* Handle bar — mobile only */}
+                          <div className="flex justify-center mb-3 lg:hidden">
+                            <div className="w-10 h-1 rounded-full bg-slate-200" />
+                          </div>
 
-                  {/* Popover — bottom sheet on mobile, dropdown on desktop */}
-                  {showAdvancedPopover && (
-                    <>
-                      {/* Mobile backdrop */}
-                      <div className="fixed inset-0 bg-black/30 z-40 lg:hidden" onClick={() => setShowAdvancedPopover(false)} />
-                      <div
-                        ref={popoverRef}
-                        className={cn(
-                          "z-50 bg-white border border-slate-200 shadow-xl",
-                          // Mobile: full-width bottom sheet
-                          "fixed bottom-0 left-0 right-0 rounded-t-2xl p-4 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom-4 duration-200",
-                          // Desktop: dropdown
-                          "lg:absolute lg:fixed-[unset] lg:bottom-auto lg:left-auto lg:right-0 lg:top-full lg:mt-2 lg:w-72 lg:rounded-lg lg:max-h-none lg:overflow-visible lg:slide-in-from-bottom-0 lg:slide-in-from-top-2"
-                        )}
-                      >
-                        {/* Handle bar — mobile only */}
-                        <div className="flex justify-center mb-3 lg:hidden">
-                          <div className="w-10 h-1 rounded-full bg-slate-200" />
-                        </div>
-
-                        <div className="flex flex-col gap-3">
-                          <div className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 flex items-center justify-between">
-                            <span className="flex items-center gap-1.5">
-                              <SlidersHorizontal className="h-3.5 w-3.5 text-slate-500" />
-                              Filters
-                              {gpsActive && <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              {(intent || category || city || priceRange !== "all" || gpsActive || limit !== 12) && (
+                          <div className="flex flex-col gap-3">
+                            <div className="text-xs font-bold text-slate-800 border-b border-slate-100 pb-2 flex items-center justify-between">
+                              <span className="flex items-center gap-1.5">
+                                <SlidersHorizontal className="h-3.5 w-3.5 text-slate-500" />
+                                Filters
+                                {gpsActive && <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />}
+                              </span>
+                              <div className="flex items-center gap-2">
+                                {(intent || category || city || priceRange !== "all" || gpsActive || limit !== 12) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => { handleResetAll(); setShowAdvancedPopover(false); }}
+                                    className="text-[10px] font-extrabold text-rose-500 hover:text-rose-700 px-2 py-0.5 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
+                                  >
+                                    Reset All
+                                  </button>
+                                )}
                                 <button
                                   type="button"
-                                  onClick={() => { handleResetAll(); setShowAdvancedPopover(false); }}
-                                  className="text-[10px] font-extrabold text-rose-500 hover:text-rose-700 px-2 py-0.5 rounded-md hover:bg-rose-50 transition-colors cursor-pointer"
+                                  onClick={() => setShowAdvancedPopover(false)}
+                                  className="p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
                                 >
-                                  Reset All
+                                  <X className="h-3.5 w-3.5" />
                                 </button>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => setShowAdvancedPopover(false)}
-                                className="p-0.5 rounded hover:bg-slate-100 text-slate-400 hover:text-slate-600 cursor-pointer transition-colors"
-                              >
-                                <X className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Search Mode Selector */}
-                          <div className="flex flex-col gap-1 pb-2 border-b border-slate-100">
-                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Search For</span>
-                            <div className="grid grid-cols-2 gap-1 bg-slate-100 p-0.5 rounded-lg">
-                              <button
-                                type="button"
-                                onClick={() => { setSearchMode("properties"); setPage(1); }}
-                                className={cn(
-                                  "py-1 text-xs font-extrabold rounded-md transition-all cursor-pointer",
-                                  searchMode === "properties"
-                                    ? "bg-white text-slate-900 shadow-sm"
-                                    : "text-slate-500 hover:text-slate-700"
-                                )}
-                              >
-                                Properties
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => { setSearchMode("agencies"); setPage(1); setViewMode("list"); }}
-                                className={cn(
-                                  "py-1 text-xs font-extrabold rounded-md transition-all cursor-pointer",
-                                  searchMode === "agencies"
-                                    ? "bg-white text-slate-900 shadow-sm"
-                                    : "text-slate-500 hover:text-slate-700"
-                                )}
-                              >
-                                Agencies
-                              </button>
-                            </div>
-                          </div>
-
-                          {/* Mobile-only: Looking For + Type in 2-col grid */}
-                          <div className={cn("grid grid-cols-2 gap-2 lg:hidden", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
-                            <div className="flex flex-col gap-1">
-                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Intent</span>
-                              <Select value={intent || undefined} onValueChange={(val) => { setIntent(val === "all" || !val ? "" : val); setPage(1); }}>
-                                <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
-                                  <SelectValue placeholder="Any">{intent === "buy" ? "Sale" : intent === "rent" ? "Rent" : intent === "lease" ? "Lease" : "Any"}</SelectValue>
-                                </SelectTrigger>
-                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
-                                  <SelectItem value="all">Any</SelectItem>
-                                  <SelectItem value="buy">For Sale</SelectItem>
-                                  <SelectItem value="rent">For Rent</SelectItem>
-                                  <SelectItem value="lease">For Lease</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Type</span>
-                              <Select value={category || undefined} onValueChange={(val) => { setCategory(val === "all" || !val ? "" : val); setPage(1); }}>
-                                <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
-                                  <SelectValue placeholder="All">{category === "apartment" ? "Apt" : category === "villa_house" ? "Villa" : category === "land" ? "Land" : category === "commercial" ? "Comm" : category === "pg" ? "PG" : category === "hostel" ? "Hostel" : "All"}</SelectValue>
-                                </SelectTrigger>
-                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
-                                  <SelectItem value="all">All</SelectItem>
-                                  <SelectItem value="apartment">Apartment</SelectItem>
-                                  <SelectItem value="villa_house">Villa / House</SelectItem>
-                                  <SelectItem value="land">Land</SelectItem>
-                                  <SelectItem value="commercial">Commercial</SelectItem>
-                                  <SelectItem value="pg">PG</SelectItem>
-                                  <SelectItem value="hostel">Hostel</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-
-                          {/* Mobile-only: Price + Location in 2-col grid */}
-                          <div className="grid grid-cols-2 gap-2 lg:hidden">
-                            <div className={cn("flex flex-col gap-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
-                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Price</span>
-                              <Select value={priceRange === "all" ? undefined : priceRange} onValueChange={(val) => { setPriceRange(val || "all"); setPage(1); }}>
-                                <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
-                                  <SelectValue placeholder="Any">{priceRange === "under-50k" ? "<₹50k" : priceRange === "50k-5l" ? "₹50k-5L" : priceRange === "5l-15l" ? "₹5-15L" : priceRange === "15l-50l" ? "₹15-50L" : priceRange === "50l-1cr" ? "₹50L-1Cr" : priceRange === "above-1cr" ? ">₹1Cr" : "Any"}</SelectValue>
-                                </SelectTrigger>
-                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
-                                  <SelectItem value="all">Any Price</SelectItem>
-                                  <SelectItem value="under-50k">Under ₹50k</SelectItem>
-                                  <SelectItem value="50k-5l">₹50k - ₹5L</SelectItem>
-                                  <SelectItem value="5l-15l">₹5L - ₹15L</SelectItem>
-                                  <SelectItem value="15l-50l">₹15L - ₹50L</SelectItem>
-                                  <SelectItem value="50l-1cr">₹50L - ₹1Cr</SelectItem>
-                                  <SelectItem value="above-1cr">Above ₹1Cr</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">City</span>
-                              <div className={cn("flex items-center gap-1 bg-white border rounded-md h-8 px-2 transition-all", gpsActive ? "border-emerald-500" : "border-slate-200")}>
-                                <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
-                                <input type="text" placeholder="City..." value={searchCity}
-                                  onChange={(e) => setSearchCity(e.target.value)}
-                                  onBlur={() => { setCity(searchCity); setPage(1); }}
-                                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setCity(searchCity); setPage(1); } }}
-                                  className="w-full bg-transparent border-0 font-semibold text-slate-800 text-[11px] focus:outline-none p-0 placeholder:text-slate-400"
-                                />
                               </div>
                             </div>
-                          </div>
 
-                          {/* GPS Proximity */}
-                          <div className="flex flex-col gap-1">
-                            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">GPS Nearby</span>
-                            <button type="button" onClick={toggleGPS} disabled={gpsLoading}
-                              className={`w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md border text-[11px] font-bold transition-all cursor-pointer ${
-                                gpsActive ? "border-emerald-500 text-emerald-700 bg-emerald-50/50" : "border-slate-200 text-slate-600 bg-white hover:bg-slate-50"
-                              }`}
+                            {/* Search Mode Selector */}
+                            <div className="flex flex-col gap-1 pb-2 border-b border-slate-100">
+                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Search For</span>
+                              <div className="grid grid-cols-2 gap-1 bg-slate-100 p-0.5 rounded-lg">
+                                <button
+                                  type="button"
+                                  onClick={() => { setSearchMode("properties"); setPage(1); }}
+                                  className={cn(
+                                    "py-1 text-xs font-extrabold rounded-md transition-all cursor-pointer",
+                                    searchMode === "properties"
+                                      ? "bg-white text-slate-900 shadow-sm"
+                                      : "text-slate-500 hover:text-slate-700"
+                                  )}
+                                >
+                                  Properties
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => { setSearchMode("agencies"); setPage(1); setViewMode("list"); }}
+                                  className={cn(
+                                    "py-1 text-xs font-extrabold rounded-md transition-all cursor-pointer",
+                                    searchMode === "agencies"
+                                      ? "bg-white text-slate-900 shadow-sm"
+                                      : "text-slate-500 hover:text-slate-700"
+                                  )}
+                                >
+                                  Agencies
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Mobile-only: Looking For + Type in 2-col grid */}
+                            <div className={cn("grid grid-cols-2 gap-2 lg:hidden", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
+                              <div className="flex flex-col gap-1">
+                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Intent</span>
+                                <Select value={intent || undefined} onValueChange={(val) => { setIntent(val === "all" || !val ? "" : val); setPage(1); }}>
+                                  <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
+                                    <SelectValue placeholder="Any">{intent === "buy" ? "Sale" : intent === "rent" ? "Rent" : intent === "lease" ? "Lease" : "Any"}</SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
+                                    <SelectItem value="all">Any</SelectItem>
+                                    <SelectItem value="buy">For Sale</SelectItem>
+                                    <SelectItem value="rent">For Rent</SelectItem>
+                                    <SelectItem value="lease">For Lease</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Type</span>
+                                <Select value={category || undefined} onValueChange={(val) => { setCategory(val === "all" || !val ? "" : val); setPage(1); }}>
+                                  <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
+                                    <SelectValue placeholder="All">{category === "apartment" ? "Apt" : category === "villa_house" ? "Villa" : category === "land" ? "Land" : category === "commercial" ? "Comm" : category === "pg" ? "PG" : category === "hostel" ? "Hostel" : "All"}</SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
+                                    <SelectItem value="all">All</SelectItem>
+                                    <SelectItem value="apartment">Apartment</SelectItem>
+                                    <SelectItem value="villa_house">Villa / House</SelectItem>
+                                    <SelectItem value="land">Land</SelectItem>
+                                    <SelectItem value="commercial">Commercial</SelectItem>
+                                    <SelectItem value="pg">PG</SelectItem>
+                                    <SelectItem value="hostel">Hostel</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+
+                            {/* Mobile-only: Price + Location in 2-col grid */}
+                            <div className="grid grid-cols-2 gap-2 lg:hidden">
+                              <div className={cn("flex flex-col gap-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
+                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Price</span>
+                                <Select value={priceRange === "all" ? undefined : priceRange} onValueChange={(val) => { setPriceRange(val || "all"); setPage(1); }}>
+                                  <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
+                                    <SelectValue placeholder="Any">{priceRange === "under-50k" ? "<₹50k" : priceRange === "50k-5l" ? "₹50k-5L" : priceRange === "5l-15l" ? "₹5-15L" : priceRange === "15l-50l" ? "₹15-50L" : priceRange === "50l-1cr" ? "₹50L-1Cr" : priceRange === "above-1cr" ? ">₹1Cr" : "Any"}</SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
+                                    <SelectItem value="all">Any Price</SelectItem>
+                                    <SelectItem value="under-50k">Under ₹50k</SelectItem>
+                                    <SelectItem value="50k-5l">₹50k - ₹5L</SelectItem>
+                                    <SelectItem value="5l-15l">₹5L - ₹15L</SelectItem>
+                                    <SelectItem value="15l-50l">₹15L - ₹50L</SelectItem>
+                                    <SelectItem value="50l-1cr">₹50L - ₹1Cr</SelectItem>
+                                    <SelectItem value="above-1cr">Above ₹1Cr</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">City</span>
+                                <div className={cn("flex items-center gap-1 bg-white border rounded-md h-8 px-2 transition-all", gpsActive ? "border-emerald-500" : "border-slate-200")}>
+                                  <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
+                                  <input type="text" placeholder="City..." value={searchCity}
+                                    onChange={(e) => setSearchCity(e.target.value)}
+                                    onBlur={() => { setCity(searchCity); setPage(1); }}
+                                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setCity(searchCity); setPage(1); } }}
+                                    className="w-full bg-transparent border-0 font-semibold text-slate-800 text-[11px] focus:outline-none p-0 placeholder:text-slate-400"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* GPS Proximity */}
+                            <div className="flex flex-col gap-1">
+                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">GPS Nearby</span>
+                              <button type="button" onClick={toggleGPS} disabled={gpsLoading}
+                                className={`w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md border text-[11px] font-bold transition-all cursor-pointer ${gpsActive ? "border-emerald-500 text-emerald-700 bg-emerald-50/50" : "border-slate-200 text-slate-600 bg-white hover:bg-slate-50"
+                                  }`}
+                              >
+                                {gpsLoading ? <span className="h-3.5 w-3.5 border-2 border-slate-500 border-t-transparent rounded-full animate-spin" /> : (
+                                  <><MapPin className={`h-3 w-3 ${gpsActive ? "text-emerald-600 animate-bounce" : "text-slate-400"}`} />
+                                    {gpsActive ? "Proximity Active" : "Detect GPS Location"}</>
+                                )}
+                              </button>
+                            </div>
+
+                            {/* Radius + Limit in 2-col */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className={cn("flex flex-col gap-1", !gpsActive && "opacity-30 pointer-events-none select-none relative")}>
+                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Radius</span>
+                                <Select value={String(radius)} onValueChange={(val) => { setRadius(Number(val || "20")); setPage(1); }} disabled={!gpsActive}>
+                                  <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px] disabled:opacity-50">
+                                    <SelectValue placeholder="20 km" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
+                                    <SelectItem value="5">5 km</SelectItem>
+                                    <SelectItem value="10">10 km</SelectItem>
+                                    <SelectItem value="20">20 km</SelectItem>
+                                    <SelectItem value="50">50 km</SelectItem>
+                                    <SelectItem value="100">100 km</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div className="flex flex-col gap-1">
+                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Per Page</span>
+                                <Select value={String(limit)} onValueChange={(val) => { setLimit(Number(val || "12")); setPage(1); }}>
+                                  <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
+                                    <SelectValue placeholder="12" />
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
+                                    <SelectItem value="12">12</SelectItem>
+                                    <SelectItem value="24">24</SelectItem>
+                                    <SelectItem value="48">48</SelectItem>
+                                    <SelectItem value="100">100</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+
+                            {/* Apply button — mobile only */}
+                            <button
+                              type="button"
+                              onClick={() => setShowAdvancedPopover(false)}
+                              className="lg:hidden w-full h-10 rounded-lg bg-brand-green hover:bg-brand-green-hover text-white font-extrabold text-sm transition-colors mt-1"
                             >
-                              {gpsLoading ? <span className="h-3.5 w-3.5 border-2 border-slate-500 border-t-transparent rounded-full animate-spin" /> : (
-                                <><MapPin className={`h-3 w-3 ${gpsActive ? "text-emerald-600 animate-bounce" : "text-slate-400"}`} />
-                                {gpsActive ? "Proximity Active" : "Detect GPS Location"}</>
-                              )}
+                              Apply Filters
                             </button>
                           </div>
-
-                          {/* Radius + Limit in 2-col */}
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className={cn("flex flex-col gap-1", !gpsActive && "opacity-30 pointer-events-none select-none relative")}>
-                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Radius</span>
-                              <Select value={String(radius)} onValueChange={(val) => { setRadius(Number(val || "20")); setPage(1); }} disabled={!gpsActive}>
-                                <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px] disabled:opacity-50">
-                                  <SelectValue placeholder="20 km" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
-                                  <SelectItem value="5">5 km</SelectItem>
-                                  <SelectItem value="10">10 km</SelectItem>
-                                  <SelectItem value="20">20 km</SelectItem>
-                                  <SelectItem value="50">50 km</SelectItem>
-                                  <SelectItem value="100">100 km</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                            <div className="flex flex-col gap-1">
-                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Per Page</span>
-                              <Select value={String(limit)} onValueChange={(val) => { setLimit(Number(val || "12")); setPage(1); }}>
-                                <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
-                                  <SelectValue placeholder="12" />
-                                </SelectTrigger>
-                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
-                                  <SelectItem value="12">12</SelectItem>
-                                  <SelectItem value="24">24</SelectItem>
-                                  <SelectItem value="48">48</SelectItem>
-                                  <SelectItem value="100">100</SelectItem>
-                                </SelectContent>
-                              </Select>
-                            </div>
-                          </div>
-
-                          {/* Apply button — mobile only */}
-                          <button
-                            type="button"
-                            onClick={() => setShowAdvancedPopover(false)}
-                            className="lg:hidden w-full h-10 rounded-lg bg-brand-green hover:bg-brand-green-hover text-white font-extrabold text-sm transition-colors mt-1"
-                          >
-                            Apply Filters
-                          </button>
                         </div>
-                      </div>
-                    </>
-                  )}
+                      </>
+                    )}
+                  </div>
                 </div>
+
               </div>
-
-            </div>
-          </form>
-        </div>
-
-        {/* Active Filter Chips — visible on all screen sizes */}
-        {(city || searchQuery || limit !== 12 || (searchMode !== "agencies" && (intent || category || priceRange !== "all" || gpsActive))) && (
-          <div className="hidden lg:flex items-center gap-2 mt-4 flex-wrap relative z-20 w-full px-0">
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mr-1">Active:</span>
-            
-            {searchQuery && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
-                Query: "{searchQuery}"
-                <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => setSearchQuery("")} />
-              </span>
-            )}
-
-            {intent && searchMode !== "agencies" && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
-                Intent: {intent === "buy" ? "For Sale" : intent === "rent" ? "For Rent" : "For Lease"}
-                <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => { setIntent(""); setPage(1); }} />
-              </span>
-            )}
-
-            {category && searchMode !== "agencies" && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
-                Type: {category.replace("_", " ")}
-                <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => { setCategory(""); setPage(1); }} />
-              </span>
-            )}
-
-            {city && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
-                Location: {city}
-                <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => { setCity(""); setSearchCity(""); setPage(1); }} />
-              </span>
-            )}
-
-            {priceRange !== "all" && searchMode !== "agencies" && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
-                Budget: {
-                  priceRange === "under-50k" ? "Under ₹50k" :
-                  priceRange === "50k-5l" ? "₹50k - ₹5L" :
-                  priceRange === "5l-15l" ? "₹5L - ₹15L" :
-                  priceRange === "15l-50l" ? "₹15L - ₹50L" :
-                  priceRange === "50l-1cr" ? "₹50L - ₹1Cr" : "Above ₹1Cr"
-                }
-                <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => { setPriceRange("all"); setPage(1); }} />
-              </span>
-            )}
-
-            {gpsActive && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
-                GPS Nearby: {detectedLocation || `${radius} km`}
-                <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={toggleGPS} />
-              </span>
-            )}
-
-            {limit !== 12 && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
-                Limit: {limit} / page
-                <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => { setLimit(12); setPage(1); }} />
-              </span>
-            )}
-
-            <button
-              type="button"
-              onClick={handleResetAll}
-              className="text-[11px] font-extrabold text-rose-600 hover:text-rose-700 hover:underline px-2 py-1 ml-1 cursor-pointer transition-colors"
-            >
-              Clear All
-            </button> 
+            </form>
           </div>
-        )}
 
-        {/* Title Grid Section */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 mt-10 border-b border-slate-200/60 pb-4">
-          <div className="text-left">
-            <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight capitalize">
-              {searchMode === "agencies" ? "Verified Agencies" : (category ? category.replace("_", " / ") : "Residence")}{city ? ` in ${city}` : ""}
-            </h2>
-            <p className="text-slate-500 text-xs mt-0.5 font-semibold">
-              {searchMode === "agencies" ? (
-                <>We found <span className="font-extrabold text-slate-900">{filteredAgencies.length}</span> {filteredAgencies.length === 1 ? "agency" : "agencies"}</>
-              ) : (
-                <>We found <span className="font-extrabold text-slate-900">{filteredProperties.length}</span> {filteredProperties.length === 1 ? "property" : "properties"}</>
+          {/* Active Filter Chips — visible on all screen sizes */}
+          {(city || searchQuery || limit !== 12 || (searchMode !== "agencies" && (intent || category || priceRange !== "all" || gpsActive))) && (
+            <div className="hidden lg:flex items-center gap-2 mt-4 flex-wrap relative z-20 w-full px-0">
+              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mr-1">Active:</span>
+
+              {searchQuery && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
+                  Query: "{searchQuery}"
+                  <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => setSearchQuery("")} />
+                </span>
               )}
-            </p>
+
+              {intent && searchMode !== "agencies" && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
+                  Intent: {intent === "buy" ? "For Sale" : intent === "rent" ? "For Rent" : "For Lease"}
+                  <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => { setIntent(""); setPage(1); }} />
+                </span>
+              )}
+
+              {category && searchMode !== "agencies" && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
+                  Type: {category.replace("_", " ")}
+                  <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => { setCategory(""); setPage(1); }} />
+                </span>
+              )}
+
+              {city && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
+                  Location: {city}
+                  <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => { setCity(""); setSearchCity(""); setPage(1); }} />
+                </span>
+              )}
+
+              {priceRange !== "all" && searchMode !== "agencies" && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
+                  Budget: {
+                    priceRange === "under-50k" ? "Under ₹50k" :
+                      priceRange === "50k-5l" ? "₹50k - ₹5L" :
+                        priceRange === "5l-15l" ? "₹5L - ₹15L" :
+                          priceRange === "15l-50l" ? "₹15L - ₹50L" :
+                            priceRange === "50l-1cr" ? "₹50L - ₹1Cr" : "Above ₹1Cr"
+                  }
+                  <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => { setPriceRange("all"); setPage(1); }} />
+                </span>
+              )}
+
+              {gpsActive && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
+                  GPS Nearby: {detectedLocation || `${radius} km`}
+                  <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={toggleGPS} />
+                </span>
+              )}
+
+              {limit !== 12 && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
+                  Limit: {limit} / page
+                  <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => { setLimit(12); setPage(1); }} />
+                </span>
+              )}
+
+              <button
+                type="button"
+                onClick={handleResetAll}
+                className="text-[11px] font-extrabold text-rose-600 hover:text-rose-700 hover:underline px-2 py-1 ml-1 cursor-pointer transition-colors"
+              >
+                Clear All
+              </button>
+            </div>
+          )}
+
+          {/* Title Grid Section */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 mt-10 border-b border-slate-200/60 pb-4">
+            <div className="text-left">
+              <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight capitalize">
+                {searchMode === "agencies" ? "Verified Agencies" : (category ? category.replace("_", " / ") : "Residence")}{city ? ` in ${city}` : ""}
+              </h2>
+              <p className="text-slate-500 text-xs mt-0.5 font-semibold">
+                {searchMode === "agencies" ? (
+                  <>We found <span className="font-extrabold text-slate-900">{filteredAgencies.length}</span> {filteredAgencies.length === 1 ? "agency" : "agencies"}</>
+                ) : (
+                  <>We found <span className="font-extrabold text-slate-900">{filteredProperties.length}</span> {filteredProperties.length === 1 ? "property" : "properties"}</>
+                )}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end shrink-0">
+              {((searchMode === "agencies" && agencies.length > 0) || (searchMode !== "agencies" && properties.length > 0)) && (
+                <span className="text-[10px] text-brand-green px-2.5 py-1 rounded-full font-black uppercase tracking-wider">
+                  PAGE {page}
+                </span>
+              )}
+
+              {searchMode !== "agencies" && (
+                <div className="flex items-center gap-1 text-xs font-semibold text-slate-500 shrink-0 whitespace-nowrap">
+                  <span className="shrink-0">Sort By:</span>
+                  <Select
+                    value={sortBy || "newest"}
+                    onValueChange={(val) => {
+                      setSortBy(val || "newest");
+                      setPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="w-auto border-none bg-transparent hover:bg-slate-100/50 rounded-md h-7 px-1.5 font-bold text-slate-800 text-xs focus:ring-0 focus:ring-transparent focus:ring-offset-0 cursor-pointer flex items-center gap-1 shrink-0 whitespace-nowrap">
+                      <SelectValue placeholder="Default">
+                        {sortBy === "price_asc" ? "Low to High" : sortBy === "price_desc" ? "High to Low" : "newest"}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-30">
+                      <SelectItem value="newest">newest</SelectItem>
+                      <SelectItem value="price_asc">Low to High</SelectItem>
+                      <SelectItem value="price_desc">High to Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end shrink-0">
-            {((searchMode === "agencies" && agencies.length > 0) || (searchMode !== "agencies" && properties.length > 0)) && (
-              <span className="text-[10px] text-brand-green px-2.5 py-1 rounded-full font-black uppercase tracking-wider">
-                PAGE {page}
-              </span>
-            )}
-            
-            {searchMode !== "agencies" && (
-              <div className="flex items-center gap-1 text-xs font-semibold text-slate-500 shrink-0 whitespace-nowrap">
-                <span className="shrink-0">Sort By:</span>
-                <Select
-                  value={sortBy || "newest"}
-                  onValueChange={(val) => {
-                    setSortBy(val || "newest");
-                    setPage(1);
-                  }}
-                >
-                  <SelectTrigger className="w-auto border-none bg-transparent hover:bg-slate-100/50 rounded-md h-7 px-1.5 font-bold text-slate-800 text-xs focus:ring-0 focus:ring-transparent focus:ring-offset-0 cursor-pointer flex items-center gap-1 shrink-0 whitespace-nowrap">
-                    <SelectValue placeholder="Default">
-                      {sortBy === "price_asc" ? "Low to High" : sortBy === "price_desc" ? "High to Low" : "newest"}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-30">
-                    <SelectItem value="newest">newest</SelectItem>
-                    <SelectItem value="price_asc">Low to High</SelectItem>
-                    <SelectItem value="price_desc">High to Low</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Listings Content */}
-        {loading ? (
+          {/* Listings Content */}
+          {loading ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {[...Array(6)].map((_, i) => (
                 <SkeletonCard key={i} />
@@ -1704,14 +1701,14 @@ export const ClientDashboard: React.FC = () => {
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-50 text-slate-400 mb-6">
                   <Building2 className="h-10 w-10 text-brand-green" />
                 </div>
-                
+
                 {searchQuery ? (
                   <>
                     <h3 className="text-xl font-bold text-slate-900">No agencies matched "{searchQuery}"</h3>
                     <p className="text-slate-500 max-w-sm mt-1 text-sm">
                       Try typing a different name or resetting the search input.
                     </p>
-                    <Button 
+                    <Button
                       onClick={() => setSearchQuery("")}
                       className="mt-6 bg-brand-green hover:bg-brand-green-hover text-white text-xs font-semibold rounded-full px-6"
                     >
@@ -1724,7 +1721,7 @@ export const ClientDashboard: React.FC = () => {
                     <p className="text-slate-500 max-w-sm mt-1 text-sm">
                       Try searching for a different city or clearing the text filter.
                     </p>
-                    <Button 
+                    <Button
                       onClick={() => { setCity(""); setSearchCity(""); }}
                       className="mt-6 bg-brand-green hover:bg-brand-green-hover text-white text-xs font-semibold rounded-full px-6"
                     >
@@ -1746,7 +1743,7 @@ export const ClientDashboard: React.FC = () => {
                 <div className="grid gap-4 grid-cols-1 md:grid-cols-3 lg:grid-cols-4">
                   {filteredAgencies.map((agency) => {
                     const savedBanner = localStorage.getItem(`agency_banner_${agency.id}`);
-                    const savedLogo   = localStorage.getItem(`agency_logo_${agency.id}`);
+                    const savedLogo = localStorage.getItem(`agency_logo_${agency.id}`);
 
                     return (
                       <div
@@ -1839,7 +1836,7 @@ export const ClientDashboard: React.FC = () => {
                         className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
-                    
+
                     {page > 1 && (
                       <PaginationItem>
                         <PaginationLink
@@ -1900,14 +1897,14 @@ export const ClientDashboard: React.FC = () => {
               <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-50 text-slate-400 mb-6">
                 <Home className="h-10 w-10 text-brand-green" />
               </div>
-              
+
               {searchQuery ? (
                 <>
                   <h3 className="text-xl font-bold text-slate-900">No properties matched "{searchQuery}"</h3>
                   <p className="text-slate-500 max-w-sm mt-1 text-sm">
                     Try typing a different keyword or resetting the search input.
                   </p>
-                  <Button 
+                  <Button
                     onClick={() => setSearchQuery("")}
                     className="mt-6 bg-brand-green hover:bg-brand-green-hover text-white text-xs font-semibold rounded-full px-6"
                   >
@@ -1918,17 +1915,17 @@ export const ClientDashboard: React.FC = () => {
                 <>
                   <h3 className="text-xl font-bold text-slate-900">No properties matched combined filters</h3>
                   <p className="text-slate-500 max-w-md mt-2 text-sm leading-relaxed">
-                    We are searching for properties that are located within 20km of your coordinates <strong>AND</strong> match the city text search: <span className="text-slate-900 font-semibold">"{city}"</span>. 
-                    <br/>Try disabling one of these active restrictions to broaden your search:
+                    We are searching for properties that are located within 20km of your coordinates <strong>AND</strong> match the city text search: <span className="text-slate-900 font-semibold">"{city}"</span>.
+                    <br />Try disabling one of these active restrictions to broaden your search:
                   </p>
                   <div className="flex gap-4 mt-6">
-                    <Button 
+                    <Button
                       onClick={() => { setGpsActive(false); setLat(null); setLng(null); }}
                       className="bg-brand-green hover:bg-brand-green-hover text-white text-xs font-semibold rounded-full px-6"
                     >
                       Disable GPS Filter
                     </Button>
-                    <Button 
+                    <Button
                       onClick={() => { setCity(""); setSearchCity(""); }}
                       variant="outline"
                       className="border-slate-200 text-slate-700 text-xs font-semibold rounded-full px-6"
@@ -1943,7 +1940,7 @@ export const ClientDashboard: React.FC = () => {
                   <p className="text-slate-500 max-w-sm mt-1 text-sm">
                     No listings are currently available within 20km of your GPS location.
                   </p>
-                  <Button 
+                  <Button
                     onClick={() => { setGpsActive(false); setLat(null); setLng(null); }}
                     className="mt-6 bg-brand-green hover:bg-brand-green-hover text-white text-xs font-semibold rounded-full px-6"
                   >
@@ -1956,7 +1953,7 @@ export const ClientDashboard: React.FC = () => {
                   <p className="text-slate-500 max-w-sm mt-1 text-sm">
                     Try searching for a different city or clearing the text filter.
                   </p>
-                  <Button 
+                  <Button
                     onClick={() => { setCity(""); setSearchCity(""); }}
                     className="mt-6 bg-brand-green hover:bg-brand-green-hover text-white text-xs font-semibold rounded-full px-6"
                   >
@@ -1969,7 +1966,7 @@ export const ClientDashboard: React.FC = () => {
                   <p className="text-slate-500 max-w-sm mt-1 text-sm">
                     Try resetting active category or intent filters to view all listings.
                   </p>
-                  <Button 
+                  <Button
                     onClick={handleResetAll}
                     className="mt-6 bg-brand-green hover:bg-brand-green-hover text-white text-xs font-semibold rounded-full px-6"
                   >
@@ -1983,8 +1980,8 @@ export const ClientDashboard: React.FC = () => {
               {/* Grid layout matching design */}
               <div className="grid gap-6 grid-cols-1 md:grid-cols-3 lg:grid-cols-4">
                 {filteredProperties.map((prop) => (
-                  <Card 
-                    key={prop.id} 
+                  <Card
+                    key={prop.id}
                     className="border border-slate-100 bg-white hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col group p-3.5 rounded-xl"
                   >
                     {/* Aspect image box */}
@@ -1995,7 +1992,7 @@ export const ClientDashboard: React.FC = () => {
                         className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
                       />
-                      
+
                       {/* Absolute tags matching Webflow theme */}
                       <div className="absolute top-3 left-3 flex flex-col gap-1.5">
                         <span className="inline-flex rounded-[6px] bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-800 shadow-sm uppercase tracking-wider">
@@ -2008,7 +2005,7 @@ export const ClientDashboard: React.FC = () => {
                           {prop.category.replace("_", " ")}
                         </span>
                       </div>
-                      
+
                       {prop.owner_role === "agency" ? (
                         <div className="absolute bottom-3 left-3">
                           <span className="inline-flex items-center gap-1 rounded bg-amber-600 text-white px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest shadow-sm">
@@ -2071,7 +2068,7 @@ export const ClientDashboard: React.FC = () => {
               </div>
 
               {/* Pagination Controls */}
-              <Pagination className="mt-12 border-t border-slate-200/80 pt-8">
+              <Pagination className="mt-12 border-t border-slate-200/80 pt-8 pb-6">
                 <PaginationContent>
                   <PaginationItem>
                     <PaginationPrevious
@@ -2083,7 +2080,7 @@ export const ClientDashboard: React.FC = () => {
                       className={page === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     />
                   </PaginationItem>
-                  
+
                   {page > 1 && (
                     <PaginationItem>
                       <PaginationLink
@@ -2138,8 +2135,8 @@ export const ClientDashboard: React.FC = () => {
               </Pagination>
             </>
           )
-        }
-      </main>
+          }
+        </main>
       )}
 
       {viewMode === "list" && searchMode === "properties" && (
@@ -2298,9 +2295,8 @@ export const AdminDashboard: React.FC = () => {
                       <td className="px-6 py-4">{u.email}</td>
                       <td className="px-6 py-4 capitalize">{u.role}</td>
                       <td className="px-6 py-4">
-                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                          u.status === "Verified" ? "bg-brand-light-green text-brand-deep-green" : "bg-amber-50 text-amber-800"
-                        }`}>
+                        <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${u.status === "Verified" ? "bg-brand-light-green text-brand-deep-green" : "bg-amber-50 text-amber-800"
+                          }`}>
                           {u.status}
                         </span>
                       </td>

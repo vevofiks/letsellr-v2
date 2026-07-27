@@ -3,9 +3,7 @@ from app.db.session import engine
 from app.db.base import Base
 
 # Import all models so Base knows about them
-import app.modules.properties.models
-import app.modules.users.models
-import app.modules.admin.models
+import app.db.registry
 
 async def main():
     async with engine.begin() as conn:

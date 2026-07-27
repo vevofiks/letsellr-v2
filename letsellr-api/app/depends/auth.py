@@ -35,16 +35,16 @@ from app.modules.users.repository import UserRepository
 security = HTTPBearer()
 
 
-# ── Internal JWT (OTP-based auth) ─────────────────────────────────────────────
+# ── Internal JWT (OTP-based auth & Service tokens) ───────────────────────────
 
-def _try_internal_jwt(token: str) -> str | None:
+def _try_internal_jwt(token: str) -> dict | str | None:
     """
     Try decoding as an internally issued JWT (HS256 signed with SECRET_KEY).
-    Returns the user UUID string (sub claim) on success, None on failure.
+    Returns the user UUID string (sub claim) or service payload on success, None on failure.
     """
     try:
         payload = decode_token(token)
-        if payload.get("type") == "access":
+        if payload.get("type") in ("access", "service"):
             return payload["sub"]
         return None
     except (JWTError, KeyError):
@@ -85,6 +85,15 @@ async def _verify_supabase_token(token: str) -> str:
         ) from e
 
 
+# ── Server-to-Server / Service Auth Dependency ─────────────────────────────
+
+def is_valid_service_key(token_or_key: str | None) -> bool:
+    """Check if provided string matches N8N_API_KEY."""
+    if not token_or_key or not settings.N8N_API_KEY:
+        return False
+    return token_or_key.strip() == settings.N8N_API_KEY.strip()
+
+
 # ── Main Dependency ───────────────────────────────────────────────────────────
 
 async def get_current_user(
@@ -95,18 +104,41 @@ async def get_current_user(
     Extract Bearer token → verify → load User from DB.
 
     Resolution order:
-    1. Try internal JWT (issued by /auth/verify-login or /auth/verify-registration)
-    2. Try external provider (firebase / supabase) as fallback
+    1. Check if token matches N8N_API_KEY (Server-to-Server auth)
+    2. Try internal JWT (issued by /auth/verify-login or service generator)
+    3. Try external provider (firebase / supabase) as fallback
     """
     token = credentials.credentials
     repo = UserRepository(db)
 
+    # ── 0. Service API Key direct Bearer token check ─────────────────────────
+    if is_valid_service_key(token):
+        # Return synthetic system user for service requests
+        return User(
+            id="00000000-0000-0000-0000-000000000000",
+            phone="0000000000",
+            role="admin",
+            status="active",
+        )
+
     # ── 1. Try internal JWT first ──────────────────────────────────────────────
     user_id = _try_internal_jwt(token)
     if user_id:
+        if user_id == "n8n-service" or user_id == "00000000-0000-0000-0000-000000000000":
+            return User(
+                id="00000000-0000-0000-0000-000000000000",
+                phone="0000000000",
+                role="admin",
+                status="active",
+            )
         user = await repo.get_by_id(user_id)
         if user:
-            if user.status == "suspended":
+            if user.status == "suspended" or user.verification_status in ("review_request", "pending"):
+                if user.verification_status in ("review_request", "unverified", "pending"):
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="Your account is currently under review by our admin team. Access will be enabled once verified.",
+                    )
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Your account has been suspended. Contact support.",
@@ -127,13 +159,19 @@ async def get_current_user(
             detail="User not found. Please complete registration.",
         )
 
-    if user.status == "suspended":
+    if user.status == "suspended" or user.verification_status in ("review_request", "pending"):
+        if user.verification_status in ("review_request", "unverified", "pending"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account is currently under review by our admin team. Access will be enabled once verified.",
+            )
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Your account has been suspended. Contact support.",
         )
 
     return user
+
 
 
 # ── Reusable type alias ────────────────────────────────────────────────────────

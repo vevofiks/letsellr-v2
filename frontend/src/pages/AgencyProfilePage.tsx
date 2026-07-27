@@ -258,7 +258,7 @@ export const AgencyProfilePage: React.FC = () => {
               <button 
                 onClick={() => {
                   const propsWithWhatsApp = properties.find(p => p.owner_whatsapp);
-                  const phoneNum = propsWithWhatsApp?.owner_whatsapp || "917025351519";
+                  const phoneNum = propsWithWhatsApp?.owner_whatsapp || "15551398764";
                   const message = `Hi, I am interested in property listings from ${agency.display_name}.`;
                   window.open(`https://wa.me/${phoneNum}?text=${encodeURIComponent(message)}`, "_blank");
                 }}

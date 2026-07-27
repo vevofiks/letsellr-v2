@@ -3,6 +3,7 @@
 import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
+from sqlalchemy.orm import selectinload
 from sqlalchemy import select, func
 
 from app.depends.auth import CurrentUser
@@ -36,7 +37,9 @@ def require_admin(user: User):
 @router.get("/users", response_model=list[UserAdminResponse], tags=["Admin - Users"])
 async def list_users(current_user: CurrentUser, db: DbSession):
     require_admin(current_user)
-    result = await db.execute(select(User).order_by(User.created_at.desc()))
+    result = await db.execute(
+        select(User).options(selectinload(User.agency_profile)).order_by(User.created_at.desc())
+    )
     return result.scalars().all()
 
 
@@ -53,6 +56,22 @@ async def update_user_status(
         raise HTTPException(status_code=404, detail="User not found")
 
     user.status = payload.status
+    if payload.status == "active":
+        user.verification_status = "verified"
+        res = await db.execute(
+            select(VerificationRequest).where(
+                VerificationRequest.user_id == user.id,
+                VerificationRequest.status == "pending"
+            )
+        )
+        for v_req in res.scalars().all():
+            v_req.status = "approved"
+            v_req.reviewed_by = current_user.id
+    elif payload.status == "pending":
+        user.verification_status = "pending"
+    elif payload.status == "suspended":
+        user.verification_status = "rejected"
+
     await db.commit()
     await db.refresh(user)
     return user
@@ -87,8 +106,7 @@ async def approve_verification_request(
     if user:
         user.verification_status = "verified"
         user.verification_note = payload.note
-        if user.status == "suspended":
-            user.status = "active"
+        user.status = "active"
 
     await db.commit()
     return {"message": "Request approved"}
@@ -114,6 +132,7 @@ async def reject_verification_request(
     if user:
         user.verification_status = "rejected"
         user.verification_note = payload.note
+        user.status = "suspended"
 
     await db.commit()
     return {"message": "Request rejected"}
@@ -124,6 +143,11 @@ async def get_dashboard_stats(current_user: CurrentUser, db: DbSession):
     require_admin(current_user)
 
     pending_properties = await db.scalar(select(func.count(Property.id)).where(Property.status == "pending_review"))
+    pending_kyc = await db.scalar(
+        select(func.count(User.id)).where(
+            (User.verification_status.in_(["pending", "review_request"])) | (User.status == "pending")
+        )
+    )
     total_users = await db.scalar(select(func.count(User.id)))
     total_properties = await db.scalar(select(func.count(Property.id)))
     active_properties = await db.scalar(select(func.count(Property.id)).where(Property.status == "live"))
@@ -138,6 +162,7 @@ async def get_dashboard_stats(current_user: CurrentUser, db: DbSession):
 
     return DashboardStatsResponse(
         pending_property_reviews=pending_properties or 0,
+        pending_kyc_reviews=pending_kyc or 0,
         open_disputes=open_disputes,
         total_users=total_users or 0,
         total_properties=total_properties or 0,

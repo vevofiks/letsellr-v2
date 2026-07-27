@@ -1,37 +1,74 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
-  ArrowUpRight,
-  MoreHorizontal,
   Building2,
   Users,
-  Search,
-  Filter,
-  Plus,
+  CheckCircle2,
   Clock,
-  ChevronDown,
+  ArrowUpRight,
+  TrendingUp,
   RefreshCw,
+  PlusCircle,
+  Eye,
+  ShieldCheck,
+  UserCheck,
+  MapPin,
+  Tag,
+  Check,
+  Activity,
+  FileCheck,
+  UserPlus
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { adminService, type AdminDashboardStats } from "@/services/adminService";
+import {
+  adminService,
+  type AdminDashboardStats,
+  type AdminProperty,
+  type AdminUser,
+  type VerificationRequest
+} from "@/services/adminService";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const AdminDashboardPage: React.FC = () => {
-  const [timeFilter] = useState("This Month");
-  const [chartRange, setChartRange] = useState<"Monthly" | "Yearly">("Yearly");
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
+  const [pendingProperties, setPendingProperties] = useState<AdminProperty[]>([]);
+  const [recentUsers, setRecentUsers] = useState<AdminUser[]>([]);
+  const [pendingVerifications, setPendingVerifications] = useState<VerificationRequest[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
 
-  const fetchStats = async (isManualRefresh = false) => {
+  const fetchDashboardData = async (isManualRefresh = false) => {
     try {
       if (isManualRefresh) setRefreshing(true);
       else setLoading(true);
 
-      const data = await adminService.getDashboardStats();
-      setStats(data);
+      const [statsData, pendingData, usersData, verificationsData] = await Promise.all([
+        adminService.getDashboardStats().catch(() => null),
+        adminService.getPendingProperties().catch(() => []),
+        adminService.getUsers().catch(() => []),
+        adminService.getVerificationRequests().catch(() => []),
+      ]);
+
+      setStats(statsData);
+      setPendingProperties(Array.isArray(pendingData) ? pendingData.slice(0, 5) : []);
+      // Filter out admin users from recent registrations
+      setRecentUsers(
+        Array.isArray(usersData)
+          ? usersData.filter((u) => u && u.role !== "admin").slice(0, 5)
+          : []
+      );
+      setPendingVerifications(
+        Array.isArray(verificationsData)
+          ? verificationsData.filter((v) => v && v.status === "pending").slice(0, 4)
+          : []
+      );
     } catch (err: any) {
-      console.error("Failed to load dashboard stats:", err);
-      toast.error("Failed to load platform statistics.");
+      console.error("Failed to load dashboard data:", err);
+      toast.error("Loaded dashboard with available metrics.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -39,503 +76,437 @@ export const AdminDashboardPage: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchStats();
+    fetchDashboardData();
   }, []);
 
-  // Sample data for recent activities matching reference table styling
-  const recentActivities = [
-    {
-      id: "ACT_001",
-      activity: "New Property Listing Moderation",
-      subtitle: "Luxury 4 BHK Villa near Lulu Mall",
-      ref: "PROP-EDP-VIL",
-      date: "25 Jul, 2026",
-      time: "06:45 PM",
-      amount: "₹18,500,000",
-      status: "Completed",
-      statusVariant: "success",
-    },
-    {
-      id: "ACT_002",
-      activity: "Agency Verification Request",
-      subtitle: "Apex Realty Group Kerala",
-      ref: "AGY-APX-882",
-      date: "25 Jul, 2026",
-      time: "05:12 PM",
-      amount: "Agency Plan",
-      status: "Pending",
-      statusVariant: "warning",
-    },
-    {
-      id: "ACT_003",
-      activity: "Property Rejection Notice",
-      subtitle: "Commercial Space Kakkanad",
-      ref: "PROP-KKD-COM",
-      date: "24 Jul, 2026",
-      time: "02:30 PM",
-      amount: "₹45,000/mo",
-      status: "Rejected",
-      statusVariant: "danger",
-    },
-    {
-      id: "ACT_004",
-      activity: "User Account Registration",
-      subtitle: "Rahul Nair (Property Seeker)",
-      ref: "USR-RN-1092",
-      date: "24 Jul, 2026",
-      time: "11:15 AM",
-      amount: "Standard Client",
-      status: "Completed",
-      statusVariant: "success",
-    },
-  ];
+  const handleQuickApproveProperty = async (id: string) => {
+    try {
+      setActionLoadingId(id);
+      await adminService.approveProperty(id, "Approved via Executive Dashboard");
+      toast.success("Listing approved successfully!");
+      fetchDashboardData(true);
+    } catch (err: any) {
+      toast.error("Failed to approve property.");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
+  const formatCurrency = (val: number) => {
+    if (typeof val !== "number") return "₹0";
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0,
+    }).format(val);
+  };
+
+  const getRoleBadgeColor = (role?: string) => {
+    switch (role?.toLowerCase()) {
+      case "agency":
+        return "bg-purple-50 text-purple-700 border-purple-200";
+      case "owner":
+        return "bg-emerald-50 text-emerald-700 border-emerald-200";
+      case "seeker":
+      case "user":
+      default:
+        return "bg-blue-50 text-blue-700 border-blue-200";
+    }
+  };
 
   return (
-    <div className="space-y-6">
-      
-      {/* Overview Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="space-y-0.5">
-          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight my-0">
-            Overview
-          </h1>
-          <p className="text-xs text-slate-500 font-medium">
-            Here is the summary of overall platform performance and moderation data
+    <div className="flex flex-col gap-6 text-left font-sans">
+      {/* Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight my-0">
+              Executive Dashboard
+            </h1>
+            
+          </div>
+          <p className="text-xs text-slate-500 font-medium -mt-4!">
+            Real-time platform activity, pending property moderation, KYC reviews, and user statistics.
           </p>
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Time Filter Dropdown */}
-          <div className="relative">
-            <button className="bg-white border border-slate-200/80 hover:border-slate-300 rounded-xl px-3.5 py-1.5 text-xs font-bold text-slate-700 shadow-2xs flex items-center gap-1.5 cursor-pointer">
-              <span>{timeFilter}</span>
-              <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
-            </button>
-          </div>
-
-          {/* Refresh View Button */}
-          <button
-            onClick={() => fetchStats(true)}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => fetchDashboardData(true)}
             disabled={refreshing}
-            className="bg-white border border-slate-200/80 hover:bg-slate-50 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
+            className="font-bold text-xs gap-2 rounded-md cursor-pointer py-2.5 px-3.5 h-auto"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-[#086942]" : "text-slate-400"}`} />
-            <span>Refresh Stats</span>
-          </button>
+            <RefreshCw className={`size-3.5 ${refreshing ? "animate-spin text-[#014645]" : ""}`} />
+            Sync Metrics
+          </Button>
+
+          <Link to="/admin-platform/properties">
+            <Button
+              size="sm"
+              className="bg-[#014645] hover:bg-[#013534] text-white font-extrabold text-xs gap-1.5 rounded-md cursor-pointer shadow-2xs py-2.5 px-4 h-auto"
+            >
+              <Eye className="size-3.5" />
+              Review Queue ({pendingProperties.length})
+            </Button>
+          </Link>
         </div>
       </div>
 
-      {/* Top 3 Summary Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        
-        {/* Card 1: Featured Deep Forest Green Card */}
-        <div className="bg-[#086942] text-white rounded-2xl p-5 shadow-sm flex flex-col justify-between min-h-44 relative overflow-hidden group">
-          <div className="flex items-center justify-between z-10">
-            <div className="h-10 w-10 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/20">
-              <Building2 className="h-5 w-5 text-emerald-200" />
+      {/* KPI Stats Cards Grid (2 cols mobile, 4 cols desktop) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+        <Card className="py-0 rounded-lg shadow-2xs border-slate-200/80 bg-white">
+          <CardContent className="p-3 sm:p-3.5 space-y-1.5">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[9.5px] sm:text-[10.5px] font-black uppercase tracking-wider text-slate-400 truncate">Total Properties</span>
+              <div className="size-7 sm:size-8 rounded-md bg-emerald-50 text-[#014645] flex items-center justify-center shrink-0 border border-emerald-200/60">
+                <Building2 className="size-3.5 sm:size-4" />
+              </div>
             </div>
-            <button className="text-white/60 hover:text-white transition-colors cursor-pointer">
-              <MoreHorizontal className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="space-y-1.5 z-10 my-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-emerald-100/90 block">
-                Total Properties Listed
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pt-0.5">
+              <p className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-none">{stats?.total_properties ?? "—"}</p>
+              <span className="inline-flex items-center gap-1 text-[9.5px] sm:text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100/80 w-fit">
+                <TrendingUp className="size-2.5" /> {stats?.active_properties ?? 0} Live
               </span>
             </div>
-            <div className="flex items-baseline gap-2.5">
-              <span className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-                {loading ? "..." : (stats?.total_properties ?? 0)}
-              </span>
-              <span className="bg-white/20 backdrop-blur-md text-emerald-100 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                {stats?.active_properties ?? 0} Live
+          </CardContent>
+        </Card>
+
+        <Card className="py-0 rounded-lg shadow-2xs border-slate-200/80 bg-white">
+          <CardContent className="p-3 sm:p-3.5 space-y-1.5">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[9.5px] sm:text-[10.5px] font-black uppercase tracking-wider text-slate-400 truncate">Pending Review</span>
+              <div className="size-7 sm:size-8 rounded-md bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200/60">
+                <Clock className="size-3.5 sm:size-4" />
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pt-0.5">
+              <p className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-none">{stats?.pending_property_reviews ?? "—"}</p>
+              <span className="inline-flex items-center gap-1 text-[9.5px] sm:text-[10px] font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-100/80 w-fit">
+                <Clock className="size-2.5" /> Action
               </span>
             </div>
-            <span className="text-[11px] text-emerald-100/70 font-medium block">
-              Active, verified & moderated listings
-            </span>
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="pt-2 border-t border-white/15 flex items-center justify-between text-xs font-bold z-10">
-            <Link to="/admin-platform/properties" className="text-emerald-100 hover:text-white flex items-center gap-1.5 transition-colors">
-              <span>See details</span>
-              <ArrowUpRight className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-
-          {/* Decorative background glow */}
-          <div className="absolute -bottom-10 -right-10 w-36 h-36 bg-emerald-400/20 rounded-full blur-2xl group-hover:scale-125 transition-all duration-500 pointer-events-none" />
-        </div>
-
-        {/* Card 2: White Moderation Queue Card */}
-        <div className="bg-white border border-slate-200/70 rounded-2xl p-5 shadow-xs flex flex-col justify-between min-h-44">
-          <div className="flex items-center justify-between">
-            <div className="h-10 w-10 rounded-xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-700">
-              <Clock className="h-5 w-5" />
+        <Card className="py-0 rounded-lg shadow-2xs border-slate-200/80 bg-white">
+          <CardContent className="p-3 sm:p-3.5 space-y-1.5">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[9.5px] sm:text-[10.5px] font-black uppercase tracking-wider text-slate-400 truncate">Registered Users</span>
+              <div className="size-7 sm:size-8 rounded-md bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-200/60">
+                <Users className="size-3.5 sm:size-4" />
+              </div>
             </div>
-            <button className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
-              <MoreHorizontal className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="space-y-1.5 my-2">
-            <span className="text-xs font-bold text-slate-500 block">
-              Pending Review Queue
-            </span>
-            <div className="flex items-baseline gap-2.5">
-              <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                {loading ? "..." : (stats?.pending_property_reviews ?? 0)}
-              </span>
-              <span className="bg-amber-50 text-amber-800 border border-amber-200 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                {(stats?.pending_property_reviews ?? 0) > 0 ? "Action Required" : "All Clear"}
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pt-0.5">
+              <p className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-none">{stats?.total_users ?? "—"}</p>
+              <span className="inline-flex items-center gap-1 text-[9.5px] sm:text-[10px] font-extrabold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-md border border-blue-100/80 w-fit">
+                <Users className="size-2.5" /> Accounts
               </span>
             </div>
-            <span className="text-[11px] text-slate-400 font-medium block">
-              Awaiting admin moderation check
-            </span>
-          </div>
+          </CardContent>
+        </Card>
 
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
-            <Link to="/admin-platform/properties" className="text-slate-700 hover:text-[#086942] flex items-center gap-1.5 transition-colors">
-              <span>View summary</span>
-              <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" />
-            </Link>
-          </div>
-        </div>
-
-        {/* Card 3: White Users & Agencies Card */}
-        <div className="bg-white border border-slate-200/70 rounded-2xl p-5 shadow-xs flex flex-col justify-between min-h-44">
-          <div className="flex items-center justify-between">
-            <div className="h-10 w-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center text-[#086942]">
-              <Users className="h-5 w-5" />
+        <Card className="py-0 rounded-lg shadow-2xs border-slate-200/80 bg-white">
+          <CardContent className="p-3 sm:p-3.5 space-y-1.5">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[9.5px] sm:text-[10.5px] font-black uppercase tracking-wider text-slate-400 truncate">Verified Agencies</span>
+              <div className="size-7 sm:size-8 rounded-md bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 border border-purple-200/60">
+                <ShieldCheck className="size-3.5 sm:size-4" />
+              </div>
             </div>
-            <button className="text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
-              <MoreHorizontal className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="space-y-1.5 my-2">
-            <span className="text-xs font-bold text-slate-500 block">
-              Registered Accounts
-            </span>
-            <div className="flex items-baseline gap-2.5">
-              <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                {loading ? "..." : (stats?.total_users ?? 0)}
-              </span>
-              <span className="bg-emerald-50 text-[#086942] border border-emerald-200 text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5">
-                Total Users
+            <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pt-0.5">
+              <p className="text-2xl font-black text-slate-900 tracking-tight leading-none">{stats?.agencies_count ?? "—"}</p>
+              <span className="inline-flex items-center gap-1 text-[9.5px] sm:text-[10px] font-extrabold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded-md border border-purple-100/80 w-fit">
+                <CheckCircle2 className="size-2.5" /> Verified
               </span>
             </div>
-            <span className="text-[11px] text-slate-400 font-medium block">
-              Owners, agencies & verified seekers
-            </span>
-          </div>
-
-          <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs font-bold">
-            <Link to="/admin-platform/users" className="text-slate-700 hover:text-[#086942] flex items-center gap-1.5 transition-colors">
-              <span>Analyze performance</span>
-              <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" />
-            </Link>
-          </div>
-        </div>
-
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Middle Section: Role Breakdown & Activity Bar Chart */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        
-        {/* Left Side: Role Breakdown Sub-Cards */}
-        <div className="lg:col-span-5 bg-white border border-slate-200/70 rounded-2xl p-5 shadow-xs space-y-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between">
+      {/* User Demographics Breakdown Bar (Admin excluded) */}
+      <Card className="py-0 rounded-lg shadow-2xs border-slate-200/80 bg-white">
+        <CardContent className="p-3.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <Activity className="size-4 text-[#014645]" />
+              <span className="text-xs font-extrabold text-slate-900">User Role Breakdown</span>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className="text-[10px] font-bold bg-blue-50 text-blue-800 border-blue-200 px-2.5 py-0.5 rounded-md">
+                Seekers: <span className="font-black ml-1">{stats?.seekers_count ?? 0}</span>
+              </Badge>
+              <Badge variant="outline" className="text-[10px] font-bold bg-emerald-50 text-emerald-800 border-emerald-200 px-2.5 py-0.5 rounded-md">
+                Owners: <span className="font-black ml-1">{stats?.owners_count ?? 0}</span>
+              </Badge>
+              <Badge variant="outline" className="text-[10px] font-bold bg-purple-50 text-purple-800 border-purple-200 px-2.5 py-0.5 rounded-md">
+                Agencies: <span className="font-black ml-1">{stats?.agencies_count ?? 0}</span>
+              </Badge>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Top Workspace Grid: Property Approvals & Quick Shortcuts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Section 1: Pending Property Approvals Queue (2 cols) */}
+        <Card className="lg:col-span-2 rounded-lg shadow-2xs border-slate-200/80 flex flex-col bg-white px-5 sm:px-6">
+          <CardHeader className="flex flex-row items-center justify-between px-0 py-4 border-b border-slate-100">
             <div>
-              <h2 className="text-base font-extrabold text-slate-900 my-0">
-                User Role Distribution
-              </h2>
-              <span className="text-[11px] font-semibold text-slate-400 block">
-                Platform account tier breakdown
-              </span>
+              <CardTitle className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                <Building2 className="size-4 text-[#014645]" />
+                Pending Property Approvals
+              </CardTitle>
+              <CardDescription className="text-xs mt-0.5">
+                Listings requiring administrative inspection before going live.
+              </CardDescription>
             </div>
-            <button className="bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 cursor-pointer">
-              <Plus className="h-3.5 w-3.5" /> Add New
-            </button>
-          </div>
+            <Link to="/admin-platform/properties">
+              <Button variant="ghost" size="sm" className="text-xs font-bold text-[#014645] hover:bg-emerald-50 flex items-center gap-1 rounded-md h-7 px-2">
+                View All <ArrowUpRight className="size-3.5" />
+              </Button>
+            </Link>
+          </CardHeader>
 
-          {/* 4 Role Breakdown Grid Sub-Cards matching reference image layout */}
-          <div className="grid grid-cols-2 gap-3">
-            
-            {/* Sub-card 1 */}
-            <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-3.5 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-extrabold text-slate-700 flex items-center gap-1.5">
-                  👥 Seekers
-                </span>
-                <button className="text-slate-400 hover:text-slate-600">⋮</button>
+          <CardContent className="p-0 flex-1">
+            {loading ? (
+              <div className="py-8 text-center space-y-2">
+                <div className="size-5 border-2 border-[#014645] border-t-transparent rounded-full animate-spin mx-auto" />
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Loading Submissions...</p>
               </div>
-              <div>
-                <span className="text-lg font-black text-slate-900 block">{stats?.seekers_count ?? 0}</span>
-                <span className="text-[10px] text-slate-400 font-semibold block">Property Buyers & Renters</span>
-              </div>
-              <span className="inline-block bg-emerald-100 text-[#086942] font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider">
-                Active
-              </span>
-            </div>
-
-            {/* Sub-card 2 */}
-            <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-3.5 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-extrabold text-slate-700 flex items-center gap-1.5">
-                  🏢 Agencies
-                </span>
-                <button className="text-slate-400 hover:text-slate-600">⋮</button>
-              </div>
-              <div>
-                <span className="text-lg font-black text-slate-900 block">{stats?.agencies_count ?? 0}</span>
-                <span className="text-[10px] text-slate-400 font-semibold block">Verified Firms</span>
-              </div>
-              <span className="inline-block bg-emerald-100 text-[#086942] font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider">
-                Active
-              </span>
-            </div>
-
-            {/* Sub-card 3 */}
-            <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-3.5 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-extrabold text-slate-700 flex items-center gap-1.5">
-                  🏡 Owners
-                </span>
-                <button className="text-slate-400 hover:text-slate-600">⋮</button>
-              </div>
-              <div>
-                <span className="text-lg font-black text-slate-900 block">{stats?.owners_count ?? 0}</span>
-                <span className="text-[10px] text-slate-400 font-semibold block">Direct Landlords</span>
-              </div>
-              <span className="inline-block bg-emerald-100 text-[#086942] font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider">
-                Active
-              </span>
-            </div>
-
-            {/* Sub-card 4 */}
-            <div className="bg-slate-50 border border-slate-200/60 rounded-xl p-3.5 space-y-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-extrabold text-slate-700 flex items-center gap-1.5">
-                  🛡️ Admins
-                </span>
-                <button className="text-slate-400 hover:text-slate-600">⋮</button>
-              </div>
-              <div>
-                <span className="text-lg font-black text-slate-900 block">{stats?.admins_count ?? 0}</span>
-                <span className="text-[10px] text-slate-400 font-semibold block">Super Administrators</span>
-              </div>
-              <span className="inline-block bg-rose-100 text-rose-700 font-black text-[9px] px-2 py-0.5 rounded-full uppercase tracking-wider">
-                System Active
-              </span>
-            </div>
-
-          </div>
-        </div>
-
-        {/* Right Side: Platform Traffic & Activity Bar Chart */}
-        <div className="lg:col-span-7 bg-white border border-slate-200/70 rounded-2xl p-5 shadow-xs flex flex-col justify-between">
-          
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">
-                Platform Activity & Views
-              </span>
-              <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-                142,850 <span className="text-xs text-slate-400 font-normal">views</span>
-              </span>
-            </div>
-
-            {/* Monthly / Yearly Pill Selector */}
-            <div className="bg-slate-100 p-1 rounded-xl flex items-center text-xs font-extrabold">
-              <button
-                onClick={() => setChartRange("Monthly")}
-                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                  chartRange === "Monthly"
-                    ? "bg-white text-slate-900 shadow-2xs"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setChartRange("Yearly")}
-                className={`px-3 py-1 rounded-lg transition-all cursor-pointer ${
-                  chartRange === "Yearly"
-                    ? "bg-[#086942] text-white shadow-2xs"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-              >
-                Yearly
-              </button>
-            </div>
-          </div>
-
-          {/* Bar Chart Graphics matching UI reference image */}
-          <div className="pt-6 pb-2 relative">
-            
-            {/* Chart Tooltip mockup on highlight bar */}
-            <div className="hidden sm:flex flex-col bg-slate-900 text-white text-[11px] p-2.5 rounded-xl shadow-lg absolute top-4 left-[38%] z-20 pointer-events-none border border-slate-700">
-              <span className="text-slate-400 font-bold text-[9px] uppercase">July 25, 2026</span>
-              <div className="flex items-center justify-between gap-4 font-extrabold mt-0.5">
-                <span>Active Views</span>
-                <span className="text-emerald-400">33,847</span>
-              </div>
-              <div className="flex items-center justify-between gap-4 text-slate-400 text-[10px]">
-                <span>Inflow Leads</span>
-                <span className="text-slate-200">7,456</span>
-              </div>
-            </div>
-
-            {/* Bars container */}
-            <div className="h-44 flex items-end justify-between gap-2 sm:gap-4 px-2 border-b border-slate-100 pb-2">
-              
-              {/* Jan */}
-              <div className="flex-1 flex flex-col items-center gap-2 group">
-                <div className="w-full bg-slate-100 rounded-lg h-24 group-hover:bg-slate-200 transition-all" />
-                <span className="text-[11px] font-bold text-slate-400">Jan</span>
-              </div>
-
-              {/* Feb */}
-              <div className="flex-1 flex flex-col items-center gap-2 group">
-                <div className="w-full bg-slate-100 rounded-lg h-28 group-hover:bg-slate-200 transition-all" />
-                <span className="text-[11px] font-bold text-slate-400">Feb</span>
-              </div>
-
-              {/* Mar (Highlighted Bar from UI reference!) */}
-              <div className="flex-1 flex flex-col items-center gap-2 relative">
-                <div className="w-full bg-gradient-to-t from-[#086942] to-emerald-500 rounded-lg h-36 relative flex justify-center shadow-sm">
-                  <div className="h-3 w-3 rounded-full bg-white ring-4 ring-[#086942] absolute top-1.5" />
+            ) : pendingProperties.length === 0 ? (
+              <div className="py-8 text-center space-y-1.5">
+                <div className="size-9 rounded-full bg-emerald-50 border border-emerald-200/60 flex items-center justify-center mx-auto text-emerald-600">
+                  <CheckCircle2 className="size-4.5" />
                 </div>
-                <span className="text-[11px] font-extrabold text-[#086942]">Mar</span>
+                <p className="text-xs font-bold text-slate-700">Queue is Clear!</p>
+                <p className="text-xs text-slate-400">All submitted listings have been reviewed.</p>
               </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/80">
+                    <TableHead className="text-[10px] font-black uppercase py-2.5 px-3">Property Details</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase py-2.5 px-3">Category</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase py-2.5 px-3">Price</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase py-2.5 px-3 text-right">Quick Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingProperties.map((prop) => (
+                    <TableRow key={prop.id} className="hover:bg-slate-50/70">
+                      <TableCell className="font-extrabold text-slate-900 text-xs py-3 px-3">
+                        <div>
+                          <span className="line-clamp-1">{prop.title || "Untitled Property"}</span>
+                          <span className="block text-[10.5px] font-semibold text-slate-400">
+                            {prop.location_area || "Area"}, {prop.location_city || "City"}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3 px-3">
+                        <Badge variant="outline" className="text-[9.5px] font-black uppercase rounded-md">
+                          {prop.category || "General"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-black text-xs text-[#014645] py-3 px-3">
+                        {formatCurrency(prop.price)}
+                      </TableCell>
+                      <TableCell className="text-right py-3 px-3">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            size="sm"
+                            onClick={() => handleQuickApproveProperty(prop.id)}
+                            disabled={actionLoadingId === prop.id}
+                            className="h-7 text-[11px] font-extrabold bg-[#014645] hover:bg-[#013534] text-white px-2.5 py-0 rounded-md gap-1 cursor-pointer"
+                          >
+                            <Check className="size-3" /> Approve
+                          </Button>
+                          <Link to="/admin-platform/properties">
+                            <Button size="sm" variant="outline" className="h-7 text-[11px] font-bold px-2.5 py-0 rounded-md">
+                              Inspect
+                            </Button>
+                          </Link>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
 
-              {/* Apr */}
-              <div className="flex-1 flex flex-col items-center gap-2 group">
-                <div className="w-full bg-slate-100 rounded-lg h-20 group-hover:bg-slate-200 transition-all" />
-                <span className="text-[11px] font-bold text-slate-400">Apr</span>
-              </div>
-
-              {/* May */}
-              <div className="flex-1 flex flex-col items-center gap-2 group">
-                <div className="w-full bg-slate-100 rounded-lg h-32 group-hover:bg-slate-200 transition-all" />
-                <span className="text-[11px] font-bold text-slate-400">May</span>
-              </div>
-
-              {/* Jun */}
-              <div className="flex-1 flex flex-col items-center gap-2 group">
-                <div className="w-full bg-slate-100 rounded-lg h-26 group-hover:bg-slate-200 transition-all" />
-                <span className="text-[11px] font-bold text-slate-400">Jun</span>
-              </div>
-
-              {/* Jul */}
-              <div className="flex-1 flex flex-col items-center gap-2 group">
-                <div className="w-full bg-slate-100 rounded-lg h-30 group-hover:bg-slate-200 transition-all" />
-                <span className="text-[11px] font-bold text-slate-400">Jul</span>
-              </div>
-
-            </div>
-          </div>
-
-        </div>
-
+        {/* Section 2: Platform Quick Actions (1 col) */}
+        <Card className="lg:col-span-1 rounded-lg shadow-2xs border-slate-200/80 bg-white px-5">
+          <CardHeader className="px-0 py-4 border-b border-slate-100">
+            <CardTitle className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+              <PlusCircle className="size-4 text-[#014645]" />
+              Quick Management Shortcuts
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2 px-0 py-4">
+            <Link to="/admin-platform/categories">
+              <Button variant="outline" className="w-full justify-start gap-2 text-xs font-bold h-9 rounded-md border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <Tag className="size-3.5 text-[#014645]" />
+                Property Categories & Types
+              </Button>
+            </Link>
+            <Link to="/admin-platform/locations">
+              <Button variant="outline" className="w-full justify-start gap-2 text-xs font-bold h-9 rounded-md border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <MapPin className="size-3.5 text-blue-600" />
+                Locations & Cities Registry
+              </Button>
+            </Link>
+            <Link to="/admin-platform/users">
+              <Button variant="outline" className="w-full justify-start gap-2 text-xs font-bold h-9 rounded-md border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <Users className="size-3.5 text-purple-600" />
+                User & Agency Accounts
+              </Button>
+            </Link>
+            <Link to="/admin-platform/properties">
+              <Button variant="outline" className="w-full justify-start gap-2 text-xs font-bold h-9 rounded-md border-slate-200 hover:bg-slate-50 cursor-pointer">
+                <Building2 className="size-3.5 text-emerald-600" />
+                All Listings & Moderation
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Bottom Section: Recent Activities & Moderation Table */}
-      <div className="bg-white border border-slate-200/70 rounded-2xl p-5 shadow-xs space-y-4">
-        
-        {/* Table Top Controls */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <h2 className="text-base font-extrabold text-slate-900 my-0">
-            Recent Activities & Moderation Log
-          </h2>
-
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1 sm:w-60">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search..."
-                className="w-full bg-slate-50 border border-slate-200/80 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:bg-white focus:ring-1 focus:ring-[#086942] transition-colors"
-              />
+      {/* Bottom Grid: 1 Row Desktop View (User KYC & Recent Registrations side-by-side) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* User KYC Verification Requests Queue */}
+        <Card className="rounded-lg shadow-2xs border-slate-200/80 flex flex-col bg-white px-5 sm:px-6">
+          <CardHeader className="flex flex-row items-center justify-between px-0 py-4 border-b border-slate-100">
+            <div>
+              <CardTitle className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                <FileCheck className="size-4 text-blue-600" />
+                User KYC Verification Requests
+              </CardTitle>
+              <CardDescription className="text-xs mt-0.5">
+                Pending identity and agency license documentation reviews.
+              </CardDescription>
             </div>
-            <button className="bg-slate-50 hover:bg-slate-100 border border-slate-200/80 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs flex items-center gap-1.5 cursor-pointer">
-              <Filter className="h-3.5 w-3.5 text-slate-500" />
-              <span>Filter ≡</span>
-            </button>
-          </div>
-        </div>
+            <Link to="/admin-platform/users">
+              <Button variant="ghost" size="sm" className="text-xs font-bold text-blue-700 hover:bg-blue-50 flex items-center gap-1 rounded-md h-7 px-2">
+                Manage Users <ArrowUpRight className="size-3.5" />
+              </Button>
+            </Link>
+          </CardHeader>
 
-        {/* Table Container */}
-        <div className="overflow-x-auto border border-slate-100 rounded-xl">
-          <table className="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr className="bg-slate-50/70 border-b border-slate-100 text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">
-                <th className="py-3 px-4 w-10">
-                  <input type="checkbox" className="rounded border-slate-300 text-[#086942] focus:ring-[#086942]" />
-                </th>
-                <th className="py-3 px-4">Activity</th>
-                <th className="py-3 px-4">Order ID / Ref</th>
-                <th className="py-3 px-4">Date</th>
-                <th className="py-3 px-4">Time</th>
-                <th className="py-3 px-4">Price / Plan</th>
-                <th className="py-3 px-4">Status</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
-              {recentActivities.map((row) => (
-                <tr key={row.id} className="hover:bg-slate-50/60 transition-colors">
-                  <td className="py-3 px-4">
-                    <input type="checkbox" className="rounded border-slate-300 text-[#086942] focus:ring-[#086942]" />
-                  </td>
-                  <td className="py-3 px-4">
-                    <div>
-                      <span className="font-bold text-slate-900 block">{row.activity}</span>
-                      <span className="text-[11px] text-slate-400 block">{row.subtitle}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <span className="font-mono text-slate-600 font-bold bg-slate-100 px-2 py-0.5 rounded text-[11px]">
-                      {row.ref}
-                    </span>
-                  </td>
-                  <td className="py-3 px-4 text-slate-600 font-semibold">{row.date}</td>
-                  <td className="py-3 px-4 text-slate-500">{row.time}</td>
-                  <td className="py-3 px-4 font-bold text-slate-900">{row.amount}</td>
-                  <td className="py-3 px-4">
-                    {row.statusVariant === "success" && (
-                      <span className="inline-flex items-center gap-1 bg-emerald-50 text-[#086942] font-black text-[10px] px-2.5 py-0.5 rounded-full border border-emerald-100">
-                        <span className="h-1.5 w-1.5 rounded-full bg-[#086942]" /> Completed
-                      </span>
-                    )}
-                    {row.statusVariant === "warning" && (
-                      <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-800 font-black text-[10px] px-2.5 py-0.5 rounded-full border border-amber-100">
-                        <span className="h-1.5 w-1.5 rounded-full bg-amber-600" /> Pending
-                      </span>
-                    )}
-                    {row.statusVariant === "danger" && (
-                      <span className="inline-flex items-center gap-1 bg-rose-50 text-rose-700 font-black text-[10px] px-2.5 py-0.5 rounded-full border border-rose-100">
-                        <span className="h-1.5 w-1.5 rounded-full bg-rose-600" /> Rejected
-                      </span>
-                    )}
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <button className="text-slate-400 hover:text-slate-600 p-1">
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+          <CardContent className="p-0 flex-1">
+            {pendingVerifications.length === 0 ? (
+              <div className="py-6 text-center space-y-1">
+                <UserCheck className="size-7 text-blue-500 mx-auto opacity-80" />
+                <p className="text-xs font-bold text-slate-700">No Pending Verifications</p>
+                <p className="text-[11px] text-slate-400">All submitted documents have been reviewed.</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/80">
+                    <TableHead className="text-[10px] font-black uppercase py-2.5 px-3">Document Type</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase py-2.5 px-3">Status</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase py-2.5 px-3">Submitted</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase py-2.5 px-3 text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingVerifications.map((ver) => (
+                    <TableRow key={ver.id} className="hover:bg-slate-50/70">
+                      <TableCell className="font-extrabold text-slate-900 text-xs py-3 px-3">
+                        <span className="capitalize">{(ver.document_type || "document").replace(/_/g, " ")}</span>
+                      </TableCell>
+                      <TableCell className="py-3 px-3">
+                        <Badge variant="outline" className="text-[9.5px] font-black uppercase bg-amber-50 text-amber-700 border-amber-200 rounded-md">
+                          {ver.status || "pending"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-slate-500 py-3 px-3 font-medium">
+                        {ver.created_at ? new Date(ver.created_at).toLocaleDateString() : "Recently"}
+                      </TableCell>
+                      <TableCell className="text-right py-3 px-3">
+                        <Link to="/admin-platform/users">
+                          <Button size="sm" variant="outline" className="h-7 text-[11px] font-bold px-2.5 py-0 rounded-md">
+                            Review Document
+                          </Button>
+                        </Link>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
 
+        {/* Recent Registered Users List (Excludes Admin) */}
+        <Card className="rounded-lg shadow-2xs border-slate-200/80 flex flex-col bg-white px-5 sm:px-6">
+          <CardHeader className="flex flex-row items-center justify-between px-0 py-4 border-b border-slate-100">
+            <div>
+              <CardTitle className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                <UserPlus className="size-4 text-purple-600" />
+                Recent User Registrations
+              </CardTitle>
+              <CardDescription className="text-xs mt-0.5">
+                Latest platform sign-ups across Seekers, Owners, and Agencies.
+              </CardDescription>
+            </div>
+            <Link to="/admin-platform/users">
+              <Button variant="ghost" size="sm" className="text-xs font-bold text-purple-700 hover:bg-purple-50 flex items-center gap-1 rounded-md h-7 px-2">
+                View All <ArrowUpRight className="size-3.5" />
+              </Button>
+            </Link>
+          </CardHeader>
+
+          <CardContent className="p-0 flex-1">
+            {recentUsers.length === 0 ? (
+              <div className="py-6 text-center">
+                <p className="text-xs text-slate-400">No recent users found.</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50/80">
+                    <TableHead className="text-[10px] font-black uppercase py-2.5 px-3">User</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase py-2.5 px-3">Role</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase py-2.5 px-3">Location</TableHead>
+                    <TableHead className="text-[10px] font-black uppercase py-2.5 px-3 text-right">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {recentUsers.map((u) => (
+                    <TableRow key={u.id} className="hover:bg-slate-50/70">
+                      <TableCell className="font-extrabold text-slate-900 text-xs py-3 px-3">
+                        <div>
+                          <span>{u.name || "User"}</span>
+                          <span className="block text-[10.5px] font-semibold text-slate-400">
+                            {u.email || ""}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="py-3 px-3">
+                        <Badge variant="outline" className={`text-[9.5px] font-black uppercase rounded-md ${getRoleBadgeColor(u.role)}`}>
+                          {u.role || "user"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-xs text-slate-500 py-3 px-3 font-medium">
+                        {u.location_city || "N/A"}
+                      </TableCell>
+                      <TableCell className="text-right py-3 px-3">
+                        <Badge variant="outline" className="text-[9.5px] font-black uppercase bg-emerald-50 text-emerald-700 border-emerald-200 rounded-md">
+                          {u.status || "active"}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       </div>
-
     </div>
   );
 };

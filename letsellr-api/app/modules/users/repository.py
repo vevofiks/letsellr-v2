@@ -39,6 +39,15 @@ class UserRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def get_by_phone(self, phone: str) -> User | None:
+        stmt = (
+            select(User)
+            .where(User.phone == phone)
+            .options(selectinload(User.agency_profile))
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
+
     async def get_by_provider_uid(self, uid: str) -> User | None:
         stmt = (
             select(User)

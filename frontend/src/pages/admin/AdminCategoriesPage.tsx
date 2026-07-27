@@ -5,6 +5,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { adminService, type PropertyType } from "@/services/adminService";
+import { Badge } from "@/components/ui/badge";
 
 const ROLE_OPTIONS = ["owner", "agency", "user", "admin"];
 
@@ -14,7 +15,6 @@ const slugify = (str: string) =>
 const fmt = (iso: string) =>
   new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
-// ── Inline form for create/edit ──
 type FormState = { slug: string; label: string; description: string; is_active: boolean; allowed_roles: string[] };
 const EMPTY: FormState = { slug: "", label: "", description: "", is_active: true, allowed_roles: [] };
 
@@ -23,13 +23,11 @@ export const AdminCategoriesPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Create / Edit modal
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<PropertyType | null>(null);
   const [form, setForm] = useState<FormState>(EMPTY);
   const [saving, setSaving] = useState(false);
 
-  // Delete confirm
   const [deleteTarget, setDeleteTarget] = useState<PropertyType | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -115,123 +113,116 @@ export const AdminCategoriesPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6" style={{ fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div className="space-y-6 text-left font-sans">
 
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2.5">
-            <h1 className="text-2xl font-black tracking-tight" style={{ color: "#08060d" }}>
+            <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight my-0">
               Categories & Property Types
             </h1>
-            <span className="text-[12px] font-bold px-2.5 py-0.5 rounded-full" style={{ background: "#f1f5f9", color: "#6b6375", border: "1px solid #e2e8f0" }}>
-              {types.length} Types
-            </span>
           </div>
-          <p className="text-[13px] font-medium mt-1" style={{ color: "#6B7280" }}>
-            Define the property categories available on the platform and which roles can list them.
+          <p className="text-xs text-slate-500 font-medium mt-1">
+            Define property categories on the platform and specify which account roles can list them.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => load(true)}
             disabled={refreshing}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-[13px] font-semibold transition-all cursor-pointer disabled:opacity-50"
-            style={{ background: "#ffffff", border: "1px solid #e2e8f0", color: "#6b6375" }}
+            className="flex-1 sm:flex-none justify-center bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs px-3.5 py-2 rounded-lg border border-slate-200/80 shadow-2xs transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} style={{ color: refreshing ? "#23D283" : undefined }} />
-            Refresh
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-[#014645]" : ""}`} />
+            <span>Refresh</span>
           </button>
           <button
             onClick={openCreate}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold transition-all cursor-pointer"
-            style={{ background: "#23D283", color: "#ffffff" }}
+            className="flex-1 sm:flex-none justify-center bg-[#014645] hover:bg-[#013534] text-white font-extrabold text-xs px-4 py-2 rounded-lg shadow-2xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
           >
             <Plus className="h-4 w-4" />
-            Add Type
+            <span>Add Property Type</span>
           </button>
         </div>
       </div>
 
       {/* Table Card */}
       {loading ? (
-        <div className="bg-white rounded-2xl p-14 text-center" style={{ border: "1px solid oklch(0.922 0 0)" }}>
-          <div className="h-8 w-8 rounded-full border-2 border-t-transparent animate-spin mx-auto mb-3" style={{ borderColor: "#23D283", borderTopColor: "transparent" }} />
-          <p className="text-[12px] font-bold uppercase tracking-wider" style={{ color: "#6B7280" }}>Loading types…</p>
+        <div className="bg-white rounded-xl border border-slate-200/80 p-12 text-center space-y-3">
+          <div className="h-7 w-7 border-2 border-[#014645] border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+            Loading Categories...
+          </p>
         </div>
       ) : types.length === 0 ? (
-        <div className="bg-white rounded-2xl p-14 text-center space-y-3" style={{ border: "1px solid oklch(0.922 0 0)" }}>
-          <div className="h-12 w-12 rounded-2xl flex items-center justify-center mx-auto" style={{ background: "#D9F7E9" }}>
-            <Layers className="h-6 w-6" style={{ color: "#11995E" }} />
+        <div className="bg-white rounded-xl border border-slate-200/80 p-12 flex flex-col items-center justify-center text-center space-y-3 shadow-2xs">
+          <div className="h-12 w-12 rounded-xl bg-emerald-50 text-[#014645] flex items-center justify-center border border-emerald-200/60">
+            <Layers className="h-6 w-6" />
           </div>
-          <p className="text-[15px] font-black" style={{ color: "#08060d" }}>No property types yet</p>
-          <p className="text-[13px]" style={{ color: "#6B7280" }}>Create your first property category to get started.</p>
-          <button onClick={openCreate} className="mx-auto mt-2 flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-bold cursor-pointer" style={{ background: "#23D283", color: "#fff" }}>
+          <h3 className="text-base font-extrabold text-slate-900 my-0 text-center">No Property Types Configured</h3>
+          <p className="text-xs text-slate-500 font-medium max-w-md text-center my-2!">Create your first property category to enable listings.</p>
+          <button onClick={openCreate} className="mt-2 bg-[#014645] text-white text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-1.5 cursor-pointer shadow-2xs">
             <Plus className="h-4 w-4" /> Add Type
           </button>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl overflow-hidden" style={{ border: "1px solid oklch(0.922 0 0)", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr style={{ background: "#f8fafc", borderBottom: "1px solid oklch(0.922 0 0)" }}>
-                  {["Label / Slug", "Description", "Allowed Roles", "Status", "Created", ""].map(h => (
-                    <th key={h} className="py-3 px-5 text-[10px] font-black uppercase tracking-widest" style={{ color: "#6B7280" }}>{h}</th>
+                <tr className="bg-slate-50 border-b border-slate-200/80 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                  {["Label / Slug", "Description", "Allowed Roles", "Status", "Created", "Actions"].map(h => (
+                    <th key={h} className={`py-3 px-4 sm:px-5 whitespace-nowrap ${h === 'Actions' ? 'text-right' : ''}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
-                {types.map((t, i) => (
-                  <tr key={t.id} style={{ borderBottom: i < types.length - 1 ? "1px solid #f1f5f9" : "none" }}
-                    className="transition-colors hover:bg-[#fafafa]">
-                    <td className="py-3.5 px-5">
+              <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
+                {types.map((t) => (
+                  <tr key={t.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="py-3 px-4 sm:px-5 whitespace-nowrap">
                       <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#D9F7E9" }}>
-                          <Tag className="h-4 w-4" style={{ color: "#0B6E4F" }} />
+                        <div className="h-8 w-8 rounded-lg bg-emerald-50 border border-emerald-200/60 text-[#014645] flex items-center justify-center shrink-0">
+                          <Tag className="h-4 w-4" />
                         </div>
                         <div>
-                          <p className="text-[13px] font-bold" style={{ color: "#08060d" }}>{t.label}</p>
-                          <p className="text-[11px] font-mono" style={{ color: "#6B7280" }}>{t.slug}</p>
+                          <p className="text-xs font-extrabold text-slate-900 leading-tight my-0">{t.label}</p>
+                          <p className="text-[10.5px] font-mono text-slate-400 my-0">{t.slug}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="py-3.5 px-5 max-w-[200px]">
-                      <p className="text-[12px] truncate" style={{ color: "#6b6375" }}>{t.description || "—"}</p>
+                    <td className="py-3 px-4 sm:px-5 max-w-48 sm:max-w-64">
+                      <p className="text-xs text-slate-600 truncate my-0">{t.description || "—"}</p>
                     </td>
-                    <td className="py-3.5 px-5">
+                    <td className="py-3 px-4 sm:px-5 whitespace-nowrap">
                       <div className="flex flex-wrap gap-1">
                         {t.allowed_roles.length === 0
-                          ? <span className="text-[11px]" style={{ color: "#6B7280" }}>All roles</span>
+                          ? <span className="text-[11px] text-slate-400 font-semibold">All roles</span>
                           : t.allowed_roles.map(r => (
-                            <span key={r} className="text-[10px] font-bold px-2 py-0.5 rounded-full capitalize"
-                              style={{ background: "rgba(170,59,255,0.08)", color: "#7c3aed", border: "1px solid rgba(170,59,255,0.2)" }}>
+                            <Badge key={r} variant="outline" className="text-[9px] font-black uppercase shrink-0">
                               {r}
-                            </span>
+                            </Badge>
                           ))}
                       </div>
                     </td>
-                    <td className="py-3.5 px-5">
+                    <td className="py-3 px-4 sm:px-5 whitespace-nowrap">
                       <button onClick={() => handleToggleActive(t)} className="cursor-pointer">
                         {t.is_active
-                          ? <span className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: "#D9F7E9", color: "#0B6E4F" }}>
+                          ? <Badge variant="success" className="text-[9.5px] font-black uppercase flex items-center gap-1 shrink-0">
                               <ToggleRight className="h-3.5 w-3.5" /> Active
-                            </span>
-                          : <span className="flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full" style={{ background: "#f1f5f9", color: "#6B7280" }}>
+                            </Badge>
+                          : <Badge variant="outline" className="text-[9.5px] font-black uppercase flex items-center gap-1 shrink-0">
                               <ToggleLeft className="h-3.5 w-3.5" /> Inactive
-                            </span>
+                            </Badge>
                         }
                       </button>
                     </td>
-                    <td className="py-3.5 px-5 text-[12px]" style={{ color: "#6B7280" }}>{fmt(t.created_at)}</td>
-                    <td className="py-3.5 px-5">
+                    <td className="py-3 px-4 sm:px-5 whitespace-nowrap text-slate-500 text-[11px] font-semibold">{fmt(t.created_at)}</td>
+                    <td className="py-3 px-4 sm:px-5 whitespace-nowrap text-right">
                       <div className="flex items-center gap-1.5 justify-end">
-                        <button onClick={() => openEdit(t)} className="h-8 w-8 rounded-lg flex items-center justify-center cursor-pointer transition-colors" style={{ border: "1px solid #e2e8f0", color: "#6b6375" }}
-                          onMouseEnter={e => { e.currentTarget.style.background = "#f1f5f9"; }} onMouseLeave={e => { e.currentTarget.style.background = ""; }}>
+                        <button onClick={() => openEdit(t)} className="h-8 w-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer transition-colors">
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
-                        <button onClick={() => setDeleteTarget(t)} className="h-8 w-8 rounded-lg flex items-center justify-center cursor-pointer transition-colors" style={{ border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444" }}
-                          onMouseEnter={e => { e.currentTarget.style.background = "rgba(239,68,68,0.05)"; }} onMouseLeave={e => { e.currentTarget.style.background = ""; }}>
+                        <button onClick={() => setDeleteTarget(t)} className="h-8 w-8 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 flex items-center justify-center cursor-pointer transition-colors">
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
@@ -244,79 +235,68 @@ export const AdminCategoriesPage: React.FC = () => {
         </div>
       )}
 
-      {/* ── Create / Edit Modal ── */}
+      {/* Create / Edit Modal */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(8,6,13,0.5)", backdropFilter: "blur(4px)" }}>
-          <div className="bg-white rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-5" style={{ borderBottom: "1px solid oklch(0.922 0 0)" }}>
+        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl border border-slate-200 text-left">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h2 className="text-[17px] font-black" style={{ color: "#08060d" }}>
+                <h2 className="text-base font-extrabold text-slate-900 my-0">
                   {editTarget ? "Edit Property Type" : "Create Property Type"}
                 </h2>
-                <p className="text-[12px] mt-0.5" style={{ color: "#6B7280" }}>
-                  {editTarget ? `Editing "${editTarget.label}"` : "Define a new category for property listings."}
+                <p className="text-xs text-slate-500 font-medium my-0">
+                  {editTarget ? `Editing "${editTarget.label}"` : "Define a new property category."}
                 </p>
               </div>
-              <button onClick={() => setModalOpen(false)} className="h-8 w-8 rounded-full flex items-center justify-center cursor-pointer" style={{ background: "#f1f5f9", color: "#6b6375" }}>
+              <button onClick={() => setModalOpen(false)} className="h-8 w-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer">
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="px-6 py-5 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black uppercase tracking-widest" style={{ color: "#6B7280" }}>Label *</label>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-400 block">Label *</label>
                   <input
                     value={form.label}
                     onChange={e => handleLabelChange(e.target.value)}
                     placeholder="e.g. Apartment"
-                    className="w-full rounded-xl px-3.5 py-2.5 text-[13px] font-medium focus:outline-none transition-all"
-                    style={{ background: "#f1f5f9", border: "1px solid #e2e8f0", color: "#08060d" }}
-                    onFocus={e => { e.currentTarget.style.borderColor = "#23D283"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(35,210,131,0.12)"; e.currentTarget.style.background = "#fff"; }}
-                    onBlur={e => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.background = "#f1f5f9"; }}
+                    className="w-full bg-slate-50 border border-slate-200/80 rounded-lg px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#014645]"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-[11px] font-black uppercase tracking-widest" style={{ color: "#6B7280" }}>Slug *</label>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-400 block">Slug *</label>
                   <input
                     value={form.slug}
                     onChange={e => setForm(f => ({ ...f, slug: slugify(e.target.value) }))}
                     placeholder="e.g. apartment"
-                    className="w-full rounded-xl px-3.5 py-2.5 text-[13px] font-mono focus:outline-none transition-all"
-                    style={{ background: "#f1f5f9", border: "1px solid #e2e8f0", color: "#08060d" }}
-                    onFocus={e => { e.currentTarget.style.borderColor = "#23D283"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(35,210,131,0.12)"; e.currentTarget.style.background = "#fff"; }}
-                    onBlur={e => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.background = "#f1f5f9"; }}
+                    className="w-full bg-slate-50 border border-slate-200/80 rounded-lg px-3 py-2 text-xs font-mono font-semibold text-slate-900 focus:outline-none focus:border-[#014645]"
                   />
                 </div>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-[11px] font-black uppercase tracking-widest" style={{ color: "#6B7280" }}>Description</label>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-slate-400 block">Description</label>
                 <textarea
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  placeholder="Brief description for this property type…"
+                  placeholder="Brief description for this category..."
                   rows={2}
-                  className="w-full rounded-xl px-3.5 py-2.5 text-[13px] font-medium resize-none focus:outline-none transition-all"
-                  style={{ background: "#f1f5f9", border: "1px solid #e2e8f0", color: "#08060d" }}
-                  onFocus={e => { e.currentTarget.style.borderColor = "#23D283"; e.currentTarget.style.boxShadow = "0 0 0 3px rgba(35,210,131,0.12)"; e.currentTarget.style.background = "#fff"; }}
-                  onBlur={e => { e.currentTarget.style.borderColor = "#e2e8f0"; e.currentTarget.style.boxShadow = "none"; e.currentTarget.style.background = "#f1f5f9"; }}
+                  className="w-full bg-slate-50 border border-slate-200/80 rounded-lg p-3 text-xs font-medium text-slate-900 focus:outline-none focus:border-[#014645] resize-none"
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[11px] font-black uppercase tracking-widest" style={{ color: "#6B7280" }}>Allowed Roles (empty = all)</label>
-                <div className="flex flex-wrap gap-2">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-slate-400 block">Allowed Roles (empty = all)</label>
+                <div className="flex flex-wrap gap-1.5">
                   {ROLE_OPTIONS.map(role => {
                     const selected = form.allowed_roles.includes(role);
                     return (
                       <button key={role} onClick={() => toggleRole(role)}
-                        className="px-3 py-1.5 rounded-xl text-[12px] font-bold capitalize cursor-pointer transition-all flex items-center gap-1.5"
-                        style={selected
-                          ? { background: "#D9F7E9", color: "#0B6E4F", border: "1px solid rgba(35,210,131,0.3)" }
-                          : { background: "#f1f5f9", color: "#6b6375", border: "1px solid #e2e8f0" }}>
+                        className={`px-3 py-1 rounded-lg text-xs font-extrabold capitalize cursor-pointer transition-all flex items-center gap-1 ${
+                          selected ? "bg-emerald-50 text-[#014645] border border-emerald-200" : "bg-slate-50 text-slate-600 border border-slate-200/80"
+                        }`}
+                      >
                         {selected && <Check className="h-3 w-3" />}
                         {role}
                       </button>
@@ -324,48 +304,37 @@ export const AdminCategoriesPage: React.FC = () => {
                   })}
                 </div>
               </div>
-
-              <div className="flex items-center justify-between p-3.5 rounded-xl" style={{ background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-                <span className="text-[13px] font-semibold" style={{ color: "#08060d" }}>Active on platform</span>
-                <button onClick={() => setForm(f => ({ ...f, is_active: !f.is_active }))} className="cursor-pointer">
-                  {form.is_active
-                    ? <ToggleRight className="h-6 w-6" style={{ color: "#23D283" }} />
-                    : <ToggleLeft className="h-6 w-6" style={{ color: "#6B7280" }} />}
-                </button>
-              </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 px-6 py-4" style={{ borderTop: "1px solid oklch(0.922 0 0)" }}>
-              <button onClick={() => setModalOpen(false)} className="px-4 py-2 rounded-xl text-[13px] font-semibold cursor-pointer" style={{ background: "#f1f5f9", color: "#6b6375", border: "1px solid #e2e8f0" }}>
+            <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
+              <button onClick={() => setModalOpen(false)} className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-3.5 py-2 rounded-lg cursor-pointer">
                 Cancel
               </button>
-              <button onClick={handleSave} disabled={saving} className="px-5 py-2 rounded-xl text-[13px] font-bold cursor-pointer disabled:opacity-60 flex items-center gap-2" style={{ background: "#23D283", color: "#fff" }}>
-                {saving ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
-                {saving ? "Saving…" : editTarget ? "Save Changes" : "Create Type"}
+              <button onClick={handleSave} disabled={saving} className="bg-[#014645] hover:bg-[#013534] text-white font-extrabold text-xs px-4 py-2 rounded-lg shadow-2xs cursor-pointer disabled:opacity-50 flex items-center gap-1.5">
+                {saving ? "Saving..." : editTarget ? "Save Changes" : "Create Type"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── Delete Confirm Modal ── */}
+      {/* Delete Confirm Modal */}
       {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(8,6,13,0.5)", backdropFilter: "blur(4px)" }}>
-          <div className="bg-white rounded-3xl w-full max-w-sm shadow-2xl p-6 space-y-5 animate-in fade-in zoom-in-95 duration-200">
-            <div className="h-12 w-12 rounded-2xl flex items-center justify-center mx-auto" style={{ background: "rgba(239,68,68,0.08)" }}>
-              <Trash2 className="h-6 w-6" style={{ color: "#ef4444" }} />
+        <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-sm w-full p-6 space-y-4 shadow-2xl border border-slate-200 text-center">
+            <div className="h-10 w-10 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
+              <Trash2 className="h-5 w-5" />
             </div>
-            <div className="text-center space-y-1">
-              <h3 className="text-[16px] font-black" style={{ color: "#08060d" }}>Delete "{deleteTarget.label}"?</h3>
-              <p className="text-[13px]" style={{ color: "#6B7280" }}>This action cannot be undone. Property listings using this type may be affected.</p>
+            <div>
+              <h3 className="text-base font-extrabold text-slate-900 my-0">Delete "{deleteTarget.label}"?</h3>
+              <p className="text-xs text-slate-500 font-medium mt-1">This action cannot be undone.</p>
             </div>
-            <div className="flex gap-3">
-              <button onClick={() => setDeleteTarget(null)} className="flex-1 py-2.5 rounded-xl text-[13px] font-semibold cursor-pointer" style={{ background: "#f1f5f9", color: "#6b6375", border: "1px solid #e2e8f0" }}>
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => setDeleteTarget(null)} className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs py-2 rounded-lg cursor-pointer">
                 Cancel
               </button>
-              <button onClick={handleDelete} disabled={deleting} className="flex-1 py-2.5 rounded-xl text-[13px] font-bold cursor-pointer disabled:opacity-60" style={{ background: "#ef4444", color: "#fff" }}>
-                {deleting ? "Deleting…" : "Yes, Delete"}
+              <button onClick={handleDelete} disabled={deleting} className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs py-2 rounded-lg shadow-2xs cursor-pointer disabled:opacity-50">
+                {deleting ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>

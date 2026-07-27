@@ -167,12 +167,43 @@ async def refresh_token(payload: RefreshTokenRequest, db: DbSession) -> TokenRes
     return await service.refresh_token(payload)
 
 
+from typing import Optional
+
 @router.get(
     "/me",
     response_model=UserPublic,
     summary="Get current user",
 )
-async def get_me(current_user: CurrentUser) -> UserPublic:
-    """Return the currently authenticated user's profile. Requires a valid JWT."""
+async def get_me(
+    current_user: CurrentUser,
+    db: DbSession,
+    phone: Optional[str] = None,
+) -> UserPublic:
+    """Return the currently authenticated user's profile. Requires a valid JWT or service key."""
+    if phone and current_user.role == "admin":
+        from app.modules.users.repository import UserRepository
+        repo = UserRepository(db)
+        clean_phone = phone.strip()
+        user = await repo.get_by_phone(clean_phone)
+        if not user and clean_phone.startswith("+"):
+            user = await repo.get_by_phone(clean_phone[1:])
+        if not user and len(clean_phone) > 10:
+            user = await repo.get_by_phone(clean_phone[-10:])
+        if user:
+            return UserPublic.model_validate(user)
+        # If user not found in DB by phone, return synthetic user with phone
+        return UserPublic(
+            id=current_user.id,
+            role="user",
+            name="Valued Customer",
+            email="",
+            email_verified=False,
+            phone=clean_phone,
+            preference_type="buy",
+            location_city="",
+            location_area="",
+            verification_status="none",
+            status="active"
+        )
     return UserPublic.model_validate(current_user)
 

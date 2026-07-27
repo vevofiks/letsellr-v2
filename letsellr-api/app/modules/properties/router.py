@@ -73,19 +73,12 @@ async def list_properties(
 # ── Static sub-paths — must be declared BEFORE /{property_id} ─────────────────
 
 @router.get("/ref/{ref}/enquiry-link", response_model=EnquiryLinkResponse)
-async def get_enquiry_link(ref: str, db: DbSession):
+async def get_enquiry_link(ref: str, db: DbSession, current_user: CurrentUser):
     """
     Generate a WhatsApp deep-link (wa.me URL) for a PG / Hostel listing.
 
-    **How it works:**
-    - Looks up the property by its human-readable `ref` code (e.g. `PROP-AB12CD`).
-    - Validates the property is a `pg` or `hostel` (only these categories use
-      WhatsApp-bot enquiry flow; other categories use in-platform chat).
-    - Constructs a pre-filled `https://wa.me/<phone>?text=...` URL that opens
-      the owner's WhatsApp with a greeting message referencing the property ref.
-
-    This allows seekers to contact the owner directly — zero brokerage.
-    The `enquiries` stat counter is incremented each time this endpoint is called.
+    Requires authentication via Bearer token.
+    Increments the property's `enquiries` and `views` stat counters on each call.
     """
     service = PropertyService(db)
     return await service.get_enquiry_link(ref)
@@ -112,18 +105,22 @@ async def get_owner_properties(current_user: CurrentUser, db: DbSession):
     return await service.list_owner_properties(current_user.id)
 
 
-# ── Single property by UUID ────────────────────────────────────────────────────
+# ── Single property by UUID or Property Code (ref) ───────────────────────────
 
 @router.get("/{property_id}", response_model=PropertyResponse)
-async def get_property(property_id: UUID, db: DbSession):
+async def get_property(
+    property_id: str,
+    db: DbSession,
+):
     """
-    Full public details for a single property listing.
+    Full details for a single property listing (by UUID or Property Ref Code e.g. PROP-AB12CD).
+    Public access — no authentication required.
 
-    Increments the `views` stat counter on every call.
-    Returns 404 if the property is not found or not live.
+    Returns 404 if the property is not found.
     """
     service = PropertyService(db)
     return await service.get_property(property_id)
+
 
 
 # ── Authenticated mutations ────────────────────────────────────────────────────

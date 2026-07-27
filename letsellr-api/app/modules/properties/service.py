@@ -113,11 +113,28 @@ class PropertyService:
         await self.repo.delete(prop)
 
     async def get_property(self, property_id: str | uuid.UUID) -> Property:
-        prop = await self.repo.get_by_id(property_id)
+        prop = None
+        # Attempt UUID lookup first if property_id is valid UUID format or UUID object
+        if isinstance(property_id, uuid.UUID):
+            prop = await self.repo.get_by_id(property_id)
+        else:
+            str_val = str(property_id).strip()
+            try:
+                parsed_uuid = uuid.UUID(str_val)
+                prop = await self.repo.get_by_id(parsed_uuid)
+            except ValueError:
+                # Not a UUID, look up by property reference code (e.g. PROP-AB12CD, PG1042)
+                prop = await self.repo.get_by_ref(str_val)
+
+            if not prop:
+                # Fallback: if search by UUID yielded nothing, try search by ref code
+                prop = await self.repo.get_by_ref(str_val)
+
         if not prop:
             raise HTTPException(status_code=404, detail="Property not found")
 
         return prop
+
 
     async def get_enquiry_link(self, ref: str) -> EnquiryLinkResponse:
         """
@@ -132,7 +149,7 @@ class PropertyService:
         is_pg_or_hostel = prop.category in ["pg", "hostel"]
 
         # Use a static defined number instead of the owner's phone
-        phone = "917025351519"
+        phone = "15551398764"
 
         # Pre-filled message text
         message = (

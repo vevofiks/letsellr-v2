@@ -54,11 +54,11 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
   // Avatar initials from name
   const initials = user?.name
     ? user.name
-        .split(" ")
-        .slice(0, 2)
-        .map((w) => w[0])
-        .join("")
-        .toUpperCase()
+      .split(" ")
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join("")
+      .toUpperCase()
     : "?";
 
   // Profile Image Resolution
@@ -230,7 +230,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
                     <button
                       onClick={() => {
                         setDropdownOpen(false);
-                        navigate('/register/type')
+                        navigate('/login')
                       }}
                       className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:rounded-b-md hover:text-brand-deep-green transition-all text-left bg-slate-50/30"
                     >

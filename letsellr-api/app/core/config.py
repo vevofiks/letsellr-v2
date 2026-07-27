@@ -77,6 +77,10 @@ class Settings(BaseSettings):
     WHATSAPP_WEBHOOK_VERIFY_TOKEN: str = ""
     FREE_CONTACT_LIMIT: int = 3
 
+    # ── Server-to-Server Auth (n8n) ───────────────────────────────────────────
+    N8N_API_KEY: str = "letsellr_n8n_sec_key_98324798327498"
+
+
     # ── Map / Places API ──────────────────────────────────────────────────────
     PLACES_API_KEY: str = ""
 

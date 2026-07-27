@@ -2,13 +2,12 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { clientRegisterSchema } from "@/lib/validation";
-import type { ClientRegisterInput } from "@/lib/validation";
-import { loginSchema } from "@/lib/validation";
-import type { LoginInput } from "@/lib/validation";
+import { clientRegisterSchema, loginSchema } from "@/lib/validation";
+import type { ClientRegisterInput, LoginInput } from "@/lib/validation";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   X,
   Lock,
@@ -17,20 +16,12 @@ import {
   ArrowLeft,
   UserPlus,
   LogIn,
+  ArrowRight,
 } from "lucide-react";
 import {
   InputOTP,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { cn } from "@/lib/utils";
 
 export type AuthModalMode = "register-client" | "login";
 
@@ -103,22 +94,22 @@ const OTPStep: React.FC<{
   };
 
   return (
-    <div className="flex flex-col items-center gap-6 pt-2 pb-1">
+    <div className="flex flex-col items-center gap-5 text-center">
       {/* Lock icon */}
-      <div className="flex h-14 w-14 items-center justify-center rounded-full bg-brand-light-green text-brand-deep-green">
-        <Lock className="h-6 w-6" />
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#D9F7E9] text-[#0B6E4F]">
+        <Lock className="h-5 w-5" />
       </div>
 
-      <div className="text-center space-y-1">
-        <h3 className="text-xl font-extrabold text-slate-900">Verify Your Identity</h3>
-        <p className="text-sm text-slate-500 max-w-xs mx-auto leading-relaxed">
+      <div className="space-y-1">
+        <h3 className="text-xl font-extrabold text-slate-900 m-0">Verify Your Identity</h3>
+        <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
           We sent a 6-digit passcode to{" "}
           <span className="font-bold text-slate-800">{email}</span>
         </p>
       </div>
 
-      <div className="flex flex-col items-center gap-4 w-full">
-        <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+      <div className="flex flex-col items-center gap-3 w-full">
+        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
           Enter 6-digit Code
         </label>
         <InputOTP
@@ -135,34 +126,28 @@ const OTPStep: React.FC<{
               <InputOTPSlot
                 key={i}
                 index={i}
-                className={cn(
-                  "h-12 w-10 rounded-lg border border-slate-200 bg-white text-lg font-extrabold text-slate-800 transition-all",
-                  "data-[active=true]:border-brand-green data-[active=true]:ring-2 data-[active=true]:ring-brand-green/10"
-                )}
+                className="h-11 w-9 rounded-md border border-slate-200 bg-white text-base font-black text-slate-800 transition-all data-[active=true]:border-[#23D283] data-[active=true]:ring-2 data-[active=true]:ring-[#23D283]/20"
               />
             ))}
-            <span className="text-slate-300 font-bold text-lg px-0.5">-</span>
+            <span className="text-slate-300 font-bold text-base px-0.5">-</span>
             {[3, 4, 5].map((i) => (
               <InputOTPSlot
                 key={i}
                 index={i}
-                className={cn(
-                  "h-12 w-10 rounded-lg border border-slate-200 bg-white text-lg font-extrabold text-slate-800 transition-all",
-                  "data-[active=true]:border-brand-green data-[active=true]:ring-2 data-[active=true]:ring-brand-green/10"
-                )}
+                className="h-11 w-9 rounded-md border border-slate-200 bg-white text-base font-black text-slate-800 transition-all data-[active=true]:border-[#23D283] data-[active=true]:ring-2 data-[active=true]:ring-[#23D283]/20"
               />
             ))}
           </div>
         </InputOTP>
 
-        <div className="flex items-center gap-2 text-xs text-slate-500 font-medium bg-slate-50 px-4 py-2 rounded-full border border-slate-100">
+        <div className="flex items-center gap-2 text-xs text-slate-500 font-medium bg-slate-50 px-3 py-1 rounded-full border border-slate-100">
           <Timer className="h-3.5 w-3.5 text-slate-400" />
           {countdown > 0 ? (
             <span>
               Resend in <strong className="text-slate-800">{countdown}s</strong>
             </span>
           ) : (
-            <span className="text-brand-deep-green font-bold">You can request a new code.</span>
+            <span className="text-[#0B6E4F] font-bold">You can request a new code.</span>
           )}
         </div>
       </div>
@@ -171,27 +156,27 @@ const OTPStep: React.FC<{
         type="button"
         disabled={loading || otp.length < 6}
         onClick={() => verify(otp)}
-        className="w-full h-11 rounded-lg bg-brand-green hover:bg-brand-green-hover text-white font-semibold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed border-0"
+        className="w-full h-10 rounded-md bg-[#23D283] hover:bg-[#11995E] text-white font-bold text-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer border-0"
       >
         {loading ? "Verifying..." : "Verify & Continue"}
       </button>
 
-      <div className="flex w-full items-center justify-between">
+      <div className="flex w-full items-center justify-between text-xs pt-1 border-t border-slate-100">
         <button
           type="button"
           onClick={onBack}
-          className="flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900 px-3 py-2 rounded-xl hover:bg-slate-50 transition-colors"
+          className="flex items-center gap-1 text-slate-600 hover:text-slate-900 font-semibold cursor-pointer"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowLeft className="h-3.5 w-3.5" />
           Back
         </button>
         <button
           type="button"
           disabled={countdown > 0 || resending}
           onClick={handleResend}
-          className="flex items-center gap-1.5 text-sm text-slate-700 hover:text-slate-900 px-3 py-2 rounded-xl hover:bg-slate-100 transition-colors disabled:opacity-40"
+          className="flex items-center gap-1 text-[#0B6E4F] hover:underline font-semibold disabled:opacity-40 cursor-pointer"
         >
-          <RotateCw className={`h-4 w-4 ${resending ? "animate-spin" : ""}`} />
+          <RotateCw className={`h-3.5 w-3.5 ${resending ? "animate-spin" : ""}`} />
           Resend Code
         </button>
       </div>
@@ -209,7 +194,6 @@ const RegisterClientStep: React.FC<{
   const {
     register,
     handleSubmit,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm<ClientRegisterInput>({
     resolver: zodResolver(clientRegisterSchema),
@@ -227,111 +211,113 @@ const RegisterClientStep: React.FC<{
   };
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="text-center space-y-1">
-        <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-brand-light-green text-brand-deep-green mx-auto mb-2">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col items-center justify-center text-center space-y-1">
+        <div className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-[#D9F7E9] text-[#0B6E4F] mb-1">
           <UserPlus className="h-5 w-5" />
         </div>
-        <h3 className="text-xl font-extrabold text-slate-900">Create Client Account</h3>
-        <p className="text-sm text-slate-500 max-w-xs mx-auto leading-relaxed">
+        <h3 className="text-xl font-extrabold text-slate-900 m-0">Create Seeker Account</h3>
+        <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
           Start searching for properties right away.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {/* Name */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">Full Name</label>
-          <Input
-            id="rc-name"
-            placeholder="Jane Doe"
-            {...register("name")}
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 text-left">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Name */}
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Full Name</label>
+            <input
+              id="rc-name"
+              placeholder="Jane Doe"
+              {...register("name")}
+              className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+            />
+            {errors.name && (
+              <p className="mt-1 text-xs text-rose-600 font-medium">{errors.name.message}</p>
+            )}
+          </div>
 
-          />
-          {errors.name && (
-            <p className="mt-1 text-xs text-rose-600 font-medium">{errors.name.message}</p>
-          )}
-        </div>
+          {/* Email */}
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Email Address</label>
+            <input
+              id="rc-email"
+              type="email"
+              placeholder="jane@example.com"
+              {...register("email")}
+              className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+            />
+            {errors.email && (
+              <p className="mt-1 text-xs text-rose-600 font-medium">{errors.email.message}</p>
+            )}
+          </div>
 
-        {/* Email */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">Email Address</label>
-          <Input
-            id="rc-email"
-            type="email"
-            placeholder="jane@example.com"
-            {...register("email")}
+          {/* Phone */}
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Phone Number</label>
+            <input
+              id="rc-phone"
+              type="tel"
+              placeholder="+1234567890"
+              {...register("phone")}
+              className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+            />
+            {errors.phone && (
+              <p className="mt-1 text-xs text-rose-600 font-medium">{errors.phone.message}</p>
+            )}
+          </div>
 
-          />
-          {errors.email && (
-            <p className="mt-1 text-xs text-rose-600 font-medium">{errors.email.message}</p>
-          )}
-        </div>
+          {/* Preference Type */}
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
+              Looking to Buy or Rent?
+            </label>
+            <select
+              id="rc-preference"
+              {...register("preference_type")}
+              className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+            >
+              <option value="">Select preference...</option>
+              <option value="buy">Buy Properties</option>
+              <option value="rent">Rent Properties</option>
+              <option value="both">Both</option>
+            </select>
+            {errors.preference_type && (
+              <p className="mt-1 text-xs text-rose-600 font-medium">{errors.preference_type.message}</p>
+            )}
+          </div>
 
-        {/* Phone */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">Phone Number</label>
-          <Input
-            id="rc-phone"
-            type="tel"
-            placeholder="+1234567890"
-            {...register("phone")}
-
-          />
-          {errors.phone && (
-            <p className="mt-1 text-xs text-rose-600 font-medium">{errors.phone.message}</p>
-          )}
-        </div>
-
-        {/* Preference Type */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-            Looking to Buy or Rent?
-          </label>
-          <Select onValueChange={(val: string | null) => { if (val) setValue("preference_type", val as any); }}>
-            <SelectTrigger className="w-full border border-slate-200 rounded-lg text-sm font-medium text-slate-800 px-3.5 py-2.5 h-11 focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green">
-              <SelectValue placeholder="Select preference..." />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="buy">Buy Properties</SelectItem>
-              <SelectItem value="rent">Rent Properties</SelectItem>
-              <SelectItem value="both">Both</SelectItem>
-            </SelectContent>
-          </Select>
-          {errors.preference_type && (
-            <p className="mt-1 text-xs text-rose-600 font-medium">{errors.preference_type.message}</p>
-          )}
-        </div>
-
-        {/* Location */}
-        <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">Target Location / City</label>
-          <Input
-            id="rc-location"
-            placeholder="e.g. London, UK"
-            {...register("location")}
-
-          />
-          {errors.location && (
-            <p className="mt-1 text-xs text-rose-600 font-medium">{errors.location.message}</p>
-          )}
+          {/* Location */}
+          <div className="sm:col-span-2">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Target Location / City</label>
+            <input
+              id="rc-location"
+              placeholder="e.g. London, UK"
+              {...register("location")}
+              className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+            />
+            {errors.location && (
+              <p className="mt-1 text-xs text-rose-600 font-medium">{errors.location.message}</p>
+            )}
+          </div>
         </div>
 
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full h-11 rounded-lg bg-brand-green hover:bg-brand-green-hover text-white font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed mt-1"
+          className="w-full h-10 rounded-md bg-[#23D283] hover:bg-[#11995E] text-white font-bold text-xs transition-colors disabled:opacity-60 cursor-pointer mt-1 flex items-center justify-center gap-1.5"
         >
-          {isSubmitting ? "Submitting..." : "Submit"}
+          {isSubmitting ? "Submitting..." : "Submit Registration"}
         </button>
       </form>
 
-      <p className="text-center text-sm text-slate-500">
+      <p className="text-center text-xs text-slate-500 pt-1 border-t border-slate-100">
         Already registered?{" "}
         <button
           type="button"
           onClick={onSwitchToLogin}
-          className="text-brand-deep-green font-bold hover:underline focus:outline-none"
+          className="text-[#0B6E4F] font-bold hover:underline cursor-pointer"
         >
           Sign In
         </button>
@@ -367,27 +353,27 @@ const LoginStep: React.FC<{
   };
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="text-center space-y-1">
-        <div className="inline-flex items-center justify-center h-12 w-12 rounded-full bg-brand-light-green text-brand-deep-green mx-auto mb-2">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col items-center justify-center text-center space-y-1">
+        <div className="inline-flex items-center justify-center h-10 w-10 rounded-full bg-[#D9F7E9] text-[#0B6E4F] mb-1">
           <LogIn className="h-5 w-5" />
         </div>
-        <h3 className="text-xl font-extrabold text-slate-900">Welcome Back</h3>
-        <p className="text-sm text-slate-500 max-w-xs mx-auto leading-relaxed">
+        <h3 className="text-xl font-extrabold text-slate-900 m-0 text-center">Welcome Back</h3>
+        <p className="text-xs text-slate-500 max-w-xs mx-auto text-center leading-relaxed">
           Enter your email and we'll send you a one-time passcode.
         </p>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 text-left">
         {/* Email */}
         <div>
-          <label className="block text-xs font-semibold text-slate-700 mb-1.5">Email Address</label>
-          <Input
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Email Address</label>
+          <input
             id="login-email"
             type="email"
             placeholder="name@example.com"
             {...register("email")}
-
+            className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
           />
           {errors.email && (
             <p className="mt-1 text-xs text-rose-600 font-medium">{errors.email.message}</p>
@@ -397,18 +383,19 @@ const LoginStep: React.FC<{
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full h-11 rounded-lg bg-brand-green hover:bg-brand-green-hover text-white font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed mt-1"
+          className="w-full h-10 rounded-md bg-[#23D283] hover:bg-[#11995E] text-white font-bold text-xs transition-colors disabled:opacity-60 cursor-pointer mt-1 flex items-center justify-center gap-1.5"
         >
-          {isSubmitting ? "Sending OTP..." : "Send OTP"}
+          {isSubmitting ? "Sending OTP..." : "Send Passcode"}
+          <ArrowRight className="h-3.5 w-3.5" />
         </button>
       </form>
 
-      <p className="text-center text-sm text-slate-500">
+      <p className="text-center text-xs text-slate-500 pt-1 border-t border-slate-100">
         New to Letsellr?{" "}
         <button
           type="button"
           onClick={onSwitchToRegister}
-          className="text-brand-deep-green font-bold hover:underline focus:outline-none"
+          className="text-[#0B6E4F] font-bold hover:underline cursor-pointer"
         >
           Create an Account
         </button>
@@ -438,23 +425,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialMode, onClose }) =>
   }, [onClose]);
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-150">
+    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-150">
       {/* Backdrop click */}
       <div className="absolute inset-0" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-100 z-10 animate-in zoom-in-95 duration-200 overflow-hidden">
+      <div
+        className={cn(
+          "relative w-full bg-white rounded-lg shadow-xl border border-slate-200 z-10 animate-in zoom-in-95 duration-150 overflow-hidden transition-all",
+          step.type === "register-client" ? "max-w-lg" : "max-w-sm"
+        )}
+      >
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 hover:text-slate-900 transition-all z-10"
+          className="absolute top-3.5 right-3.5 flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-all z-10 cursor-pointer"
         >
           <X className="h-4 w-4" />
         </button>
 
-
         {/* Content */}
-        <div className="px-7 py-7">
+        <div className="p-6">
           {step.type === "register-client" && (
             <RegisterClientStep
               onSent={(email) =>
@@ -490,3 +481,4 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialMode, onClose }) =>
     </div>
   );
 };
+

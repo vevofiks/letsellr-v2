@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Lock, Mail, Eye, EyeOff, ShieldCheck, AlertCircle, ArrowRight } from "lucide-react";
+import { Lock, Mail, Eye, EyeOff, AlertCircle, ArrowRight, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 
 export const AdminLogin: React.FC = () => {
@@ -66,36 +66,51 @@ export const AdminLogin: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f0f2f5] flex items-center justify-center p-4 sm:p-6 font-sans">
-      <div className="w-full max-w-md space-y-6">
-        
-        {/* Top Header Card */}
-        <div className="text-center space-y-2">
+    <div className="min-h-screen w-full flex flex-col justify-center items-center bg-slate-50 font-sans text-slate-900 px-4 py-6 sm:py-10 overflow-y-auto">
+      {/* Main Container */}
+      <main className="w-full max-w-md mx-auto">
+        <div className="bg-white border border-slate-200/80 shadow-md rounded-lg p-6 sm:p-8 space-y-5">
+          {/* Header Bar */}
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition-colors"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>Back to Home</span>
+            </Link>
 
-          <div className="flex items-center justify-center gap-3 pt-2">
-            <img src="/logo.png" alt="Letsellr Logo" className="h-10 w-auto" />
-            <span className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              Letsellr <span className="text-[#086942]">Admin</span>
-            </span>
+            <Link to="/" className="flex items-center gap-1.5 hover:opacity-90 transition-opacity">
+              <img src="/logo.png" alt="Letsellr Logo" className="h-9 w-auto shrink-0" />
+              <span className="text-sm font-black tracking-tight text-slate-900 uppercase">
+                LETSELLR <span className="text-[#086942]">ADMIN</span>
+              </span>
+            </Link>
           </div>
-        </div>
 
-        {/* Main Form Container Card */}
-        <div className="bg-white rounded-3xl p-7 sm:p-9 border border-slate-200/80 shadow-xl space-y-6">
+          {/* Headline */}
+          <div className="flex flex-col items-center justify-center text-center space-y-1.5 pt-1">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 -mt-1.5!">
+              Admin Portal
+            </h1>
+            <p className="text-xs text-slate-500 max-w-xs mx-auto text-center leading-relaxed -mt-4!">
+              Sign in with your admin credentials
+            </p>
+          </div>
 
           {/* Error Banner */}
           {errorMessage && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-2xl flex items-start gap-3 text-xs font-semibold leading-relaxed animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="bg-rose-50 border border-rose-200 text-rose-800 p-3.5 rounded-md flex items-start gap-2.5 text-xs font-semibold leading-relaxed animate-in fade-in duration-200">
               <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
               <span>{errorMessage}</span>
             </div>
           )}
 
+          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
-
-            {/* Email Input Field */}
+            {/* Email */}
             <div className="space-y-1.5 text-left">
-              <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
                 Administrator Email
               </label>
               <div className="relative">
@@ -107,18 +122,16 @@ export const AdminLogin: React.FC = () => {
                   placeholder="admin@letsellr.com"
                   required
                   autoFocus
-                  className="w-full bg-slate-50 border border-slate-200/80 rounded-xl pl-10 pr-4 py-3 text-xs text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:bg-white focus:border-[#086942] focus:ring-2 focus:ring-[#086942]/20 transition-all"
+                  className="w-full bg-white border border-slate-200 rounded-md pl-10 pr-3 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#086942] focus:ring-2 focus:ring-[#086942]/20 transition-all"
                 />
               </div>
             </div>
 
-            {/* Password Input Field */}
+            {/* Password */}
             <div className="space-y-1.5 text-left">
-              <div className="flex items-center justify-between">
-                <label className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 block">
-                  Password
-                </label>
-              </div>
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                Password
+              </label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
@@ -127,7 +140,7 @@ export const AdminLogin: React.FC = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
                   required
-                  className="w-full bg-slate-50 border border-slate-200/80 rounded-xl pl-10 pr-10 py-3 text-xs text-slate-900 font-medium placeholder-slate-400 focus:outline-none focus:bg-white focus:border-[#086942] focus:ring-2 focus:ring-[#086942]/20 transition-all"
+                  className="w-full bg-white border border-slate-200 rounded-md pl-10 pr-10 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#086942] focus:ring-2 focus:ring-[#086942]/20 transition-all"
                 />
                 <button
                   type="button"
@@ -139,8 +152,8 @@ export const AdminLogin: React.FC = () => {
               </div>
             </div>
 
-            {/* Remember & Support Info */}
-            <div className="flex items-center justify-between pt-1 text-xs">
+            {/* Security Options */}
+            <div className="flex items-center justify-between text-xs pt-1">
               <label className="flex items-center gap-2 cursor-pointer select-none text-slate-600 font-medium">
                 <input
                   type="checkbox"
@@ -153,34 +166,32 @@ export const AdminLogin: React.FC = () => {
             </div>
 
             {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-[#086942] hover:bg-[#065334] text-white font-extrabold text-xs py-3.5 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-[0.99] mt-2"
-            >
-              {loading ? (
-                <>
-                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            <div className="pt-2">
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full h-11 bg-[#086942] hover:bg-[#065334] text-white font-bold text-sm rounded-md transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.99] disabled:opacity-50"
+              >
+                {loading ? (
                   <span>Authenticating...</span>
-                </>
-              ) : (
-                <>
-                  <span>Sign In to Admin Portal</span>
-                  <ArrowRight className="h-4 w-4" />
-                </>
-              )}
-            </button>
+                ) : (
+                  <>
+                    <span>Sign In to Admin Portal</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+            </div>
           </form>
 
+          {/* Footer Notice */}
+          <div className="text-center pt-2 border-t border-slate-100 text-[11px] text-slate-400 leading-normal">
+            Confidential Administrator Area. Unauthorized access attempts are logged.
+          </div>
         </div>
-
-        {/* Footer Security Notice */}
-        <div className="text-center space-y-1 text-slate-400 text-[11px] font-medium">
-          <p>© {new Date().getFullYear()} Letsellr Platform. Confidential Administrator Area.</p>
-          <p>Unauthorized access attempts are logged and monitored.</p>
-        </div>
-
-      </div>
+      </main>
     </div>
   );
 };
+
+

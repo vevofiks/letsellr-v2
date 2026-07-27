@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import {
   InputOTP,
   InputOTPSlot,
@@ -100,35 +98,54 @@ export const VerifyOTP: React.FC = () => {
   if (!email || !purpose) return null;
 
   return (
-    <div className="relative flex min-h-screen sm:h-screen flex-col items-center justify-center p-4 sm:p-6 bg-white font-sans text-black">
-      {/* Outer Card Wrapper (responsive padding, subtle border, shadow-sm, increased width) */}
-      <Card className="w-full max-w-xl border border-slate-200 bg-white shadow-sm p-5 sm:p-8 rounded-xl flex flex-col justify-center text-center">
-        {/* Lock Icon Header */}
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-brand-light-green text-brand-deep-green mb-4">
-          <Lock className="h-6 w-6" />
-        </div>
+    <div className="min-h-screen w-full flex flex-col justify-center items-center bg-slate-50 font-sans text-slate-900 px-4 py-6 sm:py-10 overflow-y-auto">
+      {/* Main Container */}
+      <main className="w-full max-w-md mx-auto">
+        <div className="bg-white border border-slate-200/80 shadow-md rounded-lg p-6 sm:p-8 space-y-5 text-center">
+          {/* Header Bar */}
+          <div className="flex items-center justify-between pb-3 -mt-2! border-b border-slate-100">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-[#0B6E4F] transition-colors"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>Back to Home</span>
+            </Link>
 
-        {/* Content Header */}
-        <div className="space-y-2 mb-6 text-center w-full flex flex-col items-center justify-center">
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 text-center w-full">
-            Verify Your Identity
-          </h1>
-          <p className="text-sm text-slate-500 max-w-sm mx-auto leading-relaxed text-center w-full">
-            We sent a verification passcode to <br />
-            <span className="font-bold text-slate-800">{email}</span>
-          </p>
-        </div>
+            <Link to="/" className="flex items-center gap-1.5 hover:opacity-90 transition-opacity">
+              <img src="/logo.png" alt="Letsellr Logo" className="h-9 w-auto shrink-0" />
+              <span className="text-sm font-black tracking-tight text-[#23D283] uppercase">
+                LETSELLR
+              </span>
+            </Link>
+          </div>
 
-        {/* Form Container */}
-        <form onSubmit={handleVerify} className="space-y-6">
-          <div className="flex flex-col items-center justify-center space-y-6 w-full">
-            <div className="flex flex-col items-center justify-center w-full">
-              <label className="mb-4 text-center text-xs font-semibold uppercase tracking-wider text-slate-400">
+          {/* Lock Icon */}
+          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full bg-[#D9F7E9] text-[#0B6E4F]">
+            <Lock className="h-5 w-5" />
+          </div>
+
+          {/* Header */}
+          <div className="flex flex-col items-center justify-center space-y-1">
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 -mt-4!">
+              Verify Your Identity
+            </h1>
+            <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed -mt-4!">
+              We sent a verification passcode to <br />
+              <span className="font-bold text-slate-800">{email}</span>
+            </p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleVerify} className="space-y-4">
+            <div className="flex flex-col items-center gap-3">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 Enter 6-digit Code
               </label>
               <InputOTP
                 maxLength={6}
                 value={otp}
+                autoComplete="one-time-code"
                 containerClassName="justify-center"
                 onChange={(val) => {
                   setOtp(val);
@@ -137,63 +154,63 @@ export const VerifyOTP: React.FC = () => {
                   }
                 }}
               >
-                <div className="flex items-center justify-center gap-1.5 sm:gap-2.5 w-full">
-                  <InputOTPSlot index={0} className="h-12 w-10 sm:h-14 sm:w-12 rounded-lg border border-slate-200 bg-white text-lg sm:text-xl font-extrabold text-slate-800 transition-all data-[active=true]:border-brand-green data-[active=true]:ring-2 data-[active=true]:ring-brand-green/10" />
-                  <InputOTPSlot index={1} className="h-12 w-10 sm:h-14 sm:w-12 rounded-lg border border-slate-200 bg-white text-lg sm:text-xl font-extrabold text-slate-800 transition-all data-[active=true]:border-brand-green data-[active=true]:ring-2 data-[active=true]:ring-brand-green/10" />
-                  <InputOTPSlot index={2} className="h-12 w-10 sm:h-14 sm:w-12 rounded-lg border border-slate-200 bg-white text-lg sm:text-xl font-extrabold text-slate-800 transition-all data-[active=true]:border-brand-green data-[active=true]:ring-2 data-[active=true]:ring-brand-green/10" />
+                <div className="flex items-center justify-center gap-1.5 sm:gap-2">
+                  <InputOTPSlot index={0} className="h-11 w-9 sm:h-12 sm:w-10 rounded-md border border-slate-200 bg-white text-base sm:text-lg font-black text-slate-800 transition-all data-[active=true]:border-[#23D283] data-[active=true]:ring-2 data-[active=true]:ring-[#23D283]/20" />
+                  <InputOTPSlot index={1} className="h-11 w-9 sm:h-12 sm:w-10 rounded-md border border-slate-200 bg-white text-base sm:text-lg font-black text-slate-800 transition-all data-[active=true]:border-[#23D283] data-[active=true]:ring-2 data-[active=true]:ring-[#23D283]/20" />
+                  <InputOTPSlot index={2} className="h-11 w-9 sm:h-12 sm:w-10 rounded-md border border-slate-200 bg-white text-base sm:text-lg font-black text-slate-800 transition-all data-[active=true]:border-[#23D283] data-[active=true]:ring-2 data-[active=true]:ring-[#23D283]/20" />
                   <span className="text-slate-300 font-bold text-lg px-0.5">-</span>
-                  <InputOTPSlot index={3} className="h-12 w-10 sm:h-14 sm:w-12 rounded-lg border border-slate-200 bg-white text-lg sm:text-xl font-extrabold text-slate-800 transition-all data-[active=true]:border-brand-green data-[active=true]:ring-2 data-[active=true]:ring-brand-green/10" />
-                  <InputOTPSlot index={4} className="h-12 w-10 sm:h-14 sm:w-12 rounded-lg border border-slate-200 bg-white text-lg sm:text-xl font-extrabold text-slate-800 transition-all data-[active=true]:border-brand-green data-[active=true]:ring-2 data-[active=true]:ring-brand-green/10" />
-                  <InputOTPSlot index={5} className="h-12 w-10 sm:h-14 sm:w-12 rounded-lg border border-slate-200 bg-white text-lg sm:text-xl font-extrabold text-slate-800 transition-all data-[active=true]:border-brand-green data-[active=true]:ring-2 data-[active=true]:ring-brand-green/10" />
+                  <InputOTPSlot index={3} className="h-11 w-9 sm:h-12 sm:w-10 rounded-md border border-slate-200 bg-white text-base sm:text-lg font-black text-slate-800 transition-all data-[active=true]:border-[#23D283] data-[active=true]:ring-2 data-[active=true]:ring-[#23D283]/20" />
+                  <InputOTPSlot index={4} className="h-11 w-9 sm:h-12 sm:w-10 rounded-md border border-slate-200 bg-white text-base sm:text-lg font-black text-slate-800 transition-all data-[active=true]:border-[#23D283] data-[active=true]:ring-2 data-[active=true]:ring-[#23D283]/20" />
+                  <InputOTPSlot index={5} className="h-11 w-9 sm:h-12 sm:w-10 rounded-md border border-slate-200 bg-white text-base sm:text-lg font-black text-slate-800 transition-all data-[active=true]:border-[#23D283] data-[active=true]:ring-2 data-[active=true]:ring-[#23D283]/20" />
                 </div>
               </InputOTP>
+
+              <div className="flex items-center gap-2 text-xs text-slate-500 font-medium bg-slate-50 px-3.5 py-1.5 rounded-full border border-slate-100">
+                <Timer className="h-3.5 w-3.5 text-slate-400" />
+                {countdown > 0 ? (
+                  <span>Resend code in <strong className="text-slate-800 font-bold">{countdown}s</strong></span>
+                ) : (
+                  <span className="text-[#0B6E4F] font-bold">You can request a new code.</span>
+                )}
+              </div>
             </div>
- 
-            <div className="flex items-center gap-2 text-sm text-slate-500 font-medium bg-slate-50 px-4 py-2 rounded-full border border-slate-100">
-              <Timer className="h-4 w-4 text-slate-400" />
-              {countdown > 0 ? (
-                <span>Resend code in <strong className="text-slate-800 font-bold">{countdown}s</strong></span>
-              ) : (
-                <span className="text-brand-deep-green font-bold">You can request a new code.</span>
-              )}
-            </div>
-          </div>
- 
-          {/* Form Actions */}
-          <div className="space-y-4 pt-2">
-            <Button
-              type="submit"
-              disabled={loading || otp.length < 6}
-              className="w-full h-11 rounded-xl bg-brand-green hover:bg-brand-green-hover text-white font-semibold transition-colors disabled:opacity-50 disabled:pointer-events-none border-0"
-            >
-              {loading ? "Verifying..." : "Verify & Continue"}
-            </Button>
- 
-            <div className="flex w-full items-center justify-between text-sm">
-              <Button
-                variant="ghost"
-                type="button"
-                onClick={() => navigate(-1)}
-                className="flex items-center gap-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-50 h-10 px-4 rounded-xl transition-colors border-0"
+
+            {/* Actions */}
+            <div className="space-y-3 pt-1">
+              <button
+                type="submit"
+                disabled={loading || otp.length < 6}
+                className="w-full h-11 bg-[#23D283] hover:bg-[#11995E] text-white font-bold text-sm rounded-md transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none"
               >
-                <ArrowLeft className="h-4 w-4" />
-                Back
-              </Button>
- 
-              <Button
-                variant="ghost"
-                type="button"
-                disabled={countdown > 0 || resending}
-                onClick={handleResend}
-                className="flex items-center gap-1.5 text-brand-deep-green hover:text-brand-green-hover hover:bg-brand-light-green/50 h-10 px-4 rounded-xl transition-colors disabled:opacity-40 border-0"
-              >
-                <RotateCw className={`h-4 w-4 ${resending ? "animate-spin" : ""}`} />
-                Resend Code
-              </Button>
+                {loading ? "Verifying..." : "Verify & Continue"}
+              </button>
+
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                <button
+                  type="button"
+                  onClick={() => navigate(-1)}
+                  className="flex items-center gap-1.5 text-slate-600 hover:text-slate-900 font-semibold px-2 py-1 rounded transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="h-3.5 w-3.5" />
+                  Back
+                </button>
+
+                <button
+                  type="button"
+                  disabled={countdown > 0 || resending}
+                  onClick={handleResend}
+                  className="flex items-center gap-1.5 text-[#0B6E4F] hover:underline font-semibold disabled:opacity-40 disabled:no-underline cursor-pointer"
+                >
+                  <RotateCw className={`h-3.5 w-3.5 ${resending ? "animate-spin" : ""}`} />
+                  Resend Code
+                </button>
+              </div>
             </div>
-          </div>
-        </form>
-      </Card>
+          </form>
+        </div>
+      </main>
     </div>
   );
 };
+
+

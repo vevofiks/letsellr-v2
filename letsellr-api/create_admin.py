@@ -1,6 +1,6 @@
 import asyncio
 import sys
-import argparse
+import argparse 
 import logging
 from sqlalchemy import select
 import app.db.registry  # noqa: F401

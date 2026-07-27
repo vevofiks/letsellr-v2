@@ -225,8 +225,8 @@ class AuthService:
                 preference_type=pending.preference_type,
                 location_city=pending.location_city,
                 location_area=pending.location_area,
-                verification_status="review_request" if pending.role == "agency" else "unverified",
-                status="suspended" if pending.role == "agency" else "active",
+                verification_status="pending" if pending.role in ("agency", "owner") else "unverified",
+                status="pending" if pending.role in ("agency", "owner") else "active",
             )
 
             if pending.role == "agency":
@@ -271,7 +271,18 @@ class AuthService:
                 detail="No account found with this email. Please register first.",
             )
 
-        if user.status == "suspended":
+        if user.status == "suspended" or user.verification_status in ("review_request", "pending"):
+            if user.verification_status in ("review_request", "unverified", "pending"):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Your account is currently under review by our admin team. You will be able to sign in once your details are verified.",
+                )
+            elif user.verification_status == "rejected":
+                reason = f": {user.verification_note}" if user.verification_note else "."
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=f"Your account verification request was rejected{reason}",
+                )
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Your account has been suspended. Please contact support.",

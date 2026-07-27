@@ -2,6 +2,7 @@ import { api } from "@/lib/api";
 
 export interface AdminDashboardStats {
   pending_property_reviews: number;
+  pending_kyc_reviews?: number;
   open_disputes: number;
   total_users: number;
   total_properties: number;
@@ -10,6 +11,15 @@ export interface AdminDashboardStats {
   agencies_count?: number;
   owners_count?: number;
   admins_count?: number;
+}
+
+export interface AgencyProfile {
+  id: string;
+  display_name: string;
+  about: string;
+  logo_key?: string | null;
+  areas_served: string[];
+  created_at: string;
 }
 
 export interface AdminUser {
@@ -26,6 +36,7 @@ export interface AdminUser {
   status: string;
   created_at: string;
   updated_at: string;
+  agency_profile?: AgencyProfile | null;
 }
 
 export interface VerificationRequest {
@@ -61,6 +72,11 @@ export interface AdminProperty {
   location_city: string;
   location_area: string;
   location_address?: string;
+  location_pincode?: string;
+  location_state?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  video_link?: string | null;
   status: string;
   admin_reviewed_by?: string | null;
   admin_reviewed_at?: string | null;
@@ -131,6 +147,12 @@ export const adminService = {
     const res = await api.post<{ message: string }>(`/api/admin/properties/${propertyId}/reject`, {
       reason,
     });
+    return res.data;
+  },
+
+  // Edit / update any property details (including youtube link, price, location, specs, etc.)
+  updateProperty: async (propertyId: string, payload: any): Promise<AdminProperty> => {
+    const res = await api.patch<AdminProperty>(`/api/properties/${propertyId}`, payload);
     return res.data;
   },
 

@@ -121,7 +121,12 @@ export const OwnerPropertyFormPage: React.FC = () => {
 
   // Leaflet Map Initialization
   useEffect(() => {
-    if (!mapRef.current) return;
+    if (loading || !mapRef.current) return;
+
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.invalidateSize();
+      return;
+    }
 
     // Fix default icons path
     delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -165,6 +170,10 @@ export const OwnerPropertyFormPage: React.FC = () => {
     mapInstanceRef.current = map;
     markerInstanceRef.current = marker;
 
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 150);
+
     return () => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
@@ -172,7 +181,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
       }
       markerInstanceRef.current = null;
     };
-  }, []);
+  }, [loading]);
 
   // Update map marker when latitude/longitude values change externally (e.g. from fetched property or search)
   useEffect(() => {
@@ -186,6 +195,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
         markerInstanceRef.current.setLatLng([lat, lng]);
         mapInstanceRef.current.setView([lat, lng], 15);
       }
+      mapInstanceRef.current.invalidateSize();
     }
   }, [latitude, longitude]);
 
@@ -506,7 +516,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
     <div className="min-h-screen bg-slate-50/70 flex flex-col font-sans pb-12 text-slate-900">
       <OwnerNavbar />
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
         
         {/* Top Navigation */}
         <div className="flex items-center justify-between">

@@ -1,17 +1,13 @@
 import React, { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ownerAgencyRegisterSchema } from "@/lib/validation";
 import type { OwnerAgencyRegisterInput } from "@/lib/validation";
 import { useAuth } from "@/context/AuthContext";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Field, FieldLabel, FieldError, FieldGroup } from "@/components/ui/field";
 import { toast } from "sonner";
-import { Building2, User, Plus, X } from "lucide-react";
+import { Building2, User, Plus, X, ArrowRight, ArrowLeft } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const RegisterOwnerAgency: React.FC = () => {
   const { registerOwnerAgency } = useAuth();
@@ -72,263 +68,336 @@ export const RegisterOwnerAgency: React.FC = () => {
   };
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center px-3 py-6 sm:p-6 bg-white font-sans text-black">
-      {/* Outer Card Wrapper (responsive padding, subtle border, shadow-sm) */}
-      <Card className="w-full max-w-2xl border border-slate-200 bg-white shadow-sm p-4 sm:p-8 rounded-xl">
-        {/* Content Header */}
-        <div className="flex flex-col items-center justify-center text-center space-y-2 mb-6">
-          <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 text-center">
-            Register Property Partner
-          </h1>
-          <p className="text-sm text-slate-500 max-w-md mx-auto leading-relaxed text-center">
-            Create an account to start listing your properties on Letsellr.
-          </p>
-        </div>
+    <div className="min-h-screen w-full flex flex-col justify-center items-center bg-slate-50 font-sans text-slate-900 px-4 py-8 sm:py-12 overflow-y-auto">
+      {/* Main Container */}
+      <main className="w-full max-w-2xl mx-auto my-auto">
+        <div className="bg-white border border-slate-200/80 shadow-md rounded-lg p-5 sm:p-7 space-y-4">
+          {/* Header Bar */}
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-100">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-[#0B6E4F] transition-colors"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span>Back to Home</span>
+            </Link>
 
-        {/* Form Container */}
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <FieldGroup className="grid gap-5 sm:grid-cols-2">
-            {/* Role Selection */}
-            <Field className="sm:col-span-2">
-              <FieldLabel htmlFor="role-select">Partner Role</FieldLabel>
-              <div id="role-select" className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-1">
-                <div
+            <Link to="/" className="flex items-center gap-1.5 hover:opacity-90 transition-opacity">
+              <img src="/logo.png" alt="Letsellr Logo" className="h-6 w-auto shrink-0" />
+              <span className="text-sm font-black tracking-tight text-[#23D283] uppercase">
+                LETSELLR
+              </span>
+            </Link>
+          </div>
+
+          {/* Headline */}
+          <div className="flex flex-col items-center justify-center text-center space-y-1 pt-1">
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-slate-900 m-0">
+              Create Property Account
+            </h1>
+            <p className="text-xs text-slate-500 max-w-md mx-auto text-center leading-relaxed">
+              Start listing your property portfolio on Letsellr.
+            </p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Role Switcher Pills */}
+            <div className="space-y-1">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                Partner Account Type
+              </label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
                   onClick={() => setValue("role", "owner")}
-                  className={`flex cursor-pointer items-center justify-center gap-2.5 rounded-xl border p-4 transition-all duration-200 h-14 ${
+                  className={cn(
+                    "flex items-center justify-center gap-2 rounded-md border p-2.5 transition-all text-xs font-bold cursor-pointer",
                     selectedRole === "owner"
-                      ? "border-brand-green bg-brand-light-green text-brand-deep-green"
-                      : "border-slate-200 hover:bg-slate-50 text-slate-500 bg-white"
-                  }`}
+                      ? "border-[#23D283] bg-[#D9F7E9]/40 text-[#0B6E4F] ring-1 ring-[#23D283]/30"
+                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  )}
                 >
-                  <User className={`h-5 w-5 ${selectedRole === "owner" ? "text-brand-deep-green" : "text-slate-500"}`} />
-                  <span className="font-semibold text-sm">Individual Owner</span>
-                </div>
-                <div
+                  <User className="h-4 w-4" />
+                  <span>Property Owner</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setValue("role", "agency")}
-                  className={`flex cursor-pointer items-center justify-center gap-2.5 rounded-xl border p-4 transition-all duration-200 h-14 ${
+                  className={cn(
+                    "flex items-center justify-center gap-2 rounded-md border p-2.5 transition-all text-xs font-bold cursor-pointer",
                     selectedRole === "agency"
-                      ? "border-brand-green bg-brand-light-green text-brand-deep-green"
-                      : "border-slate-200 hover:bg-slate-50 text-slate-500 bg-white"
-                  }`}
+                      ? "border-[#23D283] bg-[#D9F7E9]/40 text-[#0B6E4F] ring-1 ring-[#23D283]/30"
+                      : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                  )}
                 >
-                  <Building2 className={`h-5 w-5 ${selectedRole === "agency" ? "text-brand-deep-green" : "text-slate-500"}`} />
-                  <span className="font-semibold text-sm">Agency / Broker</span>
-                </div>
+                  <Building2 className="h-4 w-4" />
+                  <span>Agency / Broker</span>
+                </button>
               </div>
-            </Field>
+            </div>
 
-            {/* Name */}
-            <Field>
-              <FieldLabel htmlFor="name">Full Name</FieldLabel>
-              <Input
-                id="name"
-                placeholder="John Doe"
-                {...register("name")}
-              />
-              <FieldError className="text-left text-xs font-medium text-destructive">
-                {errors.name?.message}
-              </FieldError>
-            </Field>
+            {/* Inputs Grid */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* Full Name */}
+              <div className="space-y-1.5 text-left">
+                <label htmlFor="name" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                  Full Name
+                </label>
+                <input
+                  id="name"
+                  type="text"
+                  placeholder="John Doe"
+                  {...register("name")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+                />
+                {errors.name && (
+                  <p className="text-xs text-rose-600 font-medium text-left">{errors.name.message}</p>
+                )}
+              </div>
 
-            {/* Email */}
-            <Field>
-              <FieldLabel htmlFor="email">Email Address</FieldLabel>
-              <Input
-                id="email"
-                type="email"
-                placeholder="john@example.com"
-                {...register("email")}
-              />
-              <FieldError className="text-left text-xs font-medium text-destructive">
-                {errors.email?.message}
-              </FieldError>
-            </Field>
+              {/* Email Address */}
+              <div className="space-y-1.5 text-left">
+                <label htmlFor="email" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                  Email Address
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  placeholder="john@example.com"
+                  {...register("email")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+                />
+                {errors.email && (
+                  <p className="text-xs text-rose-600 font-medium text-left">{errors.email.message}</p>
+                )}
+              </div>
 
-            {/* Phone */}
-            <Field>
-              <FieldLabel htmlFor="phone">Phone Number</FieldLabel>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+1234567890"
-                {...register("phone")}
-              />
-              <FieldError className="text-left text-xs font-medium text-destructive">
-                {errors.phone?.message}
-              </FieldError>
-            </Field>
+              {/* Phone Number */}
+              <div className="space-y-1.5 text-left">
+                <label htmlFor="phone" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                  Phone Number
+                </label>
+                <input
+                  id="phone"
+                  type="tel"
+                  placeholder="+1234567890"
+                  {...register("phone")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+                />
+                {errors.phone && (
+                  <p className="text-xs text-rose-600 font-medium text-left">{errors.phone.message}</p>
+                )}
+              </div>
 
-            {/* Preference Type */}
-            <Field>
-              <FieldLabel htmlFor="preference_type">Listing Purpose</FieldLabel>
-              <Select onValueChange={(val: string | null) => setValue("preference_type", val || "")}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select purpose..." />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="sell">Sell Properties</SelectItem>
-                  <SelectItem value="rent">Rent Properties</SelectItem>
-                  <SelectItem value="both">Both Sell & Rent</SelectItem>
-                </SelectContent>
-              </Select>
-              <FieldError className="text-left text-xs font-medium text-destructive">
-                {errors.preference_type?.message}
-              </FieldError>
-            </Field>
+              {/* Listing Purpose */}
+              <div className="space-y-1.5 text-left">
+                <label htmlFor="preference_type" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                  Listing Purpose
+                </label>
+                <select
+                  id="preference_type"
+                  {...register("preference_type")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+                >
+                  <option value="">Select purpose...</option>
+                  <option value="sell">Sell Properties</option>
+                  <option value="rent">Rent Properties</option>
+                  <option value="both">Both Sell & Rent</option>
+                </select>
+                {errors.preference_type && (
+                  <p className="text-xs text-rose-600 font-medium text-left">{errors.preference_type.message}</p>
+                )}
+              </div>
 
-            {/* Location City */}
-            <Field>
-              <FieldLabel htmlFor="location_city">City</FieldLabel>
-              <Input
-                id="location_city"
-                placeholder="e.g. Dubai"
-                {...register("location_city")}
-              />
-              <FieldError className="text-left text-xs font-medium text-destructive">
-                {errors.location_city?.message}
-              </FieldError>
-            </Field>
+              {/* City */}
+              <div className="space-y-1.5 text-left">
+                <label htmlFor="location_city" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                  Operating City
+                </label>
+                <input
+                  id="location_city"
+                  type="text"
+                  placeholder="e.g. Dubai"
+                  {...register("location_city")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+                />
+                {errors.location_city && (
+                  <p className="text-xs text-rose-600 font-medium text-left">{errors.location_city.message}</p>
+                )}
+              </div>
 
-            {/* Location Area */}
-            <Field>
-              <FieldLabel htmlFor="location_area">Operating Area / Neighborhood</FieldLabel>
-              <Input
-                id="location_area"
-                placeholder="e.g. Downtown Dubai"
-                {...register("location_area")}
-              />
-              <FieldError className="text-left text-xs font-medium text-destructive">
-                {errors.location_area?.message}
-              </FieldError>
-            </Field>
-            {/* Password */}
-            <Field>
-              <FieldLabel htmlFor="password">Password</FieldLabel>
-              <Input
-                id="password"
-                type="password"
-                placeholder="••••••••"
-                {...register("password")}
-              />
-              <FieldError className="text-left text-xs font-medium text-destructive">
-                {errors.password?.message}
-              </FieldError>
-            </Field>
+              {/* Area */}
+              <div className="space-y-1.5 text-left">
+                <label htmlFor="location_area" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                  Primary Area / Neighborhood
+                </label>
+                <input
+                  id="location_area"
+                  type="text"
+                  placeholder="e.g. Downtown"
+                  {...register("location_area")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+                />
+                {errors.location_area && (
+                  <p className="text-xs text-rose-600 font-medium text-left">{errors.location_area.message}</p>
+                )}
+              </div>
 
-            {/* Confirm Password */}
-            <Field>
-              <FieldLabel htmlFor="confirm_password">Confirm Password</FieldLabel>
-              <Input
-                id="confirm_password"
-                type="password"
-                placeholder="••••••••"
-                {...register("confirm_password")}
-              />
-              <FieldError className="text-left text-xs font-medium text-destructive">
-                {errors.confirm_password?.message}
-              </FieldError>
-            </Field>
+              {/* Password */}
+              <div className="space-y-1.5 text-left">
+                <label htmlFor="password" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                  Password
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  {...register("password")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+                />
+                {errors.password && (
+                  <p className="text-xs text-rose-600 font-medium text-left">{errors.password.message}</p>
+                )}
+              </div>
 
-            {/* Conditional Agency Fields */}
+              {/* Confirm Password */}
+              <div className="space-y-1.5 text-left">
+                <label htmlFor="confirm_password" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                  Confirm Password
+                </label>
+                <input
+                  id="confirm_password"
+                  type="password"
+                  placeholder="••••••••"
+                  {...register("confirm_password")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+                />
+                {errors.confirm_password && (
+                  <p className="text-xs text-rose-600 font-medium text-left">{errors.confirm_password.message}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Conditional Agency Profile Fields */}
             {selectedRole === "agency" && (
-              <div className="col-span-1 sm:col-span-2 mt-2">
-                {/* Agency Details Card (responsive padding, border, radius) */}
-                <Card className="border border-slate-200 bg-white p-4 sm:p-6 rounded-xl shadow-sm space-y-4 sm:space-y-6">
-                  {/* Active-role style accent bar for header */}
-                  <div className="border-b-4 border-b-brand-green pb-1.5 w-fit">
-                    <h3 className="text-xs font-bold text-brand-deep-green uppercase tracking-wider">
-                      Agency Profile Details
-                    </h3>
+              <div className="pt-3 border-t border-slate-100 space-y-4 text-left">
+                <div className="flex items-center gap-2">
+                  <Building2 className="h-4 w-4 text-[#0B6E4F]" />
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-800">
+                    Agency Details
+                  </h3>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <label htmlFor="agency_display_name" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                      Agency Name
+                    </label>
+                    <input
+                      id="agency_display_name"
+                      type="text"
+                      placeholder="Premium Realty Group"
+                      {...register("agency_display_name")}
+                      className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+                    />
+                    {errors.agency_display_name && (
+                      <p className="text-xs text-rose-600 font-medium">{errors.agency_display_name.message}</p>
+                    )}
                   </div>
 
-                  <FieldGroup className="grid gap-5">
-                    <Field>
-                      <FieldLabel htmlFor="agency_display_name">Agency Name</FieldLabel>
-                      <Input
-                        id="agency_display_name"
-                        placeholder="Premium Realty Group"
-                        {...register("agency_display_name")}
-                      />
-                      <FieldError className="text-left text-xs font-medium text-destructive">
-                        {errors.agency_display_name?.message}
-                      </FieldError>
-                    </Field>
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <label htmlFor="agency_about" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                      About Agency
+                    </label>
+                    <input
+                      id="agency_about"
+                      type="text"
+                      placeholder="Brief overview of your agency..."
+                      {...register("agency_about")}
+                      className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+                    />
+                  </div>
 
-                    <Field>
-                      <FieldLabel htmlFor="agency_about">About Agency</FieldLabel>
-                      <Input
-                        id="agency_about"
-                        placeholder="Tell clients about your expertise..."
-                        {...register("agency_about")}
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                      Areas Served
+                    </label>
+                    <div className="flex gap-2">
+                      <input
+                        value={areaInput}
+                        onChange={(e) => setAreaInput(e.target.value)}
+                        placeholder="e.g. Marina Dubai"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            addArea();
+                          }
+                        }}
+                        className="flex-1 bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
                       />
-                    </Field>
+                      <button
+                        type="button"
+                        onClick={addArea}
+                        className="bg-[#23D283] hover:bg-[#11995E] text-white px-3 py-2 rounded-md font-bold text-xs transition-colors flex items-center gap-1 cursor-pointer"
+                      >
+                        <Plus className="h-4 w-4" />
+                        <span>Add</span>
+                      </button>
+                    </div>
 
-                    <Field>
-                      <FieldLabel htmlFor="agency_areas_served">Areas Served</FieldLabel>
-                      <div className="flex gap-2">
-                        <Input
-                          id="agency_areas_served"
-                          value={areaInput}
-                          onChange={(e) => setAreaInput(e.target.value)}
-                          placeholder="e.g. Marina Dubai"
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault();
-                              addArea();
-                            }
-                          }}
-                        />
-                        <Button type="button" onClick={addArea} className="bg-brand-green hover:bg-brand-green-hover text-white h-11 px-4 rounded-xl border-0">
-                          <Plus className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {areas.map((area, index) => (
-                          <span
-                            key={index}
-                            className="inline-flex items-center gap-1 rounded-full bg-brand-light-green px-3 py-1 text-xs font-semibold text-brand-deep-green"
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {areas.map((area, idx) => (
+                        <span
+                          key={idx}
+                          className="inline-flex items-center gap-1 bg-[#D9F7E9] text-[#0B6E4F] px-2.5 py-0.5 rounded-md text-xs font-semibold"
+                        >
+                          {area}
+                          <button
+                            type="button"
+                            onClick={() => removeArea(idx)}
+                            className="hover:text-rose-600 cursor-pointer"
                           >
-                            {area}
-                            <button
-                              type="button"
-                              onClick={() => removeArea(index)}
-                              className="text-brand-deep-green/80 hover:text-brand-deep-green"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </span>
-                        ))}
-                      </div>
-                    </Field>
-                  </FieldGroup>
-                </Card>
+                            <X className="h-3 w-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
-          </FieldGroup>
 
-          {/* Form Actions */}
-          <div className="space-y-4 pt-2">
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full h-11 rounded-xl bg-brand-green hover:bg-brand-green-hover text-white font-semibold transition-colors border-0"
-            >
-              {isSubmitting ? "Sending OTP..." : "Register Account"}
-            </Button>
-            
-            <div className="text-center text-sm text-slate-500">
-              Already registered?{" "}
+            {/* Submit Button */}
+            <div className="pt-2">
               <button
-                type="button"
-                onClick={() => navigate("/login")}
-                className="text-brand-deep-green font-bold hover:underline ml-1 focus:outline-none"
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full h-11 bg-[#23D283] hover:bg-[#11995E] text-white font-bold text-sm rounded-md transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.99] disabled:opacity-60"
               >
-                Sign In
+                {isSubmitting ? (
+                  <span>Registering...</span>
+                ) : (
+                  <>
+                    <span>Create Partner Account</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
               </button>
             </div>
+          </form>
+
+          {/* Footer Switcher */}
+          <div className="text-center pt-2 border-t border-slate-100 text-xs text-slate-500">
+            Already registered?{" "}
+            <Link to="/login" className="font-bold text-[#0B6E4F] hover:underline">
+              Sign In
+            </Link>
           </div>
-        </form>
-      </Card>
+        </div>
+      </main>
     </div>
   );
 };
+
+

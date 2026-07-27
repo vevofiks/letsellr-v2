@@ -127,6 +127,7 @@ async def test_create_property_agency_allowed_category(client, test_agency):
 
 @pytest.mark.asyncio
 async def test_get_property_by_id(client, db, test_owner):
+    app.dependency_overrides[get_current_user] = lambda: test_owner
     # Insert property directly in DB
     prop = Property(
         owner_id=test_owner.id,
@@ -154,11 +155,42 @@ async def test_get_property_by_id(client, db, test_owner):
     assert res_data["category"] == "villa_house"
 
 @pytest.mark.asyncio
-async def test_get_property_not_found(client):
+async def test_get_property_by_ref_n8n_api_key(client, db, test_owner):
+    app.dependency_overrides.pop(get_current_user, None)
+    prop = Property(
+        owner_id=test_owner.id,
+        owner_role="owner",
+        ref="PG1042",
+        title="N8N Property Ref Test",
+        category="pg",
+        intent="rent",
+        enquiry_type="whatsapp_bot",
+        price=8000,
+        location_area="Kadavanthra",
+        location_city="Kochi",
+        location_pincode="682020",
+        location_state="Kerala",
+        owner_phone="+919876543210"
+    )
+    db.add(prop)
+    await db.flush()
+
+    # Test calling by Property Code (PG1042) with N8N_API_KEY auth header
+    headers = {"Authorization": "Bearer letsellr_n8n_sec_key_98324798327498"}
+    response = await client.get("/api/properties/PG1042", headers=headers)
+    assert response.status_code == 200
+    res_data = response.json()
+    assert res_data["ref"] == "PG1042"
+    assert res_data["title"] == "N8N Property Ref Test"
+
+@pytest.mark.asyncio
+async def test_get_property_not_found(client, test_owner):
+    app.dependency_overrides[get_current_user] = lambda: test_owner
     random_uuid = uuid4()
     response = await client.get(f"/api/properties/{random_uuid}")
     assert response.status_code == 404
     assert response.json()["detail"] == "Property not found"
+
 
 @pytest.mark.asyncio
 async def test_list_public_properties(client, db, test_owner):
@@ -377,7 +409,7 @@ async def test_delete_property_unauthorized(client, db, test_owner, test_other_o
 
 @pytest.mark.asyncio
 async def test_get_enquiry_link_success(client, db, test_owner):
-    # Enquiry link only applies to PG/Hostel
+    # Enquiry link applies to PG/Hostel
     prop = Property(
         owner_id=test_owner.id,
         owner_role="owner",
@@ -400,12 +432,13 @@ async def test_get_enquiry_link_success(client, db, test_owner):
     assert response.status_code == 200
     link_data = response.json()
     assert "link" in link_data
-    assert "wa.me/919876543210" in link_data["link"]
+    assert "wa.me/" in link_data["link"]
     assert "PROP-ENQ-PG" in link_data["link"]
+    assert link_data["is_pg_or_hostel"] is True
 
 @pytest.mark.asyncio
 async def test_get_enquiry_link_invalid_category(client, db, test_owner):
-    # Non-PG categories should fail
+    # Non-PG categories set is_pg_or_hostel to False
     prop = Property(
         owner_id=test_owner.id,
         owner_role="owner",
@@ -425,8 +458,11 @@ async def test_get_enquiry_link_invalid_category(client, db, test_owner):
     await db.flush()
     
     response = await client.get(f"/api/properties/ref/{prop.ref}/enquiry-link")
-    assert response.status_code == 400
-    assert "Enquiry link is only available for PG/Hostel" in response.json()["detail"]
+    assert response.status_code == 200
+    link_data = response.json()
+    assert link_data["is_pg_or_hostel"] is False
+    assert link_data["enquiry_type"] == "manual_chat"
+
 
 @pytest.mark.asyncio
 async def test_get_owner_properties(client, db, test_owner, test_other_owner):

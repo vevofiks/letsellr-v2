@@ -31,7 +31,11 @@ import {
   Star,
   Trash2,
   Edit3,
-  Building2
+  Building2,
+  ChevronRight,
+  Share2,
+  CheckCircle2,
+  PhoneCall
 } from "lucide-react";
 
 const getYoutubeEmbedUrl = (url: string | undefined): string | null => {
@@ -192,7 +196,7 @@ export const PropertyDetailsPage: React.FC = () => {
     e.preventDefault();
     if (!user) {
       toast.error("Please sign in to submit a review.");
-      navigate("/login", { state: { from: `/properties/${propertyId}` } });
+      setAuthModal({ open: true, mode: "login" });
       return;
     }
 
@@ -308,10 +312,15 @@ export const PropertyDetailsPage: React.FC = () => {
 
   const mediaList = React.useMemo(() => {
     if (!property) return [];
-    const list: { type: "image" | "video"; url: string }[] = [];
-    const embedUrl = getYoutubeEmbedUrl(property.video_link);
-    if (embedUrl) {
-      list.push({ type: "video", url: embedUrl });
+    const list: { type: "image" | "video"; url: string; rawUrl?: string }[] = [];
+    if (property.video_link) {
+      const rawLinks = property.video_link.split(/[\n,\s]+/).map((s: string) => s.trim()).filter(Boolean);
+      rawLinks.forEach((vUrl: string) => {
+        const embedUrl = getYoutubeEmbedUrl(vUrl);
+        if (embedUrl) {
+          list.push({ type: "video", url: embedUrl, rawUrl: vUrl });
+        }
+      });
     }
     photosGrid.forEach((img) => {
       list.push({ type: "image", url: img });
@@ -372,7 +381,6 @@ export const PropertyDetailsPage: React.FC = () => {
         const res = await api.get("/api/properties", {
           params: { city: property.location_city, limit: 4 }
         });
-        // Filter out current property
         const filtered = (res.data.items || [])
           .filter((item: any) => item.id !== property.id)
           .slice(0, 3);
@@ -404,7 +412,6 @@ export const PropertyDetailsPage: React.FC = () => {
   // Leaflet Map Initialization
   useEffect(() => {
     if (property && property.latitude && property.longitude && mapRef.current) {
-      // Fix default icons path
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
         iconUrl: markerIcon,
@@ -448,7 +455,6 @@ export const PropertyDetailsPage: React.FC = () => {
     };
   }, [property]);
 
-
   const handleWhatsAppContact = async () => {
     if (!property) return;
     if (!user) {
@@ -461,7 +467,7 @@ export const PropertyDetailsPage: React.FC = () => {
     } catch (err) {
       console.error("Failed to record enquiry", err);
     }
-    const number = property.owner_whatsapp || property.owner_phone;
+    const number = property.owner_phone ? property.owner_phone.replace(/[^0-9]/g, "") : "15551398764";
     const message = encodeURIComponent(`Hi, I'm interested in your property ${property.title} (Ref: ${property.ref})`);
     window.open(`https://wa.me/${number}?text=${message}`, "_blank");
   };
@@ -472,6 +478,18 @@ export const PropertyDetailsPage: React.FC = () => {
       e.preventDefault();
       toast.error("Please sign in to view contact details.");
       setAuthModal({ open: true, mode: "login" });
+    }
+  };
+
+  const handleShareLink = () => {
+    if (navigator.share) {
+      navigator.share({
+        title: property?.title || "Property Details",
+        url: window.location.href
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(window.location.href);
+      toast.success("Property link copied to clipboard!");
     }
   };
 
@@ -486,17 +504,17 @@ export const PropertyDetailsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f4f6f5] flex items-center justify-center">
-        <div className="flex flex-col items-center gap-6">
+      <div className="min-h-screen bg-[#f8faf9] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-5">
           <div className="relative flex items-center justify-center h-20 w-20">
-            <div className="absolute inset-0 rounded-full border-[3px] border-slate-200 border-t-[#014645] animate-spin" />
+            <div className="absolute inset-0 rounded-full border-[3px] border-slate-200 border-t-[#23D283] animate-spin" />
             <img 
               src="/logo.png" 
               alt="Letsellr Logo" 
-              className="h-9 w-auto z-10 animate-pulse" 
+              className="h-8 w-auto z-10 animate-pulse" 
             />
           </div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 animate-pulse">Loading Property details...</p>
+          <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 animate-pulse">Loading Property Details...</p>
         </div>
       </div>
     );
@@ -505,155 +523,160 @@ export const PropertyDetailsPage: React.FC = () => {
   if (!property) return null;
 
   const descriptionText = property.description || "No description provided for this listing.";
-  const isDescriptionLong = descriptionText.length > 250;
+  const isDescriptionLong = descriptionText.length > 280;
   const displayedDescription = showFullDescription || !isDescriptionLong 
     ? descriptionText 
-    : `${descriptionText.slice(0, 250)}...`;
+    : `${descriptionText.slice(0, 280)}...`;
 
   return (
-    <div className="min-h-screen bg-[#f4f6f5] text-left relative font-sans">
+    <div className="min-h-screen bg-[#f8faf9] text-left relative font-sans">
       
       <AppNavbar logoHref="/dashboard" />
 
       {/* Main Container */}
-      <main className="mx-auto max-w-7xl px-6 py-8">
+      <main className="mx-auto max-w-9xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
         
+        {/* Top Breadcrumb & Actions Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-slate-200/60">
+          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 overflow-x-auto">
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="flex items-center gap-1.5 text-slate-600 hover:text-[#0B6E4F] transition-colors cursor-pointer font-bold shrink-0"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Listings</span>
+            </button>
+            <ChevronRight className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+            <span className="text-slate-900 font-bold truncate max-w-64 sm:max-w-xs">{property.title}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleShareLink}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200/80 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-2xs cursor-pointer active:scale-95"
+            >
+              <Share2 className="h-3.5 w-3.5 text-slate-500" />
+              <span>Share</span>
+            </button>
+          </div>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           
-          {/* Left Side: Media Grid, Specs, Description, Map */}
+          {/* Left Side: Media Grid, Specs, Description, Amenities, Map */}
           <div className="lg:col-span-2 space-y-8">
             
-            {/* Premium Interactive Image Carousel with Left-aligned Back Icon */}
-            <div className="flex items-start gap-4">
-              {/* Circular Back button on the left of carousel (Desktop only) */}
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="hidden md:flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white hover:bg-slate-50 border border-slate-200 text-brand-green hover:text-brand-green-hover transition-all shadow-sm hover:shadow active:scale-95 cursor-pointer mt-1"
-                title="Back to Dashboard"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </button>
+            {/* Interactive Image Carousel */}
+            <div className="space-y-2.5">
+              <div className="relative h-56 sm:h-72 md:h-100 w-full overflow-hidden rounded-2xl bg-slate-900 border border-slate-200/80 shadow-xs group">
+                
+                {/* Active Slide */}
+                {mediaList[activePhotoIndex]?.type === "video" ? (
+                  <iframe
+                    src={mediaList[activePhotoIndex].url}
+                    title="Property Video Tour"
+                    className="h-full w-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : (
+                  <img 
+                    src={mediaList[activePhotoIndex]?.url} 
+                    alt={`${property.title} - View ${activePhotoIndex + 1}`} 
+                    className="h-full w-full object-cover transition-all duration-500 ease-out"
+                  />
+                )}
 
-              {/* Carousel wrapper */}
-              <div className="flex-1 min-w-0 space-y-4">
-                <div className="relative h-75 sm:h-120 w-full overflow-hidden rounded-[24px] bg-slate-900 border border-slate-100 shadow-md group">
-                  {/* Floating Back button (Mobile only) */}
-                  <button
-                    onClick={() => navigate("/dashboard")}
-                    className="absolute top-4 left-4 z-20 md:hidden flex h-10 w-10 items-center justify-center rounded-full bg-white/95 hover:bg-white backdrop-blur-sm text-brand-green hover:text-brand-green-hover transition-all shadow-md active:scale-95 cursor-pointer border border-slate-100"
-                    title="Back to Dashboard"
-                  >
-                    <ArrowLeft className="h-5 w-5" />
-                  </button>
-
-                  {/* Active Slide */}
-                  {mediaList[activePhotoIndex]?.type === "video" ? (
-                    <iframe
-                      src={mediaList[activePhotoIndex].url}
-                      title="Property Video Tour"
-                      className="h-full w-full border-0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
-                  ) : (
-                    <img 
-                      src={mediaList[activePhotoIndex]?.url} 
-                      alt={`${property.title} - View ${activePhotoIndex + 1}`} 
-                      className="h-full w-full object-cover transition-all duration-500 ease-in-out"
-                    />
-                  )}
-
-                  {/* Left/Right floating chevrons */}
-                  <button
-                    onClick={handlePrevPhoto}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 hover:bg-white backdrop-blur-sm text-brand-green hover:text-brand-green-hover transition-all shadow-md cursor-pointer opacity-0 group-hover:opacity-100 border border-slate-100"
-                    aria-label="Previous image"
-                  >
-                    <svg className="h-6 w-6 stroke-current" fill="none" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-                    </svg>
-                  </button>
-                  <button
-                    onClick={handleNextPhoto}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 hover:bg-white backdrop-blur-sm text-brand-green hover:text-brand-green-hover transition-all shadow-md cursor-pointer opacity-0 group-hover:opacity-100 border border-slate-100"
-                    aria-label="Next image"
-                  >
-                    <svg className="h-6 w-6 stroke-current" fill="none" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                    </svg>
-                  </button>
-
-                  {/* Agency vs Owner listing badge overlay (top-right on mobile, top-left on desktop) */}
-                  {property.owner_role === "agency" ? (
-                    <div className="absolute top-4 right-4 z-10 md:left-4 md:right-auto">
-                      <span className="bg-amber-600/90 backdrop-blur-sm text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider shadow-md border border-amber-500/20 flex items-center gap-1.5">
-                        <Building2 className="h-3.5 w-3.5" /> Agency Partner
-                      </span>
-                    </div>
-                  ) : (
-                    <div className="absolute top-4 right-4 z-10 md:left-4 md:right-auto">
-                      <span className="bg-emerald-600/90 backdrop-blur-sm text-white px-3 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider shadow-md border border-emerald-500/20 flex items-center gap-1.5">
-                        <Shield className="h-3.5 w-3.5" /> Direct Owner
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Counter overlay */}
-                  <div className="absolute bottom-4 right-4 bg-slate-950/70 backdrop-blur-sm text-white text-[11px] font-bold rounded-full px-3.5 py-1.5 shadow-sm">
-                    {activePhotoIndex + 1} / {mediaList.length}
-                  </div>
-                </div>
-
-                {/* Thumbnails indicator row */}
+                {/* Navigation Chevrons */}
                 {mediaList.length > 1 && (
-                  <div className="flex items-center gap-2.5 overflow-x-auto py-2 px-1 max-w-full justify-center scrollbar-none">
-                    {mediaList.map((media, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setActivePhotoIndex(i)}
-                        className={`relative h-14 w-14 sm:h-16 sm:w-16 rounded-xl overflow-hidden border-2 shrink-0 transition-all duration-300 cursor-pointer ${
-                          i === activePhotoIndex ? "border-brand-green scale-105 shadow-md" : "border-transparent opacity-60 hover:opacity-100"
-                        }`}
-                      >
-                        {media.type === "video" ? (
-                          <div className="relative h-full w-full bg-slate-900">
-                            <img src={getYoutubeThumbnailUrl(property.video_link) || photosGrid[0]} alt="" className="h-full w-full object-cover opacity-50" />
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <Play className="h-5 w-5 text-white fill-white" />
-                            </div>
-                          </div>
-                        ) : (
-                          <img src={media.url} alt="" className="h-full w-full object-cover" />
-                        )}
-                      </button>
-                    ))}
+                  <>
+                    <button
+                      onClick={handlePrevPhoto}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 hover:bg-white backdrop-blur-md text-slate-800 hover:text-[#0B6E4F] transition-all shadow-md cursor-pointer opacity-0 group-hover:opacity-100 border border-slate-200/60 active:scale-90"
+                      aria-label="Previous image"
+                    >
+                      <ArrowLeft className="h-4.5 w-4.5" />
+                    </button>
+                    <button
+                      onClick={handleNextPhoto}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 hover:bg-white backdrop-blur-md text-slate-800 hover:text-[#0B6E4F] transition-all shadow-md cursor-pointer opacity-0 group-hover:opacity-100 border border-slate-200/60 active:scale-90"
+                      aria-label="Next image"
+                    >
+                      <ChevronRight className="h-4.5 w-4.5" />
+                    </button>
+                  </>
+                )}
+
+                {/* Overlay Badge */}
+                {property.owner_role === "agency" ? (
+                  <div className="absolute top-3 left-3 z-10">
+                    <span className="bg-slate-900/90 backdrop-blur-md text-emerald-400 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider shadow-md border border-emerald-500/30 flex items-center gap-1.5">
+                      <Building2 className="h-3 w-3" /> Agency Partner
+                    </span>
+                  </div>
+                ) : (
+                  <div className="absolute top-3 left-3 z-10">
+                    <span className="bg-slate-900/90 backdrop-blur-md text-[#23D283] px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider shadow-md border border-[#23D283]/30 flex items-center gap-1.5">
+                      <Shield className="h-3 w-3" /> Direct Owner
+                    </span>
                   </div>
                 )}
+
+                {/* Counter Pill */}
+                <div className="absolute bottom-3 right-3 bg-slate-950/80 backdrop-blur-md text-white text-[10px] font-extrabold rounded-full px-3 py-1 shadow-sm border border-white/10">
+                  {activePhotoIndex + 1} / {mediaList.length}
+                </div>
               </div>
+
+              {/* Thumbnails Row */}
+              {mediaList.length > 1 && (
+                <div className="flex items-center gap-2 overflow-x-auto py-1 px-0.5 max-w-full scrollbar-none">
+                  {mediaList.map((media, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setActivePhotoIndex(i)}
+                      className={`relative h-12 w-12 sm:h-14 sm:w-14 rounded-xl overflow-hidden border-2 shrink-0 transition-all duration-300 cursor-pointer ${
+                        i === activePhotoIndex ? "border-[#23D283] scale-105 shadow-sm ring-2 ring-[#23D283]/20" : "border-transparent opacity-60 hover:opacity-100"
+                      }`}
+                    >
+                      {media.type === "video" ? (
+                        <div className="relative h-full w-full bg-slate-900">
+                          <img src={getYoutubeThumbnailUrl(media.rawUrl || property.video_link) || photosGrid[0]} alt="" className="h-full w-full object-cover opacity-60" />
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Play className="h-5 w-5 text-white fill-white" />
+                          </div>
+                        </div>
+                      ) : (
+                        <img src={media.url} alt="" className="h-full w-full object-cover" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Title & Info Block */}
+            {/* Title & Location Header */}
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="bg-brand-light-green border border-brand-green/20 text-brand-green px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider">
+                <span className="bg-[#23D283]/10 border border-[#23D283]/30 text-[#0B6E4F] px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
                   {property.category.replace("_", " ")}
                 </span>
-                <span className="bg-slate-100 text-slate-700 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider">
+                <span className="bg-slate-900 text-white px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
                   For {property.intent === "buy" ? "Sale" : property.intent === "rent" ? "Rent" : "Lease"}
                 </span>
                 {property.status && property.status !== "active" && (
-                  <span className="bg-rose-100 text-rose-700 px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider">
+                  <span className="bg-rose-100 text-rose-700 px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
                     {property.status}
                   </span>
                 )}
               </div>
               
-              <h1 className="text-3xl font-black text-slate-900 leading-tight m-0">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 leading-tight m-0 tracking-tight">
                 {property.title}
               </h1>
               
-              <div className="text-sm font-medium text-slate-500 flex flex-wrap items-center gap-1.5">
-                <MapPin className="h-4 w-4 text-brand-green shrink-0" />
+              <div className="text-sm font-semibold text-slate-500 flex flex-wrap items-center gap-1.5">
+                <MapPin className="h-4 w-4 text-rose-500 shrink-0" />
                 <span>
                   {[
                     property.location_address,
@@ -665,94 +688,113 @@ export const PropertyDetailsPage: React.FC = () => {
                 </span>
               </div>
 
-              {/* Stats Block (Visible ONLY to Owner/Agency of the listing) */}
+              {/* Owner Stats Badge */}
               {user && (user.role === "owner" || user.role === "agency") && user.id === property.owner_id && property.stats && (
-                <div className="flex items-center gap-3 text-xs font-semibold text-slate-400 pt-1">
+                <div className="flex items-center gap-3 text-xs font-bold text-slate-500 pt-1">
                   {property.stats.views !== undefined && (
-                    <span className="flex items-center gap-1 bg-slate-100/80 px-2.5 py-1 rounded-lg border border-slate-200/60">
-                      <Eye className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-                      <span className="text-slate-800 font-extrabold">{property.stats.views} Page Visits</span>
+                    <span className="flex items-center gap-1.5 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200/80">
+                      <Eye className="h-3.5 w-3.5 text-slate-600 shrink-0" />
+                      <span className="text-slate-900 font-extrabold">{property.stats.views} Visits</span>
                     </span>
                   )}
                   {property.stats.enquiries !== undefined && (
-                    <span className="flex items-center gap-1 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/60">
-                      <Mail className="h-3.5 w-3.5 text-brand-green shrink-0" />
-                      <span className="text-brand-deep-green font-extrabold">{property.stats.enquiries} WhatsApp Leads</span>
+                    <span className="flex items-center gap-1.5 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200/80">
+                      <Mail className="h-3.5 w-3.5 text-[#0B6E4F] shrink-0" />
+                      <span className="text-[#014645] font-extrabold">{property.stats.enquiries} Leads</span>
                     </span>
                   )}
                 </div>
               )}
             </div>
 
-            {/* Premium Specs Box Row matching reference image */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 border border-slate-100 bg-white rounded-2xl p-4.5 shadow-sm text-left">
+            {/* Key Specs Cards Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white border border-slate-200/80 rounded-2xl p-4 shadow-2xs text-left">
               <div className="space-y-1">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Bedroom</span>
-                <div className="flex items-center gap-1.5 text-slate-900 font-extrabold text-sm">
-                  <Bed className="h-4 w-4 text-slate-500 shrink-0" />
+                <div className="flex items-center gap-2 text-slate-900 font-black text-sm">
+                  <Bed className="h-4 w-4 text-[#0B6E4F] shrink-0" />
                   <span>{property.bedrooms || 0} Bed</span>
                 </div>
               </div>
               <div className="space-y-1 border-t sm:border-t-0 sm:border-l border-slate-100 pt-2 sm:pt-0 sm:pl-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Bathroom</span>
-                <div className="flex items-center gap-1.5 text-slate-900 font-extrabold text-sm">
-                  <Bath className="h-4 w-4 text-slate-500 shrink-0" />
+                <div className="flex items-center gap-2 text-slate-900 font-black text-sm">
+                  <Bath className="h-4 w-4 text-[#0B6E4F] shrink-0" />
                   <span>{property.bathrooms || 0} Bath</span>
                 </div>
               </div>
               <div className="space-y-1 border-t sm:border-t-0 sm:border-l border-slate-100 pt-2 sm:pt-0 sm:pl-3">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Area</span>
-                <div className="flex items-center gap-1.5 text-slate-900 font-extrabold text-sm">
-                  <Maximize className="h-4 w-4 text-slate-500 shrink-0" />
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Area</span>
+                <div className="flex items-center gap-2 text-slate-900 font-black text-sm">
+                  <Maximize className="h-4 w-4 text-[#0B6E4F] shrink-0" />
                   <span>{property.area ? `${property.area.toLocaleString()} sqft` : "N/A"}</span>
                 </div>
               </div>
               <div className="space-y-1 border-t sm:border-t-0 sm:border-l border-slate-100 pt-2 sm:pt-0 sm:pl-3">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Furnishing</span>
-                <div className="flex items-center gap-1.5 text-slate-900 font-extrabold text-sm capitalize">
-                  <div className="h-3.5 w-3.5 rounded-full border-2 border-slate-400 flex items-center justify-center shrink-0">
-                    <span className="h-1.5 w-1.5 bg-slate-500 rounded-full" />
+                <div className="flex items-center gap-2 text-slate-900 font-black text-sm capitalize">
+                  <div className="h-3.5 w-3.5 rounded-full border-2 border-emerald-500 flex items-center justify-center shrink-0">
+                    <span className="h-1.5 w-1.5 bg-emerald-600 rounded-full" />
                   </div>
                   <span>{property.furnishing || "N/A"}</span>
                 </div>
               </div>
-              <div className="space-y-1 border-t sm:border-t-0 sm:border-l border-slate-100 pt-2 sm:pt-0 sm:pl-3">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Area Safety</span>
-                <div className="flex items-center gap-1 pt-1.5">
-                  <div className="h-1.5 w-6 rounded bg-brand-green" />
-                  <div className="h-1.5 w-6 rounded bg-brand-green" />
-                  <div className="h-1.5 w-6 rounded bg-brand-green" />
-                  <div className="h-1.5 w-6 rounded bg-brand-green" />
-                  <div className="h-1.5 w-6 rounded bg-slate-100" />
-                </div>
-              </div>
             </div>
 
-            {/* Description */}
-            <div className="space-y-3 pt-6 border-t border-slate-100">
-              <h3 className="text-lg font-bold text-slate-900">Description</h3>
-              <p className="text-sm text-slate-600 leading-relaxed font-semibold">
+            {/* Property Overview / Description */}
+            <div className="space-y-3 pt-6 border-t border-slate-200/80">
+              <h3 className="text-xl font-bold text-slate-900">About Property</h3>
+              <p className="text-sm text-slate-600 leading-relaxed font-normal whitespace-pre-line">
                 {displayedDescription}
               </p>
               {isDescriptionLong && (
                 <button
                   onClick={() => setShowFullDescription(!showFullDescription)}
-                  className="text-brand-green hover:text-brand-green-hover text-xs font-bold underline cursor-pointer focus:outline-none"
+                  className="text-[#0B6E4F] hover:text-[#23D283] text-xs font-bold underline cursor-pointer focus:outline-none transition-colors"
                 >
                   {showFullDescription ? "Show Less" : "Show More"}
                 </button>
               )}
             </div>
 
-            {/* Amenities */}
+            {/* Video Tours Section */}
+            {property.video_link && (
+              <div className="space-y-4 pt-6 border-t border-slate-200/80">
+                <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                  <Play className="h-5 w-5 text-rose-600 fill-rose-600" /> Property Video Tours
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {property.video_link.split(/[\n,\s]+/).map((s: string) => s.trim()).filter(Boolean).map((vUrl: string, idx: number) => {
+                    const embedUrl = getYoutubeEmbedUrl(vUrl);
+                    if (!embedUrl) return null;
+                    return (
+                      <div key={idx} className="rounded-2xl overflow-hidden border border-slate-200 shadow-2xs aspect-video bg-slate-900">
+                        <iframe
+                          src={embedUrl}
+                          title={`Property Video Tour ${idx + 1}`}
+                          className="w-full h-full border-0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Amenities Grid */}
             {property.amenities && property.amenities.length > 0 && (
-              <div className="space-y-3 pt-6 border-t border-slate-100">
-                <h3 className="text-lg font-bold text-slate-900">Amenities</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="space-y-3.5 pt-6 border-t border-slate-200/80">
+                <h3 className="text-xl font-bold text-slate-900">Featured Amenities</h3>
+                <div className="flex flex-wrap gap-2.5">
                   {property.amenities.map((amenity: string, index: number) => (
-                    <div key={index} className="flex items-center gap-2.5 bg-white border border-slate-100 rounded-xl px-4 py-3 shadow-sm hover:shadow transition-shadow">
-                      <div className="h-2 w-2 rounded-full bg-brand-green" />
-                      <span className="text-xs font-semibold text-slate-700 capitalize">
+                    <div 
+                      key={index} 
+                      className="inline-flex items-center gap-2 bg-white border border-slate-200/80 rounded-xl px-3.5 py-2 shadow-2xs hover:border-[#23D283]/50 hover:bg-emerald-50/20 transition-all cursor-default"
+                    >
+                      <CheckCircle2 className="h-3.5 w-3.5 text-[#23D283] shrink-0" />
+                      <span className="text-xs font-bold text-slate-800 capitalize">
                         {amenity.replace(/_/g, " ")}
                       </span>
                     </div>
@@ -760,48 +802,263 @@ export const PropertyDetailsPage: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {/* Map Container */}
+            <div className="space-y-4 pt-8 border-t border-slate-200/80">
+              <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-rose-500" /> Location Map
+              </h3>
+              {property.latitude && property.longitude ? (
+                <div 
+                  ref={mapRef} 
+                  className="h-96 w-full rounded-2xl border border-slate-200/80 shadow-inner overflow-hidden relative z-10" 
+                  style={{ minHeight: '380px' }}
+                />
+              ) : (
+                <div className="h-80 w-full bg-slate-100 border border-slate-200/80 rounded-2xl flex flex-col items-center justify-center text-slate-400 text-sm gap-2">
+                  <HelpCircle className="h-8 w-8 text-slate-300" />
+                  Coordinates not provided for this listing.
+                </div>
+              )}
+            </div>
+
+            {/* Reviews Section */}
+            <div className="space-y-6 pt-10 border-t border-slate-200/80">
+              <h3 className="text-2xl font-black text-slate-900 flex items-center gap-2.5">
+                <Star className="h-6 w-6 text-amber-400 fill-amber-400" />
+                Reviews & Ratings ({totalReviews})
+              </h3>
+
+              {/* Overall Score Box */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-2xs">
+                <div className="flex flex-col items-center justify-center text-center p-4 border-b md:border-b-0 md:border-r border-slate-100">
+                  <span className="text-5xl font-black text-slate-900">{averageRating}</span>
+                  <div className="my-2">
+                    <RenderStars rating={Math.round(parseFloat(averageRating))} size={5} />
+                  </div>
+                  <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+                    {totalReviews} {totalReviews === 1 ? 'Review' : 'Reviews'}
+                  </span>
+                </div>
+
+                <div className="col-span-2 flex flex-col justify-center space-y-2.5">
+                  {[5, 4, 3, 2, 1].map((stars) => {
+                    const count = starCounts[stars - 1];
+                    const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
+                    return (
+                      <div key={stars} className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-slate-600 w-3 text-right">{stars}</span>
+                        <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400 shrink-0" />
+                        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-amber-400 rounded-full transition-all duration-500"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                        <span className="text-xs font-bold text-slate-400 w-8">{count}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Write Review Form / Actions */}
+              <div className="space-y-6">
+                {user ? (
+                  user.id === property.owner_id ? (
+                    <div className="bg-slate-100/70 border border-slate-200/80 rounded-2xl p-4 text-xs font-bold text-slate-500">
+                      Property owners or agencies cannot review their own listings.
+                    </div>
+                  ) : reviews.some((r) => r.user_id === user.id) ? (
+                    <div className="bg-slate-100/70 border border-slate-200/80 rounded-2xl p-4 text-xs font-bold text-slate-500">
+                      You have already reviewed this property. You can edit or delete your review below.
+                    </div>
+                  ) : (
+                    <form onSubmit={handleSubmitReview} className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-2xs space-y-4">
+                      <h4 className="text-base font-bold text-slate-900">Write a Review</h4>
+                      
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Your Rating</label>
+                        <RenderStars rating={newRating} interactive onChange={setNewRating} size={6} />
+                      </div>
+
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Your Experience</label>
+                        <textarea
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                          placeholder="Share your feedback regarding location, neighborhood, and property condition..."
+                          className="w-full min-h-24 bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-sm focus:outline-none focus:border-[#23D283] transition-all resize-y font-semibold text-slate-800 placeholder-slate-400"
+                        />
+                      </div>
+
+                      <div className="flex justify-end pt-1">
+                        <Button
+                          type="submit"
+                          disabled={submitting}
+                          className="bg-[#23D283] hover:bg-[#11995E] text-white font-extrabold px-6 py-2.5 text-xs rounded-xl flex items-center justify-center cursor-pointer shadow-2xs disabled:opacity-50"
+                        >
+                          {submitting ? "Submitting..." : "Submit Review"}
+                        </Button>
+                      </div>
+                    </form>
+                  )
+                ) : (
+                  <div className="bg-emerald-50/60 border border-emerald-100 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900">Have feedback on this property?</h4>
+                      <p className="text-xs font-semibold text-slate-500 mt-0.5">Sign in to share your experience with other seekers.</p>
+                    </div>
+                    <Button
+                      onClick={() => setAuthModal({ open: true, mode: "login" })}
+                      className="bg-[#23D283] hover:bg-[#11995E] text-white font-extrabold px-5 py-2 text-xs rounded-xl cursor-pointer shrink-0 shadow-2xs"
+                    >
+                      Sign In
+                    </Button>
+                  </div>
+                )}
+
+                {/* Reviews List */}
+                {reviewsLoading ? (
+                  <div className="py-8 text-center text-slate-400 font-semibold text-sm">Loading reviews...</div>
+                ) : reviews.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400 font-semibold text-sm bg-white rounded-2xl border border-slate-200/80">
+                    No reviews yet. Be the first to write a review!
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {reviews.map((rev) => {
+                      const isOwnReview = user?.id === rev.user_id;
+                      const isEditing = editingReviewId === rev.id;
+                      const initial = (rev.user?.name || rev.reviewer_name || "U")[0].toUpperCase();
+
+                      return (
+                        <div key={rev.id} className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-3 text-left">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-full bg-linear-to-tr from-[#014645] to-[#23D283] flex items-center justify-center text-white font-black text-sm shrink-0 shadow-inner">
+                                {initial}
+                              </div>
+                              <div>
+                                <h5 className="text-sm font-extrabold text-slate-900">{rev.user?.name || rev.reviewer_name}</h5>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <RenderStars rating={rev.rating} size={3} />
+                                  <span className="text-[10px] text-slate-400 font-bold">
+                                    {new Date(rev.created_at).toLocaleDateString("en-IN", {
+                                      day: "numeric",
+                                      month: "short",
+                                      year: "numeric"
+                                    })}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {isOwnReview && !isEditing && (
+                              <div className="flex items-center gap-1 shrink-0">
+                                <button
+                                  onClick={() => handleStartEdit(rev)}
+                                  className="p-1.5 text-slate-400 hover:text-[#0B6E4F] hover:bg-slate-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Edit review"
+                                >
+                                  <Edit3 className="h-4 w-4" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteReview(rev.id)}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Delete review"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+
+                          {isEditing ? (
+                            <div className="space-y-3 pt-2">
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Rating</label>
+                                <RenderStars rating={editRating} interactive onChange={setEditRating} size={5} />
+                              </div>
+                              <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Comment</label>
+                                <textarea
+                                  value={editComment}
+                                  onChange={(e) => setEditComment(e.target.value)}
+                                  className="w-full min-h-20 bg-slate-50 border border-slate-200 rounded-xl p-3 text-sm focus:outline-none focus:border-[#23D283] transition-all resize-y font-semibold text-slate-800"
+                                />
+                              </div>
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={handleCancelEdit}
+                                  className="px-4 py-1.5 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs rounded-xl cursor-pointer transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                                <Button
+                                  onClick={() => handleUpdateReview(rev.id)}
+                                  className="bg-[#23D283] hover:bg-[#11995E] text-white font-bold px-4 py-1.5 text-xs rounded-xl cursor-pointer shadow-2xs"
+                                >
+                                  Save Changes
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <p className="text-sm font-medium text-slate-600 leading-relaxed font-sans">
+                              {rev.comment}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
           </div>
 
-          {/* Right Sidebar: Cost widget and contact details */}
-          <div className="w-full lg:w-95 shrink-0 sticky top-24 space-y-6">
-            <Card className="border border-slate-100 bg-white shadow-xl rounded-3xl p-6 relative overflow-hidden">
+          {/* Right Sticky Sidebar: Price Card & Owner/Agency Info */}
+          <div className="w-full lg:w-full shrink-0 sticky top-24 space-y-6">
+            
+            {/* Pricing & Contact Widget */}
+            <Card className="border border-slate-200/80 bg-white shadow-xl rounded-2xl p-6 relative overflow-hidden space-y-5">
               
-              {/* Cost widget title */}
-              <div className="space-y-1">
-                <h3 className="text-xl font-bold text-slate-900 leading-tight">
-                  Enquiry & Pricing
-                </h3>
-                <p className="text-xs text-slate-400 font-semibold">
-                  Direct Owner check in • Verified listing
-                </p>
+              {/* Header */}
+              <div className="space-y-1 border-b border-slate-100 pb-4">
+                <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Property Price</span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl sm:text-4xl font-black text-[#0B6E4F]">
+                    {formatPrice(property.price, property.price_unit)}
+                  </span>
+                </div>
               </div>
-
-              {/* Price row */}
-              <div className="flex items-baseline gap-2 pt-4 pb-2 border-b border-slate-100">
-                <span className="text-3xl font-black text-brand-green">
-                  {formatPrice(property.price, property.price_unit)}
-                </span>
-                <span className="text-xs text-slate-400 font-bold">
-                  {property.intent === "buy" ? "Total Price" : "Month"}
-                </span>
-              </div>
-
-              {/* Cancellation policy box */}
-             
 
               {/* Total Calculation */}
-              <div className="flex justify-between items-center py-2.5 font-bold text-sm text-slate-900 border-t border-slate-100">
-                <span>Estimated Total:</span>
-                <span className="text-base font-black text-brand-green">
-                  {formatPrice(property.price + (property.deposit || 0), property.price_unit)}
-                </span>
+              <div className="space-y-2 bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
+                  <span>Base Price:</span>
+                  <span className="font-bold text-slate-800">{formatPrice(property.price, property.price_unit)}</span>
+                </div>
+                {property.deposit ? (
+                  <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
+                    <span>Security Deposit:</span>
+                    <span className="font-bold text-slate-800">₹{property.deposit.toLocaleString()}</span>
+                  </div>
+                ) : null}
+                <div className="flex justify-between items-center pt-2 font-black text-sm text-slate-900 border-t border-slate-200/60">
+                  <span>Estimated Total:</span>
+                  <span className="text-base font-extrabold text-[#0B6E4F]">
+                    {formatPrice(property.price + (property.deposit || 0), property.price_unit)}
+                  </span>
+                </div>
               </div>
 
-              {/* Action Button: WhatsApp primary */}
-              <div className="mt-5 space-y-3">
+              {/* Action Buttons */}
+              <div className="space-y-3 pt-2">
                 <Button
                   onClick={handleWhatsAppContact}
-                  className="w-full bg-brand-green hover:bg-brand-green-hover text-white font-extrabold py-4 text-sm rounded-full flex items-center justify-center gap-2 cursor-pointer shadow-md shadow-slate-900/10"
+                  className="w-full bg-[#23D283] hover:bg-[#11995E] text-white font-extrabold py-3.5 text-sm rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all active:scale-98"
                 >
                   <MessageSquare className="h-4.5 w-4.5" />
                   Chat on WhatsApp
@@ -811,288 +1068,84 @@ export const PropertyDetailsPage: React.FC = () => {
                   <a 
                     href={`tel:${property.owner_phone}`} 
                     onClick={handleCallContact}
-                    className="w-full border border-slate-200 hover:bg-slate-50 text-slate-700 font-extrabold py-3 text-xs rounded-full flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                    className="w-full border border-slate-200 hover:bg-slate-50 text-slate-800 font-extrabold py-3 text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors"
                   >
+                    <PhoneCall className="h-4 w-4 text-slate-500" />
                     Call Owner / Agency
                   </a>
                 )}
               </div>
 
-              {/* Timer tag */}
-              <div className="mt-6 pt-4 border-t border-slate-100 flex items-start gap-2.5 text-xs text-slate-500 font-medium text-left">
-                <Clock className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+              {/* Verified listing note */}
+              <div className="pt-3 border-t border-slate-100 flex items-start gap-2 text-xs text-slate-500 font-medium">
+                <Clock className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
                 <span>
-                  <strong>Only a few listings left</strong> in this area. Book your call or WhatsApp enquiry early to finalize dates.
+                  High interest listing in {property.location_city}. Contact early to schedule a visit.
                 </span>
               </div>
 
             </Card>
 
-            {/* Direct owner or agency partner badge */}
+            {/* Direct Owner or Agency Partner Card */}
             {property.owner_role === "agency" && agency ? (
-              <div className="bg-white border border-slate-100 rounded-2xl p-5 shadow-sm space-y-4 text-left">
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-4 text-left">
                 <div className="flex items-center gap-3">
-                  <div className="h-12 w-12 rounded-xl bg-[#014645]/5 border border-slate-100 flex items-center justify-center text-[#014645] shrink-0 overflow-hidden relative">
+                  <div className="h-14 w-14 rounded-2xl bg-[#014645]/5 border border-slate-100 flex items-center justify-center text-[#014645] shrink-0 overflow-hidden relative shadow-2xs">
                     {agency.logo_key ? (
                       <img src={agency.logo_key} alt={agency.display_name} className="h-full w-full object-cover" />
                     ) : (
-                      <Building2 className="h-6 w-6 text-[#014645]/40" />
+                      <Building2 className="h-7 w-7 text-[#23D283]" />
                     )}
                   </div>
                   <div className="min-w-0 space-y-0.5">
                     <span className="text-[9px] font-black uppercase text-amber-600 tracking-wider">Agency Partner</span>
-                    <h4 className="text-sm font-black text-slate-900 truncate leading-snug my-0">
+                    <h4 className="text-base font-black text-slate-900 truncate leading-snug my-0">
                       {agency.display_name}
                     </h4>
                     {agency.verification_status === "verified" && (
-                      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-600">
-                        <Shield className="h-3 w-3 fill-emerald-500 text-white" /> Verified
+                      <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
+                        <Shield className="h-3 w-3 fill-emerald-500 text-white" /> Verified Agency
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="border-t border-slate-50 pt-3">
+                <div className="border-t border-slate-100 pt-3">
                   <Link 
                     to={`/agencies/${property.owner_id}`}
-                    className="w-full border border-slate-200 hover:bg-slate-50 text-slate-700 font-extrabold py-2.5 text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    className="w-full border border-slate-200 hover:bg-slate-50 text-slate-800 font-extrabold py-2.5 text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                   >
-                    View Agency Profile
+                    View Agency Profile →
                   </Link>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-3 bg-white border border-slate-100 rounded-2xl p-4 shadow-sm text-left">
-                <div className="p-2 rounded-xl bg-brand-light-green text-brand-green">
-                  <Shield className="h-5 w-5" />
+              <div className="flex items-center gap-3 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs text-left">
+                <div className="p-3 rounded-2xl bg-[#23D283]/10 text-[#0B6E4F]">
+                  <Shield className="h-6 w-6" />
                 </div>
                 <div className="space-y-0.5">
-                  <p className="text-xs font-black text-slate-900">Direct Owner Listing</p>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">No Broker commission</p>
+                  <p className="text-sm font-black text-slate-900">Direct Owner Listing</p>
+                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Zero Brokerage Commission</p>
                 </div>
               </div>
             )}
 
           </div>
 
-          {/* Map Container */}
-          <div className="lg:col-span-2 space-y-3 pt-6 border-t border-slate-100">
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-1.5">
-              <MapPin className="h-5 w-5 text-brand-green" /> Location Map
-            </h3>
-            {property.latitude && property.longitude ? (
-              <div 
-                ref={mapRef} 
-                className="h-100 w-full rounded-2xl border border-slate-200 shadow-inner overflow-hidden relative z-10" 
-                style={{ minHeight: '400px' }}
-              />
-            ) : (
-              <div className="h-100 w-full bg-slate-100 border border-slate-200 rounded-xl flex flex-col items-center justify-center text-slate-400 text-sm gap-2" style={{ minHeight: '400px' }}>
-                <HelpCircle className="h-8 w-8 text-slate-300" />
-                Coordinates not provided for this listing.
-              </div>
-            )}
-          </div>
-
-          {/* Reviews Section */}
-          <div className="lg:col-span-2 space-y-6 pt-10 border-t border-slate-100">
-            <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
-              <Star className="h-6 w-6 text-amber-400 fill-amber-400" />
-              Reviews ({totalReviews})
-            </h3>
-
-            {/* Overall stats and progress bars */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-              <div className="flex flex-col items-center justify-center text-center p-4 border-b md:border-b-0 md:border-r border-slate-100">
-                <span className="text-5xl font-black text-slate-900">{averageRating}</span>
-                <div className="my-2">
-                  <RenderStars rating={Math.round(parseFloat(averageRating))} size={5} />
-                </div>
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  {totalReviews} {totalReviews === 1 ? 'Review' : 'Reviews'}
-                </span>
-              </div>
-
-              <div className="col-span-2 flex flex-col justify-center space-y-2.5">
-                {[5, 4, 3, 2, 1].map((stars) => {
-                  const count = starCounts[stars - 1];
-                  const percentage = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
-                  return (
-                    <div key={stars} className="flex items-center gap-3">
-                      <span className="text-xs font-bold text-slate-600 w-3 text-right">{stars}</span>
-                      <Star className="h-3 w-3 text-amber-400 fill-amber-400 shrink-0" />
-                      <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-amber-400 rounded-full transition-all duration-500"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      </div>
-                      <span className="text-xs font-bold text-slate-400 w-8">{count}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Reviews List & Write Review container */}
-            <div className="space-y-6">
-              {/* Write Review Form */}
-              {user ? (
-                user.id === property.owner_id ? (
-                  <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 text-sm text-slate-500 font-medium">
-                    Property owners/agents cannot write reviews for their own listings.
-                  </div>
-                ) : reviews.some((r) => r.user_id === user.id) ? (
-                  <div className="bg-slate-50 border border-slate-150 rounded-2xl p-4 text-sm text-slate-500 font-medium">
-                    You have already submitted a review for this property. You can edit or delete your existing review below.
-                  </div>
-                ) : (
-                  <form onSubmit={handleSubmitReview} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4">
-                    <h4 className="text-base font-bold text-slate-900 font-sans">Write a Review</h4>
-                    
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Rating</label>
-                      <RenderStars rating={newRating} interactive onChange={setNewRating} size={6} />
-                    </div>
-
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Comment</label>
-                      <textarea
-                        value={newComment}
-                        onChange={(e) => setNewComment(e.target.value)}
-                        placeholder="Share your detailed experience with this property and location..."
-                        className="w-full min-h-25 bg-slate-50 border border-slate-200 rounded-2xl p-4 text-sm focus:outline-none focus:border-brand-green transition-all resize-y font-sans font-semibold text-slate-800 placeholder-slate-400"
-                      />
-                    </div>
-
-                    <div className="flex justify-end pt-1">
-                      <Button
-                        type="submit"
-                        disabled={submitting}
-                        className="bg-brand-green hover:bg-brand-green-hover text-white font-extrabold px-6 py-2.5 text-xs rounded-full flex items-center justify-center cursor-pointer shadow-sm disabled:opacity-50"
-                      >
-                        {submitting ? "Submitting..." : "Submit Review"}
-                      </Button>
-                    </div>
-                  </form>
-                )
-              ) : (
-                <div className="bg-brand-light-green border border-brand-green/20 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-900">Logged in users can write reviews</h4>
-                    <p className="text-xs font-semibold text-slate-500 mt-0.5">Please sign in to share your experience with this listing.</p>
-                  </div>
-                  <Button
-                    onClick={() => navigate("/login", { state: { from: `/properties/${propertyId}` } })}
-                    className="bg-brand-green hover:bg-brand-green-hover text-white font-extrabold px-5 py-2 text-xs rounded-full cursor-pointer shrink-0 shadow-sm"
-                  >
-                    Sign In
-                  </Button>
-                </div>
-              )}
-
-              {/* Reviews List */}
-              {reviewsLoading ? (
-                <div className="py-8 text-center text-slate-400 font-semibold text-sm">Loading reviews...</div>
-              ) : reviews.length === 0 ? (
-                <div className="py-8 text-center text-slate-400 font-semibold text-sm bg-slate-50 rounded-2xl border border-slate-100">
-                  No reviews yet. Be the first to review this property!
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {reviews.map((rev) => {
-                    const isOwnReview = user?.id === rev.user_id;
-                    const isEditing = editingReviewId === rev.id;
-                    const initial = (rev.user?.name || rev.reviewer_name || "U")[0].toUpperCase();
-
-                    return (
-                      <div key={rev.id} className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4 text-left">
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-full bg-linear-to-tr from-brand-green to-[#2e5d45] flex items-center justify-center text-white font-black text-sm shrink-0 shadow-inner">
-                              {initial}
-                            </div>
-                            <div>
-                              <h5 className="text-sm font-bold text-slate-900">{rev.user?.name || rev.reviewer_name}</h5>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <RenderStars rating={rev.rating} size={3} />
-                                <span className="text-[10px] text-slate-400 font-bold">
-                                  {new Date(rev.created_at).toLocaleDateString("en-IN", {
-                                    day: "numeric",
-                                    month: "short",
-                                    year: "numeric"
-                                  })}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          {isOwnReview && !isEditing && (
-                            <div className="flex items-center gap-1 shrink-0">
-                              <button
-                                onClick={() => handleStartEdit(rev)}
-                                className="p-2 text-slate-400 hover:text-brand-green hover:bg-slate-50 rounded-full transition-colors cursor-pointer"
-                                title="Edit review"
-                              >
-                                <Edit3 className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteReview(rev.id)}
-                                className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition-colors cursor-pointer"
-                                title="Delete review"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
-                          )}
-                        </div>
-
-                        {isEditing ? (
-                          <div className="space-y-4 pt-2">
-                            <div className="space-y-1.5">
-                              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Rating</label>
-                              <RenderStars rating={editRating} interactive onChange={setEditRating} size={5} />
-                            </div>
-                            <div className="space-y-1.5">
-                              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Comment</label>
-                              <textarea
-                                value={editComment}
-                                onChange={(e) => setEditComment(e.target.value)}
-                                className="w-full min-h-20 bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-sm focus:outline-none focus:border-brand-green transition-all resize-y font-semibold text-slate-800"
-                              />
-                            </div>
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                onClick={handleCancelEdit}
-                                className="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 font-extrabold text-xs rounded-full cursor-pointer transition-colors"
-                              >
-                                Cancel
-                              </button>
-                              <Button
-                                onClick={() => handleUpdateReview(rev.id)}
-                                className="bg-brand-green hover:bg-brand-green-hover text-white font-extrabold px-4 py-2 text-xs rounded-full cursor-pointer shadow-sm"
-                              >
-                                Save Changes
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <p className="text-sm font-semibold text-slate-600 leading-relaxed pl-1 font-sans">
-                            {rev.comment}
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Related Properties row */}
+          {/* Related Properties */}
           {relatedProperties.length > 0 && (
-            <div className="lg:col-span-2 space-y-6 pt-10 border-t border-slate-100">
-              <h3 className="text-lg font-bold text-slate-900">Properties available in the same area</h3>
+            <div className="lg:col-span-3 space-y-6 pt-10 border-t border-slate-200/80">
+              <div className="flex items-center justify-between">
+                <h3 className="text-2xl font-black text-slate-900">Similar Properties Nearby</h3>
+                <button 
+                  onClick={() => navigate("/dashboard")}
+                  className="text-xs font-bold text-[#0B6E4F] hover:text-[#23D283] transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  View All <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+
               <div className="grid gap-6 grid-cols-1 sm:grid-cols-3">
                 {relatedProperties.map((related) => (
                   <Card 
@@ -1101,10 +1154,10 @@ export const PropertyDetailsPage: React.FC = () => {
                       navigate(`/properties/${related.id}`);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="border border-slate-100 bg-white hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col group p-3.5 rounded-[20px] cursor-pointer"
+                    className="border border-slate-200/80 bg-white hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 overflow-hidden flex flex-col group p-3.5 rounded-2xl cursor-pointer text-left"
                   >
-                    {/* Aspect image box */}
-                    <div className="h-40 w-full rounded-[14px] overflow-hidden relative shrink-0">
+                    {/* Image box */}
+                    <div className="h-44 w-full rounded-xl overflow-hidden relative shrink-0">
                       <img
                         src={related.photos && related.photos.length > 0 ? related.photos[0] : getCategoryFallbackImage(related.category)}
                         alt={related.title}
@@ -1112,28 +1165,28 @@ export const PropertyDetailsPage: React.FC = () => {
                         loading="lazy"
                       />
                       <div className="absolute top-2 left-2">
-                        <span className="inline-flex rounded-[6px] bg-white px-2 py-0.5 text-[9px] font-semibold text-slate-800 shadow-sm uppercase tracking-wider">
+                        <span className="inline-flex rounded-md bg-white/95 backdrop-blur-md px-2 py-0.5 text-[9px] font-black text-slate-800 shadow-2xs uppercase tracking-wider">
                           For {related.intent === "buy" ? "Sale" : related.intent === "rent" ? "Rent" : "Lease"}
                         </span>
                       </div>
                     </div>
 
-                    <div className="pb-1 px-0.5 pt-3 flex-1 flex flex-col justify-between">
+                    <div className="pb-1 px-1 pt-3 flex-1 flex flex-col justify-between">
                       <div>
-                        <div className="text-[10px] font-medium text-slate-500 flex items-center gap-1">
-                          <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
-                          {related.location_area}, {related.location_city}
+                        <div className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
+                          <MapPin className="h-3 w-3 text-rose-500 shrink-0" />
+                          <span className="truncate">{related.location_area}, {related.location_city}</span>
                         </div>
-                        <h4 className="text-sm font-semibold text-slate-950 line-clamp-1 pt-0.5 group-hover:text-brand-green transition-colors leading-tight">
+                        <h4 className="text-sm font-extrabold text-slate-900 line-clamp-1 pt-1 group-hover:text-[#0B6E4F] transition-colors leading-tight">
                           {related.title}
                         </h4>
                       </div>
-                      <div className="flex items-center justify-between pt-2 border-t border-slate-50 mt-2.5">
-                        <span className="font-extrabold text-sm text-slate-950">
+                      <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 mt-3">
+                        <span className="font-black text-sm text-[#0B6E4F]">
                           {formatPrice(related.price, related.price_unit)}
                         </span>
-                        <span className="text-[10px] font-bold text-brand-green flex items-center gap-0.5">
-                          Details <span className="font-mono">→</span>
+                        <span className="text-[10px] font-bold text-[#23D283] flex items-center gap-0.5">
+                          View Listing <span className="font-mono">→</span>
                         </span>
                       </div>
                     </div>

@@ -2,15 +2,29 @@ import uuid
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 
+class AgencyProfileResponse(BaseModel):
+    id: uuid.UUID
+    display_name: str
+    about: str
+    logo_key: str | None = None
+    areas_served: list[str] = []
+    created_at: datetime
+    model_config = {"from_attributes": True}
+
 class UserAdminResponse(BaseModel):
     id: uuid.UUID
     role: str
     name: str
     email: EmailStr
     phone: str
+    preference_type: str | None = None
+    location_city: str | None = None
+    location_area: str | None = None
     verification_status: str
+    verification_note: str | None = None
     status: str
     created_at: datetime
+    agency_profile: AgencyProfileResponse | None = None
     model_config = {"from_attributes": True}
 
 class VerificationRequestResponse(BaseModel):
@@ -30,6 +44,7 @@ class VerificationActionRequest(BaseModel):
 
 class DashboardStatsResponse(BaseModel):
     pending_property_reviews: int
+    pending_kyc_reviews: int = 0
     open_disputes: int
     total_users: int
     total_properties: int
