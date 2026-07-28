@@ -86,6 +86,8 @@ export interface AdminProperty {
   created_at: string;
   photos?: (string | { photo_url: string; display_order?: number })[];
   amenities?: (string | { name: string; category?: string })[];
+  owner_phone?: string;
+  owner_whatsapp?: string;
   owner?: {
     id: string;
     name: string;

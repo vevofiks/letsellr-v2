@@ -18,15 +18,17 @@ class PropertyRepository:
         self.db.add(db_obj)
         await self.db.flush()
         await self.db.refresh(db_obj)
-        return db_obj
+        stmt = select(Property).options(selectinload(Property.owner)).where(Property.id == db_obj.id)
+        res = await self.db.execute(stmt)
+        return res.scalar_one()
 
     async def get_by_id(self, property_id: str | uuid.UUID) -> Optional[Property]:
-        stmt = select(Property).where(Property.id == property_id)
+        stmt = select(Property).options(selectinload(Property.owner)).where(Property.id == property_id)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
     async def get_by_ref(self, ref: str) -> Optional[Property]:
-        stmt = select(Property).where(Property.ref == ref)
+        stmt = select(Property).options(selectinload(Property.owner)).where(Property.ref == ref)
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
@@ -35,7 +37,9 @@ class PropertyRepository:
             setattr(db_obj, field, value)
         await self.db.flush()
         await self.db.refresh(db_obj)
-        return db_obj
+        stmt = select(Property).options(selectinload(Property.owner)).where(Property.id == db_obj.id)
+        res = await self.db.execute(stmt)
+        return res.scalar_one()
 
     async def delete(self, db_obj: Property) -> None:
         await self.db.delete(db_obj)
@@ -51,7 +55,7 @@ class PropertyRepository:
         radius: Optional[float] = 20.0,
         sort_by: Optional[str] = None
     ) -> tuple[List[Property], int]:
-        stmt = select(Property).where(Property.status == "live")
+        stmt = select(Property).options(selectinload(Property.owner)).where(Property.status == "live")
         
         if "category" in filters:
             stmt = stmt.where(Property.category == filters["category"])
@@ -130,6 +134,7 @@ class PropertyRepository:
     async def list_by_owner(self, owner_id: uuid.UUID) -> List[Property]:
         stmt = (
             select(Property)
+            .options(selectinload(Property.owner))
             .where(Property.owner_id == owner_id)
             .order_by(Property.created_at.desc())
         )
@@ -141,6 +146,7 @@ class PropertyRepository:
     ) -> List[Property]:
         stmt = (
             select(Property)
+            .options(selectinload(Property.owner))
             .where(Property.status == "live")
             .where(Property.latitude.isnot(None))
             .where(Property.longitude.isnot(None))

@@ -68,6 +68,17 @@ class StatsSchema(BaseModel):
     saves: int
 
 
+class OwnerMinimal(BaseModel):
+    id: UUID
+    name: str
+    email: str
+    phone: str
+    role: str
+
+    class Config:
+        from_attributes = True
+
+
 class PropertyResponse(BaseModel):
     id: UUID
     ref: str
@@ -103,6 +114,7 @@ class PropertyResponse(BaseModel):
     
     owner_phone: str
     owner_whatsapp: Optional[str]
+    owner: Optional[OwnerMinimal] = None
     
     status: str
     stats: StatsSchema

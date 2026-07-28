@@ -40,13 +40,36 @@ class UserRepository:
         return result.scalar_one_or_none()
 
     async def get_by_phone(self, phone: str) -> User | None:
-        stmt = (
-            select(User)
-            .where(User.phone == phone)
-            .options(selectinload(User.agency_profile))
-        )
+        digits = "".join(filter(str.isdigit, phone))
+        if not digits:
+            return None
+
+        # 1. Exact match
+        stmt = select(User).where(User.phone == phone).options(selectinload(User.agency_profile))
         result = await self.db.execute(stmt)
-        return result.scalar_one_or_none()
+        user = result.scalar_one_or_none()
+        if user:
+            return user
+
+        # 2. Flexible suffix matching (last 10, 9, 8, 7 digits)
+        for length in [10, 9, 8, 7]:
+            if len(digits) >= length:
+                suffix = digits[-length:]
+                stmt = (
+                    select(User)
+                    .where(
+                        (User.phone == suffix) |
+                        (User.phone == f"+{suffix}") |
+                        (User.phone.endswith(suffix))
+                    )
+                    .options(selectinload(User.agency_profile))
+                )
+                res = await self.db.execute(stmt)
+                match = res.scalars().first()
+                if match:
+                    return match
+
+        return None
 
     async def get_by_provider_uid(self, uid: str) -> User | None:
         stmt = (

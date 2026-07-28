@@ -1,4 +1,4 @@
-# PRD — No-Brokerage Property Platform (Letsellr)
+# PRD — Letsellr v2 (Managed Property Platform)
 
 **Version:** 3.0 · **Audience:** Developers · **Status:** Build spec
 
@@ -35,6 +35,7 @@ Visitors browse genuine, admin-checked properties and contact owners/agencies **
 | Host | **Hetzner / VPS** | Backend + jobs on one server (split later). Frontends on Cloudflare Pages / Vercel free tier. |
 
 ### 2.2 Request flow
+
 ```
 Seeker     → Next.js (SSR public site) ─┐
 Owner/Admin → React SPA ────────────────┤→ Express API ─┬─ MongoDB
@@ -63,13 +64,10 @@ Auth flow  → Firebase/Supabase Auth ────┘               └─ Socke
 ## 4. Feature Scope (MVP)
 
 ### 4.1 Browsing (public, no login)
-Browsing is organized by **transaction intent**, all filtered by **location/place**:
-- **Rent** · **Buy** · **Lease** — property listings by intent
-- **Agencies** — browse listings grouped by owner/agency
 
 **Property categories (6):** `pg` · `hostel` · `apartment` · `villa_house` · `land` · `commercial`
 
-**Search:** by place/location, by agency, and on a **map**.
+### 4.2 Listing restriction
 
 ### 4.2 Listing restrictions ⭐
 Enforced server-side on `POST /properties`:
@@ -238,7 +236,7 @@ Verification Requests queue
 
 ---
 
-## 6. Data Models (MongoDB)
+## 7. API — what exists vs what's needed
 
 > Shown as document shapes. `_id` = ObjectId. Index hints noted.
 
@@ -454,6 +452,7 @@ TABLE properties (
   type: String,            // "listing_viewed", "enquiry_clicked", "chat_started", ...
   props: Object, ts: Date
 }
+```
 ```
 
 ---

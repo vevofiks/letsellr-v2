@@ -203,7 +203,56 @@ async def get_me(
             location_city="",
             location_area="",
             verification_status="none",
-            status="active"
+            status="active",
+            msg_limit=3,
+            msg_usage=0
         )
     return UserPublic.model_validate(current_user)
+
+
+@router.post(
+    "/usage/increment",
+    response_model=UserPublic,
+    summary="Increment user message usage count",
+)
+async def increment_usage(
+    current_user: CurrentUser,
+    db: DbSession,
+    phone: str,
+) -> UserPublic:
+    """Increment msg_usage for a user by phone number (requires service key)."""
+    if current_user.role != "admin":
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Admin authorization required")
+    
+    from app.modules.users.repository import UserRepository
+    repo = UserRepository(db)
+    clean_phone = phone.strip()
+    user = await repo.get_by_phone(clean_phone)
+    if not user and clean_phone.startswith("+"):
+        user = await repo.get_by_phone(clean_phone[1:])
+    if not user and len(clean_phone) > 10:
+        user = await repo.get_by_phone(clean_phone[-10:])
+    
+    if user:
+        user.msg_usage += 1
+        await db.commit()
+        await db.refresh(user)
+        return UserPublic.model_validate(user)
+    
+    return UserPublic(
+        id=current_user.id,
+        role="user",
+        name="Valued Customer",
+        email="",
+        email_verified=False,
+        phone=clean_phone,
+        preference_type="buy",
+        location_city="",
+        location_area="",
+        verification_status="none",
+        status="active",
+        msg_limit=3,
+        msg_usage=1
+    )
 

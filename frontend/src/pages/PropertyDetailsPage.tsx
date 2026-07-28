@@ -467,7 +467,7 @@ export const PropertyDetailsPage: React.FC = () => {
     } catch (err) {
       console.error("Failed to record enquiry", err);
     }
-    const number = property.owner_phone ? property.owner_phone.replace(/[^0-9]/g, "") : "15551398764";
+    const number = "15551398764";
     const message = encodeURIComponent(`Hi, I'm interested in your property ${property.title} (Ref: ${property.ref})`);
     window.open(`https://wa.me/${number}?text=${message}`, "_blank");
   };

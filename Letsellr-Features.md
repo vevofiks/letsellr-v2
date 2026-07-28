@@ -29,6 +29,7 @@ Within these, properties fall into **6 types:**
 `PG` · `Hostel` · `Apartment` · `Villa / House` · `Land` · `Commercial`
 
 **Extra ways to search:**
+
 - **By place** — search a specific area or town
 - **By agency** — see all listings from one owner/agency
 - **On the map** — browse properties visually by location
@@ -182,4 +183,4 @@ Owner/Agency registers (email auth)
 
 ---
 
-*A simple overview of the platform's current features and how they work together.*
+_A simple overview of the platform's current features and how they work together._

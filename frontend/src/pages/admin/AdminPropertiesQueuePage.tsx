@@ -19,6 +19,9 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  Phone,
+  User as UserIcon,
+  Calendar,
 } from "lucide-react";
 import { toast } from "sonner";
 import { adminService, type AdminProperty } from "@/services/adminService";
@@ -890,38 +893,224 @@ export const AdminPropertiesQueuePage: React.FC = () => {
         </div>
       )}
 
-      {/* Modal 1: Inspect Details */}
+      {/* Modal 1: Comprehensive Inspect Details */}
       {inspectModalOpen && selectedProperty && (
         <div className="fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 space-y-5 shadow-2xl border border-slate-200 text-left">
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[92vh] overflow-y-auto p-6 space-y-5 shadow-2xl border border-slate-200 text-left">
+            {/* Modal Header */}
             <div className="flex items-start justify-between gap-4 border-b border-slate-100 pb-3">
               <div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-[10px] font-black uppercase">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Badge variant="outline" className="text-[10px] font-black uppercase tracking-wider">
                     {selectedProperty.category}
                   </Badge>
-                  <Badge variant="secondary" className="text-[10px] font-black uppercase">
+                  <Badge variant="secondary" className="text-[10px] font-black uppercase tracking-wider">
                     For {selectedProperty.intent}
                   </Badge>
-                  {selectedProperty.video_link && (
-                    <Badge className="bg-rose-100 text-rose-800 font-black text-[10px] px-2 py-0.5 flex items-center gap-1">
-                      <YoutubeIcon className="h-3.5 w-3.5 text-rose-600" /> YouTube Video Added
-                    </Badge>
-                  )}
+                  <span className="text-[10px] font-black text-[#014645] bg-[#014645]/10 px-2 py-0.5 rounded-md border border-[#014645]/20">
+                    {selectedProperty.ref || selectedProperty.ref_code || "REF-CODE"}
+                  </span>
+                  <Badge className={`text-[10px] font-black uppercase ${selectedProperty.status === 'live' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}`}>
+                    {selectedProperty.status}
+                  </Badge>
                 </div>
-                <h2 className="text-lg font-extrabold text-slate-900 mt-1 my-0">
+                <h2 className="text-lg font-extrabold text-slate-900 mt-1.5 my-0">
                   {selectedProperty.title}
                 </h2>
-                <p className="text-xs text-slate-500 font-medium">
-                  {selectedProperty.location_address || `${selectedProperty.location_area}, ${selectedProperty.location_city}`}
+                <p className="text-xs text-slate-500 font-medium flex items-center gap-1 mt-1">
+                  <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                  {selectedProperty.location_address
+                    ? `${selectedProperty.location_address}, ${selectedProperty.location_area}, ${selectedProperty.location_city}`
+                    : `${selectedProperty.location_area}, ${selectedProperty.location_city}, ${selectedProperty.location_state || 'Kerala'} - ${selectedProperty.location_pincode || ''}`}
                 </p>
               </div>
               <button
                 onClick={() => setInspectModalOpen(false)}
-                className="h-8 w-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer"
+                className="h-8 w-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer shrink-0"
               >
                 <X className="h-4 w-4" />
               </button>
+            </div>
+
+            {/* Submitter & Contact Info Banner */}
+            <div className="bg-slate-50/80 rounded-xl p-3.5 border border-slate-200/80 space-y-2">
+              <div className="flex items-center justify-between border-b border-slate-200/60 pb-2">
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <UserIcon className="h-3.5 w-3.5 text-[#014645]" /> Submitted By ({selectedProperty.owner_role || 'owner'})
+                </span>
+                {selectedProperty.created_at && (
+                  <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {new Date(selectedProperty.created_at).toLocaleDateString("en-IN", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit"
+                    })}
+                  </span>
+                )}
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                <div>
+                  <span className="text-[9.5px] font-bold uppercase text-slate-400 block">Name</span>
+                  <span className="text-xs font-black text-slate-900">
+                    {selectedProperty.owner?.name || "Property Submitter"}
+                  </span>
+                </div>
+                
+                <div>
+                  <span className="text-[9.5px] font-bold uppercase text-slate-400 block">Phone</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-black text-slate-900">
+                      {selectedProperty.owner_phone || selectedProperty.owner?.phone || "N/A"}
+                    </span>
+                    {(selectedProperty.owner_phone || selectedProperty.owner?.phone) && (
+                      <a
+                        href={`tel:${selectedProperty.owner_phone || selectedProperty.owner?.phone}`}
+                        className="text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 p-1 rounded-md transition-colors"
+                        title="Call Submitter"
+                      >
+                        <Phone className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[9.5px] font-bold uppercase text-slate-400 block">WhatsApp</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-black text-slate-900">
+                      {selectedProperty.owner_whatsapp || selectedProperty.owner_phone || "N/A"}
+                    </span>
+                    {(selectedProperty.owner_whatsapp || selectedProperty.owner_phone) && (
+                      <a
+                        href={`https://wa.me/${((selectedProperty.owner_whatsapp || selectedProperty.owner_phone) || '').replace(/[^0-9]/g, '')}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-emerald-600 hover:text-emerald-700 bg-emerald-100/70 hover:bg-emerald-200 px-2 py-0.5 rounded-md text-[10px] font-extrabold flex items-center gap-1 transition-colors"
+                      >
+                        WhatsApp
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Core Specifications & Financial Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
+              <div>
+                <span className="text-[9.5px] font-black uppercase text-slate-400 block">Price</span>
+                <span className="text-sm font-black text-[#014645]">
+                  {formatPrice(selectedProperty.price)}
+                  {selectedProperty.price_unit && (
+                    <span className="text-[10px] font-bold text-slate-500 ml-1">
+                      / {selectedProperty.price_unit === 'per_month' ? 'month' : 'total'}
+                    </span>
+                  )}
+                </span>
+              </div>
+
+              {/* Security Deposit: ONLY rendered if deposit exists and is > 0 */}
+              {((selectedProperty.deposit && selectedProperty.deposit > 0) || (selectedProperty.security_deposit && selectedProperty.security_deposit > 0)) ? (
+                <div>
+                  <span className="text-[9.5px] font-black uppercase text-slate-400 block">Deposit</span>
+                  <span className="text-xs font-bold text-slate-800">
+                    {formatPrice((selectedProperty.deposit || selectedProperty.security_deposit)!)}
+                  </span>
+                </div>
+              ) : null}
+
+              <div>
+                <span className="text-[9.5px] font-black uppercase text-slate-400 block">Built-up Area</span>
+                <span className="text-xs font-bold text-slate-800">
+                  {(selectedProperty.area || selectedProperty.built_up_sqft)
+                    ? `${selectedProperty.area || selectedProperty.built_up_sqft} sq ft`
+                    : "Not specified"}
+                </span>
+              </div>
+
+              <div>
+                <span className="text-[9.5px] font-black uppercase text-slate-400 block">Bedrooms / Bathrooms</span>
+                <span className="text-xs font-bold text-slate-800 capitalize">
+                  {selectedProperty.bedrooms || selectedProperty.bathrooms
+                    ? `${selectedProperty.bedrooms || 0} BHK / ${selectedProperty.bathrooms || 0} Bath`
+                    : "Not specified"}
+                </span>
+              </div>
+
+              <div>
+                <span className="text-[9.5px] font-black uppercase text-slate-400 block">Furnishing</span>
+                <span className="text-xs font-bold text-slate-800 capitalize">
+                  {selectedProperty.furnishing || selectedProperty.furnishing_status || "Unspecified"}
+                </span>
+              </div>
+            </div>
+
+            {/* Complete Location Details */}
+            <div className="bg-slate-50/50 p-3.5 rounded-xl border border-slate-200/60 space-y-2">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center justify-between">
+                <span>Location & Geolocation</span>
+                {selectedProperty.latitude && selectedProperty.longitude && (
+                  <a
+                    href={`https://www.google.com/maps?q=${selectedProperty.latitude},${selectedProperty.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#014645] hover:underline text-[10px] font-bold flex items-center gap-1"
+                  >
+                    Open in Google Maps <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-medium text-slate-800">
+                <div>
+                  <span className="text-slate-400 text-[10px] font-bold block">Address Line:</span>
+                  <span>{selectedProperty.location_address || "No detailed street address provided."}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 text-[10px] font-bold block">Area & City:</span>
+                  <span>{selectedProperty.location_area}, {selectedProperty.location_city}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 text-[10px] font-bold block">State & Pincode:</span>
+                  <span>{selectedProperty.location_state || "Kerala"} — {selectedProperty.location_pincode || "682030"}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 text-[10px] font-bold block">Map Coordinates:</span>
+                  <span>
+                    {selectedProperty.latitude && selectedProperty.longitude
+                      ? `${Number(selectedProperty.latitude).toFixed(6)}, ${Number(selectedProperty.longitude).toFixed(6)}`
+                      : "No coordinates pinned"}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Amenities Badges */}
+            <div className="space-y-1.5">
+              <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-wider my-0">
+                Amenities & Facilities ({selectedProperty.amenities?.length || 0})
+              </h4>
+              {selectedProperty.amenities && selectedProperty.amenities.length > 0 ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedProperty.amenities.map((item, idx) => {
+                    const amenityName = typeof item === "string" ? item : (item as any)?.name || item;
+                    return (
+                      <span
+                        key={idx}
+                        className="bg-emerald-50 text-emerald-900 border border-emerald-200/80 text-[11px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1"
+                      >
+                        <Check className="h-3 w-3 text-emerald-600" />
+                        {amenityName}
+                      </span>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p className="text-xs text-slate-400 italic my-0">No amenities selected by owner.</p>
+              )}
             </div>
 
             {/* Video Link Highlight if Present */}
@@ -957,73 +1146,48 @@ export const AdminPropertiesQueuePage: React.FC = () => {
             )}
 
             {/* Photos */}
-            {selectedProperty.photos && selectedProperty.photos.length > 0 ? (
-              <div className="grid grid-cols-3 gap-2">
-                {selectedProperty.photos.map((photo, i) => {
-                  const url = getPhotoUrl(photo) || getCategoryFallbackImage(selectedProperty.category);
-                  return (
-                    <div
-                      key={i}
-                      onClick={() => setPreviewImage(url)}
-                      className="relative rounded-lg overflow-hidden border border-slate-200 cursor-pointer group/img h-24"
-                      title="Click to expand"
-                    >
-                      <img
-                        src={url}
-                        alt={`Property photo ${i + 1}`}
-                        className="h-full w-full object-cover group-hover/img:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
-                        <Eye className="h-4 w-4" />
+            <div className="space-y-1.5">
+              <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-wider my-0">
+                Property Photos ({selectedProperty.photos?.length || 0})
+              </h4>
+              {selectedProperty.photos && selectedProperty.photos.length > 0 ? (
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                  {selectedProperty.photos.map((photo, i) => {
+                    const url = getPhotoUrl(photo) || getCategoryFallbackImage(selectedProperty.category);
+                    return (
+                      <div
+                        key={i}
+                        onClick={() => setPreviewImage(url)}
+                        className="relative rounded-lg overflow-hidden border border-slate-200 cursor-pointer group/img h-24"
+                        title="Click to expand"
+                      >
+                        <img
+                          src={url}
+                          alt={`Property photo ${i + 1}`}
+                          className="h-full w-full object-cover group-hover/img:scale-105 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-slate-900/30 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
+                          <Eye className="h-4 w-4" />
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div
-                onClick={() => setPreviewImage(getCategoryFallbackImage(selectedProperty.category))}
-                className="rounded-xl overflow-hidden border border-slate-200 cursor-pointer group/img relative"
-              >
-                <img
-                  src={getCategoryFallbackImage(selectedProperty.category)}
-                  alt="Property Preview"
-                  className="h-40 w-full object-cover group-hover/img:scale-105 transition-transform duration-300"
-                />
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200/60">
-              <div>
-                <span className="text-[9.5px] font-black uppercase text-slate-400 block">Price</span>
-                <span className="text-sm font-black text-[#014645]">
-                  {formatPrice(selectedProperty.price)}
-                </span>
-              </div>
-              <div>
-                <span className="text-[9.5px] font-black uppercase text-slate-400 block">Deposit</span>
-                <span className="text-xs font-bold text-slate-800">
-                  {(selectedProperty.deposit || selectedProperty.security_deposit)
-                    ? formatPrice((selectedProperty.deposit || selectedProperty.security_deposit)!)
-                    : "N/A"}
-                </span>
-              </div>
-              <div>
-                <span className="text-[9.5px] font-black uppercase text-slate-400 block">Built-up</span>
-                <span className="text-xs font-bold text-slate-800">
-                  {(selectedProperty.area || selectedProperty.built_up_sqft)
-                    ? `${selectedProperty.area || selectedProperty.built_up_sqft} sqft`
-                    : "N/A"}
-                </span>
-              </div>
-              <div>
-                <span className="text-[9.5px] font-black uppercase text-slate-400 block">Furnishing</span>
-                <span className="text-xs font-bold text-slate-800 capitalize">
-                  {selectedProperty.furnishing || selectedProperty.furnishing_status || "Unspecified"}
-                </span>
-              </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div
+                  onClick={() => setPreviewImage(getCategoryFallbackImage(selectedProperty.category))}
+                  className="rounded-xl overflow-hidden border border-slate-200 cursor-pointer group/img relative"
+                >
+                  <img
+                    src={getCategoryFallbackImage(selectedProperty.category)}
+                    alt="Property Preview"
+                    className="h-40 w-full object-cover group-hover/img:scale-105 transition-transform duration-300"
+                  />
+                </div>
+              )}
             </div>
 
+            {/* Property Description */}
             <div className="space-y-1">
               <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-wider my-0">
                 Property Description

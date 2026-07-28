@@ -19,10 +19,12 @@ Modular Monolith Architecture:
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.core.config import settings
 from app.core.logging import configure_logging
@@ -109,7 +111,10 @@ def create_app() -> FastAPI:
     app.include_router(admin_router,      prefix=f"{api_prefix}/admin",      tags=["Admin"])
     app.include_router(media_router,      prefix=f"{api_prefix}/media",      tags=["Media"])
     app.include_router(webhooks_router,   prefix=f"{api_prefix}/webhooks",   tags=["Webhooks"])
-    app.include_router(reviews_router,    prefix=api_prefix)
+    # ── Static Uploads Mounting ────────────────────────────────────────────────
+    upload_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "uploads"))
+    os.makedirs(upload_dir, exist_ok=True)
+    app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 
     return app
 

@@ -18,6 +18,7 @@ class UserRegisterRequest(BaseModel):
     phone: str = Field(..., min_length=7, max_length=20)
     preference_type: str = Field(..., min_length=1)
     location: str = Field(..., min_length=2, max_length=200)
+    password: str = Field(..., min_length=6, max_length=100)
 
 
 class RegisterRequest(BaseModel):
@@ -82,6 +83,8 @@ class UserPublic(BaseModel):
     location_area: str
     verification_status: str
     status: str
+    msg_limit: int = 3
+    msg_usage: int = 0
 
     model_config = {"from_attributes": True}
 

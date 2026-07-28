@@ -38,7 +38,8 @@ def upgrade() -> None:
       note        TEXT NOT NULL,
       payment_ref TEXT,
       done_by     UUID REFERENCES users(id) ON DELETE SET NULL,
-      created_at  TIMESTAMP WITH TIME ZONE DEFAULT now()
+      created_at  TIMESTAMP WITH TIME ZONE DEFAULT now(),
+      updated_at  TIMESTAMP WITH TIME ZONE DEFAULT now()
     );
     """)
     op.execute("CREATE INDEX IF NOT EXISTS ix_limit_overrides_user_id ON limit_overrides (user_id);")

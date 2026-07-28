@@ -179,7 +179,7 @@ async def get_dashboard_stats(current_user: CurrentUser, db: DbSession):
 async def list_pending_properties(current_user: CurrentUser, db: DbSession):
     require_admin(current_user)
     result = await db.execute(
-        select(Property).where(Property.status == "pending_review").order_by(Property.created_at.asc())
+        select(Property).options(selectinload(Property.owner)).where(Property.status == "pending_review").order_by(Property.created_at.asc())
     )
     return result.scalars().all()
 
@@ -187,7 +187,7 @@ async def list_pending_properties(current_user: CurrentUser, db: DbSession):
 async def list_live_properties(current_user: CurrentUser, db: DbSession):
     require_admin(current_user)
     result = await db.execute(
-        select(Property).where(Property.status == "live").order_by(Property.created_at.desc())
+        select(Property).options(selectinload(Property.owner)).where(Property.status == "live").order_by(Property.created_at.desc())
     )
     return result.scalars().all()
 
@@ -196,7 +196,7 @@ async def list_live_properties(current_user: CurrentUser, db: DbSession):
 async def list_rejected_properties(current_user: CurrentUser, db: DbSession):
     require_admin(current_user)
     result = await db.execute(
-        select(Property).where(Property.status == "rejected").order_by(Property.created_at.desc())
+        select(Property).options(selectinload(Property.owner)).where(Property.status == "rejected").order_by(Property.created_at.desc())
     )
     return result.scalars().all()
 

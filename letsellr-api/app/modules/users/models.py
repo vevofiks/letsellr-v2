@@ -72,7 +72,7 @@ class User(UUIDMixin, TimestampMixin, Base):
         "Property",
         back_populates="owner",
         cascade="all, delete-orphan",
-        foreign_keys="[Property.owner_id]"
+        foreign_keys="Property.owner_id"
     )
     verification_requests: Mapped[list["VerificationRequest"]] = relationship(
         "VerificationRequest",
