@@ -27,9 +27,9 @@ class User(UUIDMixin, TimestampMixin, Base):
     __tablename__ = "users"
 
     # ── Identity ──────────────────────────────────────────────────────────────
-    auth_provider_uid: Mapped[str] = mapped_column(
-        String(256), unique=True, nullable=False, index=True,
-        comment="Firebase UID or Supabase UUID",
+    auth_provider_uid: Mapped[str | None] = mapped_column(
+        String(256), unique=True, nullable=True, index=True,
+        comment="Firebase UID or Supabase UUID (legacy/optional)",
     )
     role: Mapped[str] = mapped_column(
         String(20), nullable=False, index=True,
@@ -38,9 +38,9 @@ class User(UUIDMixin, TimestampMixin, Base):
 
     # ── Profile ───────────────────────────────────────────────────────────────
     name: Mapped[str] = mapped_column(String(200), nullable=False)
-    email: Mapped[str] = mapped_column(String(256), unique=True, nullable=False, index=True)
+    email: Mapped[str | None] = mapped_column(String(256), unique=True, nullable=True, index=True)
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    phone: Mapped[str] = mapped_column(String(20), nullable=False)
+    phone: Mapped[str] = mapped_column(String(20), nullable=False, unique=True, index=True)
     preference_type: Mapped[str] = mapped_column(
         String(255), nullable=False,
         comment="e.g. 'residential'",

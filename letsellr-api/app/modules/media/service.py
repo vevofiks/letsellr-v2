@@ -5,6 +5,7 @@ Service — Local Storage File Handling (Cloudflare R2 commented out)
 import os
 import uuid
 from fastapi import UploadFile, HTTPException, status
+from app.core.config import settings
 
 UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "uploads"))
 
@@ -30,7 +31,8 @@ class MediaService:
         Uploads a file to local storage and returns the public URL and key.
         """
         # Generate a unique key
-        ext = file.filename.split(".")[-1] if file.filename and "." in file.filename else "bin"
+        filename = file.filename or ""
+        ext = filename.split(".")[-1] if "." in filename else "bin"
         unique_id = str(uuid.uuid4())
         filename = f"{unique_id}.{ext}"
         key = f"{folder}/{filename}"
@@ -59,3 +61,42 @@ class MediaService:
             public_url = f"http://localhost:8000/uploads/{key}"
 
         return public_url, key
+
+    async def delete_file_by_url(self, url: str) -> bool:
+        """
+        Deletes a file from Cloudflare R2 by its public URL.
+        """
+        if not self.s3:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Cloudflare R2 is not configured on the server."
+            )
+
+        base_url = settings.R2_PUBLIC_URL.rstrip('/')
+        
+        # We need to extract the key from the url
+        # E.g. url = "https://cdn.letsellr.com/properties/uuid.jpg"
+        # base_url = "https://cdn.letsellr.com"
+        # key should be "properties/uuid.jpg"
+        
+        if not url.startswith(base_url):
+            # Not a recognized URL or doesn't match our bucket
+            return False
+
+        # Extract the key
+        key = url[len(base_url):].lstrip('/')
+        
+        if not key:
+            return False
+
+        try:
+            self.s3.delete_object(
+                Bucket=settings.R2_BUCKET_NAME,
+                Key=key
+            )
+            return True
+        except Exception as e:
+            # We don't want to necessarily crash if deletion fails, but logging would be good
+            print(f"Failed to delete {key} from R2: {str(e)}")
+            return False
+

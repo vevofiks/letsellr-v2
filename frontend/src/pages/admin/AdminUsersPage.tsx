@@ -76,13 +76,8 @@ export const AdminUsersPage: React.FC = () => {
       const payload = {
         msg_limit: Number(limitsData.msg_limit),
         reset_usage: limitsData.reset_usage || false,
-        note: limitsData.note,
+        note: limitsData.note || "System updated",
       };
-      if (!payload.note || payload.note.length < 5) {
-        toast.error("Please provide a note (min 5 characters).");
-        setActionLoading(false);
-        return;
-      }
       const updated = await adminService.updateUserLimit(selectedUser.id, payload);
       setLimitsData({ ...updated, note: "", reset_usage: false });
       toast.success("Limits updated successfully.");
@@ -975,7 +970,6 @@ export const AdminUsersPage: React.FC = () => {
                     onChange={(e) => setLimitsData({...limitsData, note: e.target.value})}
                     placeholder="e.g. Paid for standard package"
                     className="w-full border border-slate-200 rounded-lg px-3 py-2 text-sm focus:ring-[#014645]"
-                    required
                   />
                 </div>
 

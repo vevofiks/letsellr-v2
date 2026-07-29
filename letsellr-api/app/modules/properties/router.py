@@ -81,7 +81,7 @@ async def get_enquiry_link(ref: str, db: DbSession, current_user: CurrentUser):
     Increments the property's `enquiries` and `views` stat counters on each call.
     """
     service = PropertyService(db)
-    return await service.get_enquiry_link(ref)
+    return await service.get_enquiry_link(ref, current_user.id)
 
 
 @router.get("/nearby-locations", response_model=NearbyLocationsResponse)
