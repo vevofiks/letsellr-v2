@@ -77,14 +77,14 @@ def create_app() -> FastAPI:
     # ── Middleware ─────────────────────────────────────────────────────────────
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.CORS_ORIGINS,
+        allow_origins=settings.CORS_ORIGINS_STR.split(",") if settings.CORS_ORIGINS_STR else ["*"],
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
     )
 
-    if settings.ENVIRONMENT == "production":
-        app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
+    # if settings.ENVIRONMENT == "production":
+    #     app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS_STR)
 
     # ── Global Exception Handlers ──────────────────────────────────────────────
     @app.exception_handler(404)
