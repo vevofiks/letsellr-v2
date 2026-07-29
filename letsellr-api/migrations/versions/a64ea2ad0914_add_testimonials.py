@@ -34,7 +34,6 @@ def upgrade() -> None:
     op.alter_column('reviews', 'user_id',
                existing_type=sa.UUID(),
                nullable=False)
-    op.create_index(op.f('ix_reviews_user_id'), 'reviews', ['user_id'], unique=False)
     op.add_column('testimonials', sa.Column('author_name', sa.String(length=100), nullable=False))
     op.add_column('testimonials', sa.Column('author_role', sa.String(length=50), nullable=False, comment='owner, seeker, agency'))
     op.add_column('testimonials', sa.Column('author_location', sa.String(length=200), nullable=True))
@@ -91,7 +90,6 @@ def downgrade() -> None:
     op.drop_column('testimonials', 'author_location')
     op.drop_column('testimonials', 'author_role')
     op.drop_column('testimonials', 'author_name')
-    op.drop_index(op.f('ix_reviews_user_id'), table_name='reviews')
     op.alter_column('reviews', 'user_id',
                existing_type=sa.UUID(),
                nullable=True)
