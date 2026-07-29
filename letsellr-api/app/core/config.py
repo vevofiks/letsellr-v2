@@ -87,6 +87,7 @@ class Settings(BaseSettings):
     # ── CORS ─────────────────────────────────────────────────────────────
     # Stored as a raw string in .env (comma-separated); parsed by validator.
     CORS_ORIGINS_STR: str = "http://localhost:3000,http://localhost:5173"
+    ALLOWED_HOSTS_STR: str = "letsellr.com,*.letsellr.com"
 
     @field_validator("CORS_ORIGINS_STR", mode="before")
     @classmethod
@@ -96,10 +97,23 @@ class Settings(BaseSettings):
             return ",".join(v)
         return str(v)
 
+    @field_validator("ALLOWED_HOSTS_STR", mode="before")
+    @classmethod
+    def _coerce_hosts(cls, v: object) -> str:
+        """Allow list input too (e.g. from tests)."""
+        if isinstance(v, list):
+            return ",".join(v)
+        return str(v)
+
     @property
     def CORS_ORIGINS(self) -> list[str]:  # noqa: N802
         """Parsed list of allowed CORS origins."""
         return [o.strip() for o in self.CORS_ORIGINS_STR.split(",") if o.strip()]
+
+    @property
+    def ALLOWED_HOSTS(self) -> list[str]:  # noqa: N802
+        """Parsed list of allowed hosts."""
+        return [o.strip() for o in self.ALLOWED_HOSTS_STR.split(",") if o.strip()]
 
 
 @lru_cache
