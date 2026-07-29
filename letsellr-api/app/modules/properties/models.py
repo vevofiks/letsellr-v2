@@ -158,6 +158,8 @@ class Property(UUIDMixin, TimestampMixin, Base):
     availability_confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     availability_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    is_featured: Mapped[bool] = mapped_column(default=False, nullable=False)
+
     stats: Mapped[dict] = mapped_column(
         JSONB, default=lambda: {"views": 0, "enquiries": 0, "saves": 0}, nullable=False,
     )

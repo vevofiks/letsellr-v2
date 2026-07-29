@@ -60,6 +60,7 @@ class PropertyUpdate(BaseModel):
     owner_phone: Optional[str] = Field(None, max_length=20)
     owner_whatsapp: Optional[str] = Field(None, max_length=20)
     status: Optional[Literal["draft", "pending_review", "inactive", "live"]] = None
+    is_featured: Optional[bool] = None
 
 
 class StatsSchema(BaseModel):
@@ -117,6 +118,7 @@ class PropertyResponse(BaseModel):
     owner: Optional[OwnerMinimal] = None
     
     status: str
+    is_featured: bool = False
     stats: StatsSchema
     
     created_at: datetime

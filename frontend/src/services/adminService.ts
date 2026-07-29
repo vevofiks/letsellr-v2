@@ -83,6 +83,7 @@ export interface AdminProperty {
   admin_review_reason?: string | null;
   ref?: string;
   ref_code?: string;
+  is_featured?: boolean;
   created_at: string;
   photos?: (string | { photo_url: string; display_order?: number })[];
   amenities?: (string | { name: string; category?: string })[];
@@ -133,6 +134,12 @@ export const adminService = {
   // Get live properties
   getLiveProperties: async (): Promise<AdminProperty[]> => {
     const res = await api.get<AdminProperty[]>("/api/admin/properties/live");
+    return res.data;
+  },
+
+  // Toggle feature property on landing page
+  toggleFeatureProperty: async (propertyId: string): Promise<AdminProperty> => {
+    const res = await api.post<AdminProperty>(`/api/admin/properties/${propertyId}/toggle-feature`);
     return res.data;
   },
 

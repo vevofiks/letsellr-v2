@@ -31,6 +31,27 @@ router = APIRouter(tags=["Properties"])
 
 # ── Public Browse ──────────────────────────────────────────────────────────────
 
+@router.get("/featured", response_model=List[PropertyResponse])
+async def get_featured_properties(db: DbSession, limit: int = Query(8, ge=1, le=20)):
+    """
+    Public endpoint to fetch admin-featured properties for landing page showcase.
+    Orders featured properties first, followed by recent live listings.
+    """
+    from sqlalchemy import select
+    from sqlalchemy.orm import selectinload
+    from app.modules.properties.models import Property
+    
+    query = (
+        select(Property)
+        .options(selectinload(Property.owner))
+        .where(Property.status == "live")
+        .order_by(Property.is_featured.desc(), Property.created_at.desc())
+        .limit(limit)
+    )
+    result = await db.execute(query)
+    return result.scalars().all()
+
+
 @router.get("", response_model=PropertyBrowseResponse)
 async def list_properties(
     db: DbSession,

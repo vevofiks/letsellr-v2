@@ -275,6 +275,24 @@ async def reject_property(
     return {"message": "Property rejected successfully"}
 
 
+@router.post("/properties/{property_id}/toggle-feature", response_model=PropertyResponse, tags=["Admin - Properties"])
+async def toggle_feature_property(
+    property_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+):
+    """Admin toggle to feature / unfeature a property listing on the landing page."""
+    require_admin(current_user)
+    property_obj = await db.get(Property, property_id)
+    if not property_obj:
+        raise HTTPException(status_code=404, detail="Property not found")
+
+    property_obj.is_featured = not property_obj.is_featured
+    await db.commit()
+    await db.refresh(property_obj)
+    return property_obj
+
+
 @router.get("/property-types", response_model=list[PropertyTypeResponse], tags=["Admin - Property Types"])
 async def list_property_types(current_user: CurrentUser, db: DbSession):
     require_admin(current_user)
