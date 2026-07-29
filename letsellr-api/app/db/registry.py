@@ -13,5 +13,5 @@ from app.modules.properties.models import Property, PropertyType, LocationData, 
 from app.modules.chat.models import Chat, Message  # noqa: F401
 from app.modules.admin.models import VerificationRequest  # noqa: F401
 from app.modules.reviews.models import Review  # noqa: F401
-from app.modules.testimonials.models import Testimonial  # noqa: F401
+from app.modules.admin.testimonials.models import Testimonial  # noqa: F401
 from app.modules.auth.models import OTPRecord  # noqa: F401

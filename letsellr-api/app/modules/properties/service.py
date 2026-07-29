@@ -136,11 +136,11 @@ class PropertyService:
         return prop
 
 
-    async def get_enquiry_link(self, ref: str) -> EnquiryLinkResponse:
+    async def get_enquiry_link(self, ref: str, current_user_id: uuid.UUID) -> EnquiryLinkResponse:
         """
         Resolve a property ref to a WhatsApp wa.me deep-link.
 
-        Increments the property's enquiry/leads stat counter by exactly 1 on each click.
+        Increments the property's enquiry/leads stat counter by exactly 1 per unique user.
         """
         prop = await self.repo.get_by_ref(ref)
         if not prop:
@@ -158,11 +158,17 @@ class PropertyService:
         )
         wa_link = f"https://wa.me/{phone}?text={urllib.parse.quote(message)}"
 
-        # Increment enquiry & views stat by 1 only when Chat on WhatsApp is clicked
+        # Increment enquiry & views stat by 1 only when Chat on WhatsApp is clicked by a unique user
         current_stats = dict(prop.stats or {})
-        current_stats["enquiries"] = current_stats.get("enquiries", 0) + 1
-        current_stats["views"] = current_stats.get("views", 0) + 1
-        await self.repo.update(prop, {"stats": current_stats})
+        viewed_by_users = current_stats.get("viewed_by_users", [])
+        
+        user_id_str = str(current_user_id)
+        if user_id_str not in viewed_by_users:
+            viewed_by_users.append(user_id_str)
+            current_stats["viewed_by_users"] = viewed_by_users
+            current_stats["enquiries"] = current_stats.get("enquiries", 0) + 1
+            current_stats["views"] = current_stats.get("views", 0) + 1
+            await self.repo.update(prop, {"stats": current_stats})
 
         enquiry_type = "whatsapp_bot" if is_pg_or_hostel else "manual_chat"
 

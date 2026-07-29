@@ -85,6 +85,8 @@ export const OwnerPropertyFormPage: React.FC = () => {
   const [customAmenity, setCustomAmenity] = useState("");
   
   const [photos, setPhotos] = useState<string[]>([]);
+  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [newFilePreviews, setNewFilePreviews] = useState<string[]>([]);
 
   const [availabilityStatus, setAvailabilityStatus] = useState<"available" | "occupied" | "upcoming">("available");
   const [availableFrom, setAvailableFrom] = useState("");
@@ -396,52 +398,57 @@ export const OwnerPropertyFormPage: React.FC = () => {
     );
   };
 
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    if (photos.length + files.length > 10) {
+    if (photos.length + newFiles.length + files.length > 10) {
       toast.error("Maximum 10 photos allowed.");
       return;
     }
 
-    setSubmitting(true);
-    const uploadPromises = Array.from(files).map(async (file) => {
+    const validFiles: File[] = [];
+    const validPreviews: string[] = [];
+
+    Array.from(files).forEach(file => {
       if (file.size > 2 * 1024 * 1024) {
         toast.error(`${file.name} is too large. Max size is 2MB.`);
-        return null;
-      }
-
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("folder", "properties");
-
-      try {
-        const res = await api.post("/api/media/upload", formData, {
-          headers: { "Content-Type": "multipart/form-data" }
-        });
-        return res.data.url;
-      } catch (err) {
-        console.error("Upload failed for", file.name, err);
-        toast.error(`Failed to upload ${file.name}`);
-        return null;
+      } else {
+        validFiles.push(file);
+        validPreviews.push(URL.createObjectURL(file));
       }
     });
 
-    const uploadedUrls = await Promise.all(uploadPromises);
-    const validUrls = uploadedUrls.filter((url): url is string => Boolean(url));
-    
-    if (validUrls.length > 0) {
-      setPhotos((prev) => [...prev, ...validUrls]);
-      toast.success(`${validUrls.length} photo(s) uploaded successfully.`);
+    if (validFiles.length > 0) {
+      setNewFiles(prev => [...prev, ...validFiles]);
+      setNewFilePreviews(prev => [...prev, ...validPreviews]);
     }
-    setSubmitting(false);
     
     e.target.value = "";
   };
 
-  const handleRemovePhoto = (index: number) => {
+  const handleRemoveExistingPhoto = async (index: number) => {
+    const urlToRemove = photos[index];
+    
+    // Optimistically remove from UI
     setPhotos(photos.filter((_, i) => i !== index));
+
+    if (urlToRemove) {
+      try {
+        await api.post("/api/media/delete", { url: urlToRemove });
+        toast.success("Photo removed from storage.");
+      } catch (err) {
+        console.error("Failed to delete photo from storage", err);
+      }
+    }
+  };
+
+  const handleRemoveNewPhoto = (index: number) => {
+    const previewToRevoke = newFilePreviews[index];
+    if (previewToRevoke) URL.revokeObjectURL(previewToRevoke);
+    
+    setNewFiles(newFiles.filter((_, i) => i !== index));
+    setNewFilePreviews(newFilePreviews.filter((_, i) => i !== index));
   };
 
   const handleSubmitForm = async (targetStatus: "draft" | "pending_review") => {
@@ -457,7 +464,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
       toast.error("Area and City location fields are required.");
       return;
     }
-    if (photos.length === 0) {
+    if (photos.length + newFiles.length === 0) {
       toast.error("At least one photo upload is required.");
       return;
     }
@@ -466,6 +473,31 @@ export const OwnerPropertyFormPage: React.FC = () => {
 
     try {
       setSubmitting(true);
+
+      // Upload new files first
+      let uploadedUrls: string[] = [];
+      if (newFiles.length > 0) {
+        const uploadPromises = newFiles.map(async (file) => {
+          const formData = new FormData();
+          formData.append("file", file);
+          formData.append("folder", "uploads");
+          try {
+            const res = await api.post("/api/media/upload", formData, {
+              headers: { "Content-Type": "multipart/form-data" }
+            });
+            return res.data.url;
+          } catch (err) {
+            console.error("Upload failed for", file.name, err);
+            toast.error(`Failed to upload ${file.name}`);
+            return null;
+          }
+        });
+        
+        const results = await Promise.all(uploadPromises);
+        uploadedUrls = results.filter((url): url is string => Boolean(url));
+      }
+
+      const finalPhotos = [...photos, ...uploadedUrls];
 
       const payload = {
         category,
@@ -479,7 +511,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
         bathrooms: bathrooms ? Number(bathrooms) : undefined,
         furnishing,
         amenities,
-        photos,
+        photos: finalPhotos,
         extra_details: {
           availability_status: availabilityStatus,
           available_from: availableFrom || undefined
@@ -1017,20 +1049,45 @@ export const OwnerPropertyFormPage: React.FC = () => {
               </p>
             </div>
 
-            {/* Photo Previews */}
+            {/* Photo Previews (Existing) */}
             {photos.length > 0 && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {photos.map((url, idx) => (
-                  <div key={idx} className="relative group rounded-md overflow-hidden border border-slate-200 h-24">
+                  <div key={`existing-${idx}`} className="relative group rounded-md overflow-hidden border border-slate-200 h-24">
                     <img src={url} alt="" className="h-full w-full object-cover" />
                     <button
                       type="button"
-                      onClick={() => handleRemovePhoto(idx)}
+                      onClick={() => handleRemoveExistingPhoto(idx)}
                       className="absolute top-1 right-1 bg-rose-600 text-white p-1 rounded-md opacity-90 hover:opacity-100 transition-opacity border-0 cursor-pointer"
                       title="Remove Photo"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Photo Previews (New pending upload) */}
+            {newFilePreviews.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-3">
+                {newFilePreviews.map((url, idx) => (
+                  <div key={`new-${idx}`} className="relative group rounded-md overflow-hidden border border-slate-200 h-24">
+                    <img src={url} alt="" className="h-full w-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveNewPhoto(idx)}
+                      disabled={submitting}
+                      className="absolute top-1 right-1 bg-rose-600 text-white p-1 rounded-md opacity-90 hover:opacity-100 transition-opacity border-0 cursor-pointer disabled:opacity-50"
+                      title="Remove Photo"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                    {submitting && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                        <Loader2 className="h-6 w-6 text-brand-green animate-spin" />
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

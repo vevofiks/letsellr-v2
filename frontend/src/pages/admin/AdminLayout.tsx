@@ -15,6 +15,7 @@ import {
   X,
   PanelLeftClose,
   PanelLeftOpen,
+  MessageSquareQuote,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -258,6 +259,18 @@ export const AdminLayout: React.FC = () => {
               <div className="flex items-center gap-2.5">
                 <ShieldAlert className="h-4 w-4 shrink-0" />
                 {!sidebarCollapsed && <span>Reports & Flags</span>}
+              </div>
+            </Link>
+
+            <Link
+              to="/admin-platform/testimonials"
+              className={navItemClass("/admin-platform/testimonials")}
+              onClick={() => setSidebarOpen(false)}
+              title="Testimonials"
+            >
+              <div className="flex items-center gap-2.5">
+                <MessageSquareQuote className="h-4 w-4 shrink-0" />
+                {!sidebarCollapsed && <span>Testimonials</span>}
               </div>
             </Link>
           </div>

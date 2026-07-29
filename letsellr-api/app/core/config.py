@@ -51,12 +51,12 @@ class Settings(BaseSettings):
     SUPABASE_SERVICE_ROLE_KEY: str = ""
     SUPABASE_JWT_SECRET: str = ""
 
-    # ── Cloudflare R2 (Disabled — using local storage) ────────────────────────
-    # R2_ACCOUNT_ID: str = ""
-    # R2_ACCESS_KEY_ID: str = ""
-    # R2_SECRET_ACCESS_KEY: str = ""
-    # R2_BUCKET_NAME: str = "letsellr-media"
-    # R2_PUBLIC_URL: str = "https://media.letsellr.com"
+    # ── Cloudflare R2 ─────────────────────────────────────────────────────────
+    R2_ACCOUNT_ID: str = ""
+    R2_ACCESS_KEY_ID: str = ""
+    R2_SECRET_ACCESS_KEY: str = ""
+    R2_BUCKET_NAME: str = "letsellr-media"
+    R2_PUBLIC_URL: str = "https://cdn.letsellr.in"
 
     # ── SMTP (Email / OTP) ────────────────────────────────────────────────────
     SMTP_HOST: str = "smtp.gmail.com"

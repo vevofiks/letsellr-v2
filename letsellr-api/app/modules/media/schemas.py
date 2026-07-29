@@ -8,3 +8,6 @@ class MediaUploadResponse(BaseModel):
     url: str
     key: str
     message: str = "File uploaded successfully"
+
+class MediaDeleteRequest(BaseModel):
+    url: str

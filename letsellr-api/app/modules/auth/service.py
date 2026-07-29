@@ -1,26 +1,48 @@
 """
 Module: Auth
-Service — Business logic for OTP-based email authentication
+Service — Phone+WhatsApp OTP authentication (no email, no Supabase)
 
 Registration flow:
-  1. POST /auth/register    → validate email uniqueness, store pending user,
-                              generate OTP, send email
-  2. POST /auth/verify-registration → verify OTP, mark email_verified=True,
-                                       return JWT tokens
+  1. POST /auth/register        → validate phone uniqueness, cache profile,
+                                   generate OTP, send via WhatsApp
+  2. POST /auth/verify-registration → verify OTP, create user, return JWT
+
+  1. POST /auth/register/user   → seeker flow (same but role=user)
+  2. POST /auth/verify-registration → same endpoint
 
 Login flow:
-  1. POST /auth/login       → check email exists, generate OTP, send email
-  2. POST /auth/verify-login → verify OTP, return JWT tokens
+  1. POST /auth/login           → check phone exists, generate OTP, send via WhatsApp
+  2. POST /auth/verify-login    → verify OTP, return JWT
 
-Both flows share the same OTP generation + verification logic.
+Admin login:
+  POST /auth/admin/login        → phone + password (bcrypt)
+
+All JWTs are self-issued (HS256, SECRET_KEY). No Supabase dependency.
 """
 
 import logging
+import random
+import string
+from datetime import UTC, datetime, timedelta
+
+import httpx
 from fastapi import HTTPException, status
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.supabase import get_supabase_client
+from app.core.config import settings
+from app.core.security import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    hash_otp,
+    verify_otp_hash,
+    hash_password,
+    verify_password,
+)
+from app.modules.auth.models import OTPRecord
 from app.modules.auth.schemas import (
+    AdminLoginRequest,
     LoginRequest,
     MessageResponse,
     RegisterRequest,
@@ -38,14 +60,142 @@ from app.modules.users.repository import UserRepository
 
 logger = logging.getLogger(__name__)
 
-# Temporary in-memory store for pending registration data
+# In-memory pending registration store (keyed by phone)
 _pending_registrations: dict[str, RegisterRequest] = {}
 _pending_user_registrations: dict[str, UserRegisterRequest] = {}
+
+
+def _generate_otp(length: int = 6) -> str:
+    return "".join(random.choices(string.digits, k=length))
+
+
+def _normalize_phone(phone: str) -> str:
+    """Strip spaces/dashes. Keep leading + if present."""
+    return phone.strip().replace(" ", "").replace("-", "")
+
+
+async def _send_whatsapp_otp(phone: str, otp: str, purpose: str) -> None:
+    """
+    Send OTP via WhatsApp Cloud API (Meta Graph API).
+    Requires WHATSAPP_API_TOKEN and WHATSAPP_PLATFORM_NUMBER in settings.
+
+    Falls back to logging the OTP if no API token is configured (dev mode).
+    """
+    if not settings.WHATSAPP_API_TOKEN or not settings.WHATSAPP_PLATFORM_NUMBER:
+        logger.warning(
+            "[DEV MODE] WhatsApp OTP for %s (%s): %s", phone, purpose, otp
+        )
+        return
+
+    action = "registration" if purpose == "registration" else "login"
+    message = (
+        f"Your Letsellr verification code is: *{otp}*\n\n"
+        f"This code is valid for {settings.OTP_EXPIRE_MINUTES} minutes. "
+        f"Do not share it with anyone."
+    )
+
+    url = (
+        f"https://graph.facebook.com/v19.0/"
+        f"{settings.WHATSAPP_PLATFORM_NUMBER}/messages"
+    )
+    headers = {
+        "Authorization": f"Bearer {settings.WHATSAPP_API_TOKEN}",
+        "Content-Type": "application/json",
+    }
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": phone,
+        "type": "text",
+        "text": {"body": message},
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=10) as client:
+            resp = await client.post(url, headers=headers, json=payload)
+            resp.raise_for_status()
+            logger.info("WhatsApp OTP sent to %s (purpose=%s)", phone, purpose)
+    except httpx.HTTPStatusError as e:
+        logger.error(
+            "WhatsApp API error %s: %s", e.response.status_code, e.response.text
+        )
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to send WhatsApp OTP. Please try again.",
+        ) from e
+    except Exception as e:
+        logger.error("WhatsApp send error: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Failed to send WhatsApp OTP. Please try again.",
+        ) from e
+
 
 class AuthService:
     def __init__(self, db: AsyncSession) -> None:
         self.db = db
         self.repo = UserRepository(db)
+
+    # ── OTP Helpers ───────────────────────────────────────────────────────────
+
+    async def _save_otp(self, phone: str, otp: str, purpose: str) -> None:
+        """Delete any existing OTP for this phone+purpose, then save new one."""
+        await self.db.execute(
+            delete(OTPRecord).where(
+                OTPRecord.phone == phone, OTPRecord.purpose == purpose
+            )
+        )
+        expires_at = datetime.now(UTC) + timedelta(minutes=settings.OTP_EXPIRE_MINUTES)
+        record = OTPRecord(
+            phone=phone,
+            hashed_otp=hash_otp(otp),
+            purpose=purpose,
+            expires_at=expires_at,
+        )
+        self.db.add(record)
+        await self.db.flush()
+
+    async def _verify_otp(self, phone: str, otp: str, purpose: str) -> OTPRecord:
+        """Verify OTP for a phone+purpose. Returns the record on success."""
+        result = await self.db.execute(
+            select(OTPRecord).where(
+                OTPRecord.phone == phone,
+                OTPRecord.purpose == purpose,
+                OTPRecord.used == False,
+            )
+        )
+        record = result.scalar_one_or_none()
+
+        if not record:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No OTP found. Please request a new one.",
+            )
+        if record.expires_at.replace(tzinfo=UTC) < datetime.now(UTC):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="OTP has expired. Please request a new one.",
+            )
+        if not verify_otp_hash(otp, record.hashed_otp):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid OTP. Please check the code and try again.",
+            )
+
+        record.used = True
+        await self.db.execute(
+            delete(OTPRecord).where(OTPRecord.id == record.id)
+        )
+        return record
+
+    def _issue_tokens(self, user: User) -> TokenResponse:
+        """Issue self-signed JWT access + refresh tokens."""
+        access_token = create_access_token(str(user.id))
+        refresh_token = create_refresh_token(str(user.id))
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            user=UserPublic.model_validate(user),
+        )
 
     # ── Registration ─────────────────────────────────────────────────────────
 
@@ -56,158 +206,64 @@ class AuthService:
                 detail="Agencies must provide an agency_display_name.",
             )
 
-        existing = await self.repo.get_by_email(payload.email)
+        phone = _normalize_phone(payload.phone)
+        existing = await self.repo.get_by_phone(phone)
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="An account with this email already exists. Please log in.",
+                detail="An account with this phone number already exists. Please log in.",
             )
 
-        _pending_registrations[payload.email] = payload
+        otp = _generate_otp(settings.OTP_LENGTH)
+        await self._save_otp(phone, otp, "registration")
+        _pending_registrations[phone] = payload
+        await self.db.commit()
 
-        supabase = get_supabase_client()
-        try:
-            res = supabase.auth.admin.generate_link({
-                "type": "signup",
-                "email": payload.email,
-                "password": payload.password,
-                "options": {
-                    "data": {
-                        "name": payload.name,
-                        "phone": payload.phone,
-                        "role": payload.role,
-                        "location_city": payload.location_city,
-                        "location_area": payload.location_area,
-                        "preference_type": payload.preference_type,
-                    }
-                }
-            })
-            if hasattr(res, "properties") and res.properties.email_otp:
-                from app.core.email import send_otp_email
-                await send_otp_email(payload.email, res.properties.email_otp, "registration")
-            else:
-                raise Exception("Failed to retrieve OTP from Supabase.")
-        except Exception as e:
-            logger.error("Supabase sign_up error: %s", e)
-            error_str = str(e).lower()
-            if "rate limit" in error_str or "too many requests" in error_str:
-                raise HTTPException(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail="Email rate limit exceeded. Please wait a moment before trying again.",
-                ) from e
-            if "user_already_exists" in error_str or "user already registered" in error_str:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="An account with this email already exists. Please log in.",
-                ) from e
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to initiate registration. Please try again later.",
-            ) from e
+        await _send_whatsapp_otp(phone, otp, "registration")
 
-        logger.info("Supabase Registration initiated for %s", payload.email)
-        return RegisterResponse(email=payload.email)
+        logger.info("Registration OTP sent to %s (role=%s)", phone, payload.role)
+        return RegisterResponse(phone=phone)
 
     async def register_user(self, payload: UserRegisterRequest) -> RegisterResponse:
-        existing = await self.repo.get_by_email(payload.email)
+        phone = _normalize_phone(payload.phone)
+        existing = await self.repo.get_by_phone(phone)
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="An account with this email already exists. Please log in.",
+                detail="An account with this phone number already exists. Please log in.",
             )
 
-        _pending_user_registrations[payload.email] = payload
+        otp = _generate_otp(settings.OTP_LENGTH)
+        await self._save_otp(phone, otp, "registration")
+        _pending_user_registrations[phone] = payload
+        await self.db.commit()
 
-        supabase = get_supabase_client()
-        try:
-            res = supabase.auth.admin.generate_link({
-                "type": "magiclink",
-                "email": payload.email,
-            })
-            if hasattr(res, "properties") and res.properties.email_otp:
-                from app.core.email import send_otp_email
-                await send_otp_email(payload.email, res.properties.email_otp, "registration")
-            else:
-                raise Exception("Failed to retrieve OTP from Supabase.")
-        except Exception as e:
-            logger.error("Supabase user sign_up error: %s", e)
-            error_str = str(e).lower()
-            if "rate limit" in error_str or "too many requests" in error_str:
-                raise HTTPException(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail="Email rate limit exceeded. Please wait a moment before trying again.",
-                ) from e
-            if "user_already_exists" in error_str or "user already registered" in error_str:
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="An account with this email already exists. Please log in.",
-                ) from e
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to initiate registration. Please try again later.",
-            ) from e
+        await _send_whatsapp_otp(phone, otp, "registration")
 
-        logger.info("Supabase User Registration initiated for %s", payload.email)
-        return RegisterResponse(email=payload.email)
+        logger.info("Seeker registration OTP sent to %s", phone)
+        return RegisterResponse(phone=phone)
 
+    async def verify_registration(self, payload: VerifyRegistrationRequest) -> TokenResponse:
+        phone = _normalize_phone(payload.phone)
 
-    async def verify_registration(
-        self, payload: VerifyRegistrationRequest
-    ) -> TokenResponse:
-        pending = _pending_registrations.pop(payload.email, None)
-        pending_user = _pending_user_registrations.pop(payload.email, None)
-        
+        pending = _pending_registrations.pop(phone, None)
+        pending_user = _pending_user_registrations.pop(phone, None)
+
         if not pending and not pending_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Registration session expired. Please register again.",
+                detail="Registration session expired or not found. Please register again.",
             )
 
-        supabase = get_supabase_client()
-        try:
-            res = supabase.auth.verify_otp(
-                {"email": payload.email, "token": payload.otp, "type": "signup"}
-            )
-        except Exception as e:
-            try:
-                res = supabase.auth.verify_otp(
-                    {"email": payload.email, "token": payload.otp, "type": "email"}
-                )
-            except Exception:
-                if pending:
-                    _pending_registrations[payload.email] = pending
-                if pending_user:
-                    _pending_user_registrations[payload.email] = pending_user
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Invalid OTP or expired.",
-                ) from e
+        await self._verify_otp(phone, payload.otp, "registration")
 
-        if not res.user or not res.session:
-            if pending:
-                _pending_registrations[payload.email] = pending
-            if pending_user:
-                _pending_user_registrations[payload.email] = pending_user
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to retrieve user session from Supabase.",
-            )
-
-        existing = await self.repo.get_by_email(payload.email)
-        if existing:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="An account with this email already exists.",
-            )
-
+        # Build user
         if pending_user:
             user = User(
-                auth_provider_uid=res.user.id,
                 role="user",
                 name=pending_user.name,
-                email=pending_user.email,
-                email_verified=True,
-                phone=pending_user.phone,
+                phone=phone,
+                email_verified=False,
                 preference_type=pending_user.preference_type,
                 location_city=pending_user.location,
                 location_area="N/A",
@@ -216,12 +272,10 @@ class AuthService:
             )
         elif pending:
             user = User(
-                auth_provider_uid=res.user.id,
                 role=pending.role,
                 name=pending.name,
-                email=pending.email,
-                email_verified=True,
-                phone=pending.phone,
+                phone=phone,
+                email_verified=False,
                 preference_type=pending.preference_type,
                 location_city=pending.location_city,
                 location_area=pending.location_area,
@@ -242,118 +296,32 @@ class AuthService:
             )
 
         created = await self.repo.create(user)
-        
+
         if pending and pending.role == "agency":
             from app.modules.admin.models import VerificationRequest
             req = VerificationRequest(
                 user_id=created.id,
                 status="pending",
-                document_keys=[]  # Agencies can upload docs later, or just wait for admin review
+                document_keys=[],
             )
             self.db.add(req)
-            
-        await self.db.commit()
-        logger.info("User created in local DB via Supabase Auth: %s", created.email)
 
-        return TokenResponse(
-            access_token=res.session.access_token,
-            refresh_token=res.session.refresh_token,
-            user=UserPublic.model_validate(created),
-        )
+        await self.db.commit()
+        await self.db.refresh(created)
+        logger.info("User created via phone OTP: phone=%s role=%s", phone, created.role)
+
+        return self._issue_tokens(created)
 
     # ── Login ─────────────────────────────────────────────────────────────────
 
-    async def login(self, payload: LoginRequest) -> TokenResponse | MessageResponse:
-        user = await self.repo.get_by_email(payload.email)
+    async def login(self, payload: LoginRequest) -> MessageResponse:
+        phone = _normalize_phone(payload.phone)
+        user = await self.repo.get_by_phone(phone)
+
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="No account found with this email. Please register first.",
-            )
-
-        if user.status == "suspended" or user.verification_status in ("review_request", "pending"):
-            if user.verification_status in ("review_request", "unverified", "pending"):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Your account is currently under review by our admin team. You will be able to sign in once your details are verified.",
-                )
-            elif user.verification_status == "rejected":
-                reason = f": {user.verification_note}" if user.verification_note else "."
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Your account verification request was rejected{reason}",
-                )
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Your account has been suspended. Please contact support.",
-            )
-
-        supabase = get_supabase_client()
-        if payload.password:
-            try:
-                res = supabase.auth.sign_in_with_password({
-                    "email": payload.email,
-                    "password": payload.password
-                })
-            except Exception as e:
-                logger.error("Supabase login sign_in_with_password error: %s", e)
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid email or password.",
-                ) from e
-            if not res.user or not res.session:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to retrieve user session from Supabase.",
-                )
-            if not user.auth_provider_uid or user.auth_provider_uid != res.user.id:
-                user.auth_provider_uid = res.user.id
-                await self.db.commit()
-            logger.info("User logged in via Supabase password: %s", user.email)
-            return TokenResponse(
-                access_token=res.session.access_token,
-                refresh_token=res.session.refresh_token,
-                user=UserPublic.model_validate(user),
-            )
-        else:
-            try:
-                res = supabase.auth.admin.generate_link({
-                    "type": "magiclink",
-                    "email": payload.email,
-                })
-                if hasattr(res, "properties") and res.properties.email_otp:
-                    from app.core.email import send_otp_email
-                    await send_otp_email(payload.email, res.properties.email_otp, "login")
-                else:
-                    raise Exception("Failed to retrieve OTP from Supabase.")
-            except Exception as e:
-                logger.error("Supabase login magiclink error: %s", e)
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to send OTP for login. Please try again later.",
-                ) from e
-
-            logger.info("OTP sent for login: %s", user.email)
-            return MessageResponse(message="OTP sent to your email. Please verify to log in.")
-
-    async def admin_login(self, payload: LoginRequest) -> TokenResponse | MessageResponse:
-        user = await self.repo.get_by_email(payload.email)
-        if not user:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="No account found with this email.",
-            )
-
-        if user.role != "admin":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied. Account is not authorized for Administrator access.",
-            )
-
-        if user.status == "pending":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Your account is currently under review by our administrators. You will be notified once approved.",
+                detail="No account found with this phone number. Please register first.",
             )
 
         if user.status == "suspended":
@@ -361,202 +329,117 @@ class AuthService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Your account has been suspended. Please contact support.",
             )
-
-        supabase = get_supabase_client()
-        if payload.password:
-            try:
-                res = supabase.auth.sign_in_with_password({
-                    "email": payload.email,
-                    "password": payload.password
-                })
-            except Exception as e:
-                logger.error("Supabase admin login error: %s", e)
+        if user.verification_status in ("review_request", "pending", "unverified"):
+            if user.role in ("owner", "agency"):
                 raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid email or password.",
-                ) from e
-            if not res.user or not res.session:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to retrieve user session from Supabase.",
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Your account is currently under review. You will be able to sign in once verified.",
                 )
-            if not user.auth_provider_uid or user.auth_provider_uid != res.user.id:
-                user.auth_provider_uid = res.user.id
-                await self.db.commit()
-            logger.info("Admin logged in via Supabase password: %s", user.email)
-            return TokenResponse(
-                access_token=res.session.access_token,
-                refresh_token=res.session.refresh_token,
-                user=UserPublic.model_validate(user),
-            )
-        else:
-            try:
-                res = supabase.auth.admin.generate_link({
-                    "type": "magiclink",
-                    "email": payload.email,
-                })
-                if hasattr(res, "properties") and res.properties.email_otp:
-                    from app.core.email import send_otp_email
-                    await send_otp_email(payload.email, res.properties.email_otp, "login")
-                else:
-                    raise Exception("Failed to retrieve OTP from Supabase.")
-            except Exception as e:
-                logger.error("Supabase admin login magiclink error: %s", e)
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to send OTP for login. Please try again later.",
-                ) from e
 
-            logger.info("OTP sent for admin login: %s", user.email)
-            return MessageResponse(message="OTP sent to your email. Please verify to log in.")
+        otp = _generate_otp(settings.OTP_LENGTH)
+        await self._save_otp(phone, otp, "login")
+        await self.db.commit()
+
+        await _send_whatsapp_otp(phone, otp, "login")
+
+        logger.info("Login OTP sent to %s", phone)
+        return MessageResponse(message="OTP sent to your WhatsApp. Please verify to log in.")
+
+    async def admin_login(self, payload: AdminLoginRequest) -> TokenResponse:
+        phone = _normalize_phone(payload.phone)
+        user = await self.repo.get_by_phone(phone)
+
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No account found with this phone number.",
+            )
+        if user.role != "admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied. Account is not authorized for Administrator access.",
+            )
+        if user.status == "suspended":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account has been suspended. Please contact support.",
+            )
+
+        # Admin accounts use password (stored as bcrypt hash in auth_provider_uid field
+        # or a dedicated password column; here we use a simple approach)
+        if not user.auth_provider_uid or not verify_password(payload.password, user.auth_provider_uid):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid phone number or password.",
+            )
+
+        logger.info("Admin logged in: phone=%s", phone)
+        return self._issue_tokens(user)
 
     async def verify_login(self, payload: VerifyLoginRequest) -> TokenResponse:
-        supabase = get_supabase_client()
-        try:
-            res = supabase.auth.verify_otp(
-                {"email": payload.email, "token": payload.otp, "type": "email"}
-            )
-        except Exception as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid OTP. Please check the code and try again.",
-            ) from e
+        phone = _normalize_phone(payload.phone)
+        await self._verify_otp(phone, payload.otp, "login")
 
-        if not res.user or not res.session:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to retrieve user session from Supabase.",
-            )
-
-        user = await self.repo.get_by_provider_uid(res.user.id)
+        user = await self.repo.get_by_phone(phone)
         if not user:
-            user = await self.repo.get_by_email(payload.email)
-            if not user:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Account not found in local database.",
-                )
-            
-            user.auth_provider_uid = res.user.id
-            await self.db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Account not found.",
+            )
 
-        logger.info("User logged in via Supabase: %s", user.email)
-        
-        return TokenResponse(
-            access_token=res.session.access_token,
-            refresh_token=res.session.refresh_token,
-            user=UserPublic.model_validate(user),
-        )
+        logger.info("User verified login: phone=%s", phone)
+        return self._issue_tokens(user)
 
     # ── Resend OTP ────────────────────────────────────────────────────────────
 
     async def resend_otp(self, payload: ResendOTPRequest) -> MessageResponse:
+        phone = _normalize_phone(payload.phone)
+
         if payload.purpose == "login":
-            user = await self.repo.get_by_email(payload.email)
+            user = await self.repo.get_by_phone(phone)
             if not user:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="No account found with this email.",
+                    detail="No account found with this phone number.",
                 )
         else:
-            if payload.email not in _pending_registrations and payload.email not in _pending_user_registrations:
+            if phone not in _pending_registrations and phone not in _pending_user_registrations:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="No pending registration found. Please register again.",
                 )
 
-        supabase = get_supabase_client()
-        try:
-            if payload.purpose == "registration":
-                pending = _pending_registrations.get(payload.email) or _pending_user_registrations.get(payload.email)
-                if not pending:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="No pending registration found. Please register again.",
-                    )
-            
-                if hasattr(pending, "password") and pending.password:
-                    res = supabase.auth.admin.generate_link({
-                        "type": "signup",
-                        "email": payload.email,
-                        "password": pending.password,
-                    })
-                else:
-                    res = supabase.auth.admin.generate_link({
-                        "type": "magiclink",
-                        "email": payload.email,
-                    })
-            else:
-                res = supabase.auth.admin.generate_link({
-                    "type": "magiclink",
-                    "email": payload.email,
-                })
+        otp = _generate_otp(settings.OTP_LENGTH)
+        await self._save_otp(phone, otp, payload.purpose)
+        await self.db.commit()
 
-            if hasattr(res, "properties") and res.properties.email_otp:
-                from app.core.email import send_otp_email
-                await send_otp_email(payload.email, res.properties.email_otp, payload.purpose)
-            else:
-                raise Exception("Failed to retrieve OTP from Supabase.")
-        except Exception as e:
-            logger.error("Supabase resend_otp error: %s", e)
-            error_str = str(e).lower()
-            if "rate limit" in error_str or "too many requests" in error_str:
-                raise HTTPException(
-                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                    detail="Email rate limit exceeded. Please wait a moment before trying again.",
-                ) from e
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to send OTP. Please try again later.",
-            ) from e
-            
-        return MessageResponse(message="A new OTP has been sent to your email.")
+        await _send_whatsapp_otp(phone, otp, payload.purpose)
+        return MessageResponse(message="A new OTP has been sent to your WhatsApp.")
 
     # ── Token Refresh ─────────────────────────────────────────────────────────
 
-    async def refresh_token(
-        self, payload: RefreshTokenRequest
-    ) -> TokenResponse:
-        """Verify refresh token against Supabase and return fresh access/refresh tokens."""
-        supabase = get_supabase_client()
+    async def refresh_token(self, payload: RefreshTokenRequest) -> TokenResponse:
+        """Verify our own refresh token and issue new access+refresh tokens."""
         try:
-            # refresh_session is synchronous in supabase-py
-            res = supabase.auth.refresh_session(payload.refresh_token)
+            data = decode_token(payload.refresh_token)
         except Exception as e:
-            logger.error("Supabase refresh_token error: %s", e)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid or expired refresh token. Please log in again.",
             ) from e
 
-        if not res.user or not res.session:
+        if data.get("type") != "refresh":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Failed to refresh session from Supabase.",
+                detail="Invalid token type.",
             )
 
-        user = await self.repo.get_by_provider_uid(res.user.id)
+        user = await self.repo.get_by_id(data["sub"])
         if not user:
-            if not res.user.email:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Account not found in local database.",
-                )
-            user = await self.repo.get_by_email(res.user.email)
-            if not user:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Account not found in local database.",
-                )
-            
-            user.auth_provider_uid = res.user.id
-            await self.db.commit()
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Account not found.",
+            )
 
-        logger.info("User session refreshed via Supabase: %s", user.email)
-        
-        return TokenResponse(
-            access_token=res.session.access_token,
-            refresh_token=res.session.refresh_token,
-            user=UserPublic.model_validate(user),
-        )
-
+        logger.info("Token refreshed for user %s", user.id)
+        return self._issue_tokens(user)

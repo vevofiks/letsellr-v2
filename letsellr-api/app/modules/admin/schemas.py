@@ -114,6 +114,6 @@ class UserLimitResponse(BaseModel):
 class UserLimitUpdate(BaseModel):
     msg_limit: int
     reset_usage: bool = False
-    note: str
+    note: str = ""
     payment_ref: str | None = None
 

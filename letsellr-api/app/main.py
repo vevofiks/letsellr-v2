@@ -40,6 +40,8 @@ from app.modules.admin.router import router as admin_router
 from app.modules.media.router import router as media_router
 from app.modules.webhooks.router import router as webhooks_router
 from app.modules.reviews.router import router as reviews_router
+from app.modules.admin.testimonials.router import admin_router as admin_testimonials_router
+from app.modules.admin.testimonials.router import public_router as public_testimonials_router
 
 
 # ── Lifespan (startup / shutdown) ─────────────────────────────────────────────
@@ -115,6 +117,10 @@ def create_app() -> FastAPI:
     upload_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "uploads"))
     os.makedirs(upload_dir, exist_ok=True)
     app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
+
+    app.include_router(reviews_router,    prefix=api_prefix)
+    app.include_router(public_testimonials_router, prefix=f"{api_prefix}/testimonials", tags=["Testimonials"])
+    app.include_router(admin_testimonials_router, prefix=f"{api_prefix}/admin/testimonials", tags=["Admin Testimonials"])
 
     return app
 

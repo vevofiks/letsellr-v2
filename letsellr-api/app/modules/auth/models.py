@@ -1,16 +1,15 @@
 """
 Module: Auth
-OTP Model — stores hashed OTPs for email verification
+OTP Model — stores hashed OTPs for phone-based WhatsApp verification
 
 One row per pending OTP. Rows are deleted after successful verification
-or replaced on resend (upsert by email).
+or replaced on resend (upsert by phone).
 """
 
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, func
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Boolean, DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, UUIDMixin
@@ -18,20 +17,20 @@ from app.db.base import Base, UUIDMixin
 
 class OTPRecord(UUIDMixin, Base):
     """
-    Stores a hashed OTP for a given email address.
+    Stores a hashed OTP for a given phone number.
     - Created on send-otp (login or registration).
     - Deleted on successful verification.
-    - Replaced if a new OTP is requested for the same email.
+    - Replaced if a new OTP is requested for the same phone.
     """
     __tablename__ = "otp_records"
 
-    email: Mapped[str] = mapped_column(
-        String(256), nullable=False, index=True,
-        comment="Target email address",
+    phone: Mapped[str] = mapped_column(
+        String(20), nullable=False, index=True,
+        comment="Target phone number (E.164 format preferred)",
     )
     hashed_otp: Mapped[str] = mapped_column(
         String(256), nullable=False,
-        comment="bcrypt hash of the 6-digit OTP",
+        comment="HMAC-SHA256 hash of the 6-digit OTP",
     )
     purpose: Mapped[str] = mapped_column(
         String(20), nullable=False, default="login",
@@ -48,4 +47,4 @@ class OTPRecord(UUIDMixin, Base):
     )
 
     def __repr__(self) -> str:
-        return f"<OTPRecord email={self.email} purpose={self.purpose} expires_at={self.expires_at}>"
+        return f"<OTPRecord phone={self.phone} purpose={self.purpose} expires_at={self.expires_at}>"

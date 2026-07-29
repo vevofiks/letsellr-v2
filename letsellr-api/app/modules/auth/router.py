@@ -1,25 +1,33 @@
 """
 Module: Auth
-Router — Email OTP authentication endpoints
+Router — Phone + WhatsApp OTP authentication endpoints
 
 Registration flow:
-  POST /api/auth/register              → send OTP to email
+  POST /api/auth/register              → send OTP to WhatsApp (owners/agencies)
+  POST /api/auth/register/user         → send OTP to WhatsApp (seekers)
   POST /api/auth/verify-registration   → verify OTP, create account, return JWT
 
 Login flow:
-  POST /api/auth/login                 → send OTP to existing email
+  POST /api/auth/login                 → send OTP to existing phone via WhatsApp
   POST /api/auth/verify-login          → verify OTP, return JWT
 
+Admin login:
+  POST /api/auth/admin/login           → phone + password → JWT (no OTP)
+
 Utility:
-  POST /api/auth/resend-otp            → resend OTP for login or registration
+  POST /api/auth/resend-otp            → resend OTP
+  POST /api/auth/refresh               → exchange refresh token for new tokens
   GET  /api/auth/me                    → return current user (requires JWT)
 """
+
+from typing import Optional, Union
 
 from fastapi import APIRouter
 
 from app.depends.auth import CurrentUser
 from app.depends.db import DbSession
 from app.modules.auth.schemas import (
+    AdminLoginRequest,
     LoginRequest,
     MessageResponse,
     RegisterRequest,
@@ -43,43 +51,42 @@ router = APIRouter()
     "/register",
     response_model=RegisterResponse,
     status_code=202,
-    summary="Start registration for owners/agencies — sends OTP to email",
+    summary="Start registration for owners/agencies — sends OTP via WhatsApp",
 )
 async def register(payload: RegisterRequest, db: DbSession) -> RegisterResponse:
     """
     **Step 1 of registration for owners/agencies.**
 
-    Validates the email is unique, caches the profile data,
-    and sends a 6-digit OTP to the provided email address.
+    Validates the phone is unique, caches the profile data,
+    and sends a 6-digit OTP to the provided phone via WhatsApp.
 
     The account is **not created** until the OTP is verified.
     """
     service = AuthService(db)
     return await service.register(payload)
 
+
 @router.post(
     "/register/user",
     response_model=RegisterResponse,
     status_code=202,
-    summary="Start registration for normal users — sends OTP to email",
+    summary="Start registration for seekers — sends OTP via WhatsApp",
 )
 async def register_user(payload: UserRegisterRequest, db: DbSession) -> RegisterResponse:
     """
-    **Step 1 of registration for normal users/seekers.**
+    **Step 1 of registration for seekers.**
 
-    Captures simple user profile data (name, email, phone, location)
-    and sends a 6-digit OTP to the provided email address via Supabase.
+    Captures simple user profile data and sends a 6-digit OTP via WhatsApp.
     """
     service = AuthService(db)
     return await service.register_user(payload)
-
 
 
 @router.post(
     "/verify-registration",
     response_model=TokenResponse,
     status_code=201,
-    summary="Complete registration — verify OTP",
+    summary="Complete registration — verify WhatsApp OTP",
 )
 async def verify_registration(
     payload: VerifyRegistrationRequest, db: DbSession
@@ -87,7 +94,7 @@ async def verify_registration(
     """
     **Step 2 of registration.**
 
-    Verifies the OTP sent to the user's email.
+    Verifies the OTP sent to the user's WhatsApp.
     On success: creates the user account and returns JWT access + refresh tokens.
     """
     service = AuthService(db)
@@ -96,18 +103,16 @@ async def verify_registration(
 
 # ── Login ─────────────────────────────────────────────────────────────────────
 
-from typing import Union
-
 @router.post(
     "/login",
-    response_model=Union[TokenResponse, MessageResponse],
-    summary="Sign in with email and optional password",
+    response_model=MessageResponse,
+    summary="Sign in — sends OTP via WhatsApp",
 )
-async def login(payload: LoginRequest, db: DbSession) -> Union[TokenResponse, MessageResponse]:
+async def login(payload: LoginRequest, db: DbSession) -> MessageResponse:
     """
-    **Login flow.**
+    **Step 1 of login.**
 
-    If password is provided, signs in directly. Otherwise, sends OTP.
+    Looks up the user by phone, then sends a 6-digit OTP via WhatsApp.
     """
     service = AuthService(db)
     return await service.login(payload)
@@ -115,14 +120,14 @@ async def login(payload: LoginRequest, db: DbSession) -> Union[TokenResponse, Me
 
 @router.post(
     "/admin/login",
-    response_model=Union[TokenResponse, MessageResponse],
-    summary="Sign in to Admin portal (Admin role required)",
+    response_model=TokenResponse,
+    summary="Admin login — phone + password",
 )
-async def admin_login(payload: LoginRequest, db: DbSession) -> Union[TokenResponse, MessageResponse]:
+async def admin_login(payload: AdminLoginRequest, db: DbSession) -> TokenResponse:
     """
-    **Admin Login flow.**
+    **Admin login via phone + password.**
 
-    Authenticates administrator accounts. Rejects non-admin accounts prior to issuing tokens.
+    No OTP required for admin accounts — direct password verification.
     """
     service = AuthService(db)
     return await service.admin_login(payload)
@@ -131,13 +136,13 @@ async def admin_login(payload: LoginRequest, db: DbSession) -> Union[TokenRespon
 @router.post(
     "/verify-login",
     response_model=TokenResponse,
-    summary="Complete login — verify OTP",
+    summary="Complete login — verify WhatsApp OTP",
 )
 async def verify_login(payload: VerifyLoginRequest, db: DbSession) -> TokenResponse:
     """
     **Step 2 of login.**
 
-    Verifies the OTP. On success returns JWT access + refresh tokens.
+    Verifies the WhatsApp OTP. On success returns JWT access + refresh tokens.
     """
     service = AuthService(db)
     return await service.verify_login(payload)
@@ -148,10 +153,10 @@ async def verify_login(payload: VerifyLoginRequest, db: DbSession) -> TokenRespo
 @router.post(
     "/resend-otp",
     response_model=MessageResponse,
-    summary="Resend OTP",
+    summary="Resend OTP via WhatsApp",
 )
 async def resend_otp(payload: ResendOTPRequest, db: DbSession) -> MessageResponse:
-    """Resend a fresh OTP for login or registration. Invalidates any previous OTP."""
+    """Resend a fresh OTP to WhatsApp for login or registration. Invalidates any previous OTP."""
     service = AuthService(db)
     return await service.resend_otp(payload)
 
@@ -167,8 +172,6 @@ async def refresh_token(payload: RefreshTokenRequest, db: DbSession) -> TokenRes
     return await service.refresh_token(payload)
 
 
-from typing import Optional
-
 @router.get(
     "/me",
     response_model=UserPublic,
@@ -179,7 +182,7 @@ async def get_me(
     db: DbSession,
     phone: Optional[str] = None,
 ) -> UserPublic:
-    """Return the currently authenticated user's profile. Requires a valid JWT or service key."""
+    """Return the currently authenticated user's profile. Requires a valid JWT."""
     if phone and current_user.role == "admin":
         from app.modules.users.repository import UserRepository
         repo = UserRepository(db)
@@ -191,12 +194,11 @@ async def get_me(
             user = await repo.get_by_phone(clean_phone[-10:])
         if user:
             return UserPublic.model_validate(user)
-        # If user not found in DB by phone, return synthetic user with phone
         return UserPublic(
             id=current_user.id,
             role="user",
             name="Valued Customer",
-            email="",
+            email=None,
             email_verified=False,
             phone=clean_phone,
             preference_type="buy",
@@ -255,4 +257,3 @@ async def increment_usage(
         msg_limit=3,
         msg_usage=1
     )
-
