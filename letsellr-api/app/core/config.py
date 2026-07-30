@@ -75,6 +75,8 @@ class Settings(BaseSettings):
     WHATSAPP_PLATFORM_NUMBER: str = ""
     WHATSAPP_API_TOKEN: str = ""
     WHATSAPP_WEBHOOK_VERIFY_TOKEN: str = ""
+    OPENWA_GATEWAY_URL: str = "https://letsellr-wa.letsellr.app"
+    OPENWA_API_KEY: str = "owa_k1_ba3eb5862ab5707e681bf5f5b06ce5fce96172f5da2ba9211a54da94116d9fc9"
     FREE_CONTACT_LIMIT: int = 3
 
     # ── Server-to-Server Auth (n8n) ───────────────────────────────────────────

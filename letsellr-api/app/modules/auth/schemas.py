@@ -14,20 +14,23 @@ from pydantic import BaseModel, Field
 class UserRegisterRequest(BaseModel):
     """Registration payload for normal users/seekers (phone-based)."""
     name: str = Field(..., min_length=2, max_length=200)
+    email: Optional[str] = None
     phone: str = Field(..., min_length=7, max_length=20)
     preference_type: str = Field(..., min_length=1)
     location: str = Field(..., min_length=2, max_length=200)
-    password: str = Field(..., min_length=6, max_length=100)
+    pin: str = Field(..., min_length=4, max_length=4, pattern="^[0-9]{4}$")
 
 
 class RegisterRequest(BaseModel):
     """Step 1 of registration for owners/agencies: collect profile, trigger WhatsApp OTP."""
     role: Literal["owner", "agency"]
     name: str = Field(..., min_length=2, max_length=200)
+    email: Optional[str] = None
     phone: str = Field(..., min_length=7, max_length=20)
     preference_type: str = Field(..., min_length=1)
     location_city: str = Field(..., min_length=2, max_length=100)
     location_area: str = Field(..., min_length=2, max_length=200)
+    pin: str = Field(..., min_length=4, max_length=4, pattern="^[0-9]{4}$")
 
     # Agency-only (optional for owners)
     agency_display_name: str | None = None
@@ -44,8 +47,9 @@ class VerifyRegistrationRequest(BaseModel):
 # ── Login ─────────────────────────────────────────────────────────────────────
 
 class LoginRequest(BaseModel):
-    """Sign in using phone number — sends WhatsApp OTP."""
+    """Sign in using phone number + 4-digit PIN."""
     phone: str = Field(..., min_length=7, max_length=20)
+    pin: str = Field(..., min_length=4, max_length=4, pattern="^[0-9]{4}$")
 
 
 class VerifyLoginRequest(BaseModel):

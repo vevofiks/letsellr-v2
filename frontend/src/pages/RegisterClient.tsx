@@ -27,9 +27,9 @@ export const RegisterClient: React.FC = () => {
   const onSubmit = async (data: ClientRegisterInput) => {
     try {
       await registerClient(data);
-      toast.success("OTP sent to your email!");
+      toast.success("OTP sent to your WhatsApp!");
       navigate("/verify-otp", {
-        state: { email: data.email, purpose: "registration" },
+        state: { phone: data.phone, purpose: "registration" },
       });
     } catch (err: any) {
       console.error(err);
@@ -93,10 +93,10 @@ export const RegisterClient: React.FC = () => {
                 )}
               </div>
 
-              {/* Email Address */}
+              {/* Email Address (Optional) */}
               <div className="space-y-1.5 text-left">
                 <label htmlFor="email" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
-                  Email Address
+                  Email Address <span className="text-slate-400 font-normal lowercase">(optional)</span>
                 </label>
                 <input
                   id="email"
@@ -127,6 +127,25 @@ export const RegisterClient: React.FC = () => {
                 )}
               </div>
 
+              {/* 4-Digit Security PIN */}
+              <div className="space-y-1.5 text-left">
+                <label htmlFor="pin" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                  Set 4-Digit Security PIN
+                </label>
+                <input
+                  id="pin"
+                  type="password"
+                  maxLength={4}
+                  inputMode="numeric"
+                  placeholder="e.g. 1234"
+                  {...register("pin")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+                />
+                {errors.pin && (
+                  <p className="text-xs text-rose-600 font-medium text-left">{errors.pin.message}</p>
+                )}
+              </div>
+
               {/* Preference Type */}
               <div className="space-y-1.5 text-left">
                 <label htmlFor="preference_type" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
@@ -148,7 +167,7 @@ export const RegisterClient: React.FC = () => {
               </div>
 
               {/* Target Location */}
-              <div className="sm:col-span-2 space-y-1.5 text-left">
+              <div className="space-y-1.5 text-left">
                 <label htmlFor="location" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
                   Target Location / City
                 </label>

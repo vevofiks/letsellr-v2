@@ -105,14 +105,14 @@ async def verify_registration(
 
 @router.post(
     "/login",
-    response_model=MessageResponse,
-    summary="Sign in — sends OTP via WhatsApp",
+    response_model=TokenResponse,
+    summary="Sign in — phone + 4-digit PIN",
 )
-async def login(payload: LoginRequest, db: DbSession) -> MessageResponse:
+async def login(payload: LoginRequest, db: DbSession) -> TokenResponse:
     """
-    **Step 1 of login.**
+    **Login via Phone Number + 4-digit PIN.**
 
-    Looks up the user by phone, then sends a 6-digit OTP via WhatsApp.
+    Validates credentials and returns JWT access + refresh tokens directly.
     """
     service = AuthService(db)
     return await service.login(payload)

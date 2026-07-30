@@ -14,7 +14,7 @@ export const VerifyOTP: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const email = location.state?.email;
+  const phone = location.state?.phone || location.state?.email;
   const purpose = location.state?.purpose; // "login" or "registration"
 
   const [otp, setOtp] = useState("");
@@ -24,11 +24,11 @@ export const VerifyOTP: React.FC = () => {
 
   // If state is missing, redirect back to login
   useEffect(() => {
-    if (!email || !purpose) {
+    if (!phone || !purpose) {
       toast.error("Invalid session. Please start again.");
       navigate("/login");
     }
-  }, [email, purpose, navigate]);
+  }, [phone, purpose, navigate]);
 
   // Handle OTP countdown timer
   useEffect(() => {
@@ -42,9 +42,9 @@ export const VerifyOTP: React.FC = () => {
     setLoading(true);
     try {
       if (purpose === "registration") {
-        await verifyRegistration(email, code);
+        await verifyRegistration(phone, code);
       } else {
-        await verifyLogin(email, code);
+        await verifyLogin(phone, code);
       }
       toast.success("Authentication successful!");
     } catch (err: any) {
@@ -82,10 +82,10 @@ export const VerifyOTP: React.FC = () => {
     setResending(true);
     try {
       await api.post("/api/auth/resend-otp", {
-        email,
+        phone,
         purpose: purpose === "registration" ? "registration" : "login",
       });
-      toast.success("A new code was sent to your email!");
+      toast.success("A new code was sent to your WhatsApp!");
       setCountdown(60);
     } catch (err: any) {
       console.error(err);
@@ -95,7 +95,7 @@ export const VerifyOTP: React.FC = () => {
     }
   };
 
-  if (!email || !purpose) return null;
+  if (!phone || !purpose) return null;
 
   return (
     <div className="min-h-screen w-full flex flex-col justify-center items-center bg-slate-50 font-sans text-slate-900 px-4 py-6 sm:py-10 overflow-y-auto">
@@ -131,8 +131,8 @@ export const VerifyOTP: React.FC = () => {
               Verify Your Identity
             </h1>
             <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed -mt-4!">
-              We sent a verification passcode to <br />
-              <span className="font-bold text-slate-800">{email}</span>
+              We sent a WhatsApp verification passcode to <br />
+              <span className="font-bold text-slate-800">{phone}</span>
             </p>
           </div>
 

@@ -21,85 +21,32 @@ const phoneSchema = z
   .regex(/^\+?[0-9](?!.*\s{2,})[0-9\s\-]*$/, "Invalid phone number format.")
   .trim();
 
-const emailSchema = z
+// Optional email schema for registration forms
+const optionalEmailSchema = z
   .string()
-  .min(1, "Email is required")
-  .email("Invalid email address")
-  .toLowerCase()
-  .trim()
+  .optional()
+  .or(z.literal(""))
   .refine((val) => {
-    const domain = val.split("@")[1];
-    if (!domain) return false;
-
-    // 1. Block known disposable email domains
-    const disposableDomains = [
-      "mailinator.com",
-      "tempmail.com",
-      "dispostable.com",
-      "10minutemail.com",
-      "guerrillamail.com",
-      "sharklasers.com",
-      "getnada.com",
-      "boun.cr",
-      // "yopmail.com",
-      "maildrop.cc",
-    ];
-    if (disposableDomains.some((d) => domain.includes(d))) {
-      return false;
-    }
-
-    // 2. Allow common personal email providers
-    const majorProviders = [
-      "gmail.com",
-      "outlook.com",
-      "yahoo.com",
-      "hotmail.com",
-      "icloud.com",
-      "aol.com",
-      "zoho.com",
-      "protonmail.com",
-      "proton.me",
-      "live.com",
-      "yandex.com",
-      "mail.com",
-      "gmx.com",
-      "msn.com",
-    ];
-    if (majorProviders.includes(domain)) {
-      return true;
-    }
-
-    // 3. Verify corporate domain suffixes/TLDs
-    const standardTldRegex =
-      /\.(com|org|net|edu|gov|co|io|in|uk|ae|us|me|dev|tech|ai|biz|ca|au|fr|de)$/;
-    if (!standardTldRegex.test(domain)) {
-      return false;
-    }
-
-    // No auto-generated or suspicious random domains
-    const cleanDomainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.[a-zA-Z]{2,6}$/;
-    return cleanDomainRegex.test(domain);
-  }, "Use a trusted/verified email provider.");
+    if (!val || val.trim() === "") return true;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+  }, "Invalid email format");
 
 const locationSchema = strictTextSchema("Location", 2, 200);
 
-const passwordSchema = z
+const pinSchema = z
   .string()
-  .min(8, "Must be at least 8 characters")
-  .max(100, "Must be at most 100 characters")
-  .regex(/[A-Z]/, "Requires an uppercase letter")
-  .regex(/[a-z]/, "Requires a lowercase letter")
-  .regex(/[0-9]/, "Requires a number")
-  .regex(/[^A-Za-z0-9]/, "Requires a special character");
+  .length(4, "PIN must be exactly 4 digits")
+  .regex(/^[0-9]{4}$/, "PIN must contain only numbers");
 
 // ── Client / Seeker Registration Schema ──────────────────────────────────────
 export const clientRegisterSchema = z
   .object({
     name: nameSchema,
-    email: emailSchema,
+    email: optionalEmailSchema,
     phone: phoneSchema,
     preference_type: z.string().min(1, "Please select a preference type"),
     location: locationSchema,
+    pin: pinSchema,
   });
 
 export type ClientRegisterInput = z.infer<typeof clientRegisterSchema>;
@@ -109,13 +56,13 @@ export const ownerAgencyRegisterSchema = z
   .object({
     role: z.enum(["owner", "agency"]),
     name: nameSchema,
-    email: emailSchema,
+    email: optionalEmailSchema,
     phone: phoneSchema,
     preference_type: z.string().min(1, "Please select a preference type"),
     location_city: strictTextSchema("City", 2, 100),
     location_area: strictTextSchema("Area", 2, 200),
-    password: passwordSchema,
-    confirm_password: z.string().min(8, "Confirm password is required"),
+    pin: pinSchema,
+    confirm_pin: z.string().min(4, "Confirm PIN is required"),
 
     // Agency-only fields
     agency_display_name: z.string().optional(),
@@ -145,11 +92,11 @@ export const ownerAgencyRegisterSchema = z
         });
       }
     }
-    if (data.password !== data.confirm_password) {
+    if (data.pin !== data.confirm_pin) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ["confirm_password"],
-        message: "Passwords do not match",
+        path: ["confirm_pin"],
+        message: "PINs do not match",
       });
     }
   });
@@ -158,8 +105,8 @@ export type OwnerAgencyRegisterInput = z.infer<typeof ownerAgencyRegisterSchema>
 
 // ── Login Schema ─────────────────────────────────────────────────────────────
 export const loginSchema = z.object({
-  email: emailSchema,
-  password: z.string().optional(),
+  phone: phoneSchema,
+  pin: pinSchema,
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

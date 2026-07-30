@@ -17,6 +17,7 @@ import {
   UserPlus,
   LogIn,
   ArrowRight,
+  Phone,
 } from "lucide-react";
 import {
   InputOTP,
@@ -32,11 +33,11 @@ interface AuthModalProps {
 
 // ── OTP Step (shared) ────────────────────────────────────────────────────────
 const OTPStep: React.FC<{
-  email: string;
+  phone: string;
   purpose: "registration" | "login";
   onSuccess: () => void;
   onBack: () => void;
-}> = ({ email, purpose, onSuccess, onBack }) => {
+}> = ({ phone, purpose, onSuccess, onBack }) => {
   const { verifyLogin, verifyRegistration, user } = useAuth();
   const navigate = useNavigate();
   const [otp, setOtp] = useState("");
@@ -65,9 +66,9 @@ const OTPStep: React.FC<{
     setLoading(true);
     try {
       if (purpose === "registration") {
-        await verifyRegistration(email, code);
+        await verifyRegistration(phone, code);
       } else {
-        await verifyLogin(email, code);
+        await verifyLogin(phone, code);
       }
       toast.success("Authentication successful!");
       onSuccess();
@@ -81,10 +82,10 @@ const OTPStep: React.FC<{
     setResending(true);
     try {
       await api.post("/api/auth/resend-otp", {
-        email,
+        phone,
         purpose: purpose === "registration" ? "registration" : "login",
       });
-      toast.success("New code sent!");
+      toast.success("New code sent to WhatsApp!");
       setCountdown(60);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || "Failed to resend code.");
@@ -103,8 +104,8 @@ const OTPStep: React.FC<{
       <div className="space-y-1">
         <h3 className="text-xl font-extrabold text-slate-900 m-0">Verify Your Identity</h3>
         <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
-          We sent a 6-digit passcode to{" "}
-          <span className="font-bold text-slate-800">{email}</span>
+          We sent a WhatsApp passcode to{" "}
+          <span className="font-bold text-slate-800">{phone}</span>
         </p>
       </div>
 
@@ -186,7 +187,7 @@ const OTPStep: React.FC<{
 
 // ── Register Client Step ─────────────────────────────────────────────────────
 const RegisterClientStep: React.FC<{
-  onSent: (email: string) => void;
+  onSent: (phone: string) => void;
   onSwitchToLogin: () => void;
 }> = ({ onSent, onSwitchToLogin }) => {
   const { registerClient } = useAuth();
@@ -203,8 +204,8 @@ const RegisterClientStep: React.FC<{
   const onSubmit = async (data: ClientRegisterInput) => {
     try {
       await registerClient(data);
-      toast.success("OTP sent to your email!");
-      onSent(data.email);
+      toast.success("OTP sent to your WhatsApp!");
+      onSent(data.phone);
     } catch (err: any) {
       toast.error(err.response?.data?.detail || "Registration failed. Please try again.");
     }
@@ -240,7 +241,9 @@ const RegisterClientStep: React.FC<{
 
           {/* Email */}
           <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Email Address</label>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
+              Email Address <span className="text-slate-400 font-normal lowercase">(optional)</span>
+            </label>
             <input
               id="rc-email"
               type="email"
@@ -301,6 +304,23 @@ const RegisterClientStep: React.FC<{
               <p className="mt-1 text-xs text-rose-600 font-medium">{errors.location.message}</p>
             )}
           </div>
+
+          {/* PIN */}
+          <div className="sm:col-span-2">
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Set 4-Digit PIN</label>
+            <input
+              id="rc-pin"
+              type="password"
+              maxLength={4}
+              inputMode="numeric"
+              placeholder="e.g. 1234"
+              {...register("pin")}
+              className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+            />
+            {errors.pin && (
+              <p className="mt-1 text-xs text-rose-600 font-medium">{errors.pin.message}</p>
+            )}
+          </div>
         </div>
 
         <button
@@ -328,9 +348,9 @@ const RegisterClientStep: React.FC<{
 
 // ── Login Step ───────────────────────────────────────────────────────────────
 const LoginStep: React.FC<{
-  onOTPRequired: (email: string) => void;
+  onSuccess: () => void;
   onSwitchToRegister: () => void;
-}> = ({ onOTPRequired, onSwitchToRegister }) => {
+}> = ({ onSuccess, onSwitchToRegister }) => {
   const { login } = useAuth();
 
   const {
@@ -344,11 +364,11 @@ const LoginStep: React.FC<{
 
   const onSubmit = async (data: LoginInput) => {
     try {
-      await login(data.email);
-      toast.success("OTP sent to your email!");
-      onOTPRequired(data.email);
+      await login(data.phone, data.pin);
+      toast.success("Successfully signed in!");
+      onSuccess();
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || "No account found. Please register first.");
+      toast.error(err.response?.data?.detail || "Invalid phone number or 4-digit PIN.");
     }
   };
 
@@ -360,23 +380,46 @@ const LoginStep: React.FC<{
         </div>
         <h3 className="text-xl font-extrabold text-slate-900 m-0 text-center">Welcome Back</h3>
         <p className="text-xs text-slate-500 max-w-xs mx-auto text-center leading-relaxed">
-          Enter your email and we'll send you a one-time passcode.
+          Sign in with your phone number and 4-digit PIN.
         </p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-3 text-left">
-        {/* Email */}
+        {/* Phone */}
         <div>
-          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Email Address</label>
-          <input
-            id="login-email"
-            type="email"
-            placeholder="name@example.com"
-            {...register("email")}
-            className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
-          />
-          {errors.email && (
-            <p className="mt-1 text-xs text-rose-600 font-medium">{errors.email.message}</p>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Phone Number</label>
+          <div className="relative">
+            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              id="login-phone"
+              type="tel"
+              placeholder="+1234567890"
+              {...register("phone")}
+              className="w-full bg-white border border-slate-200 rounded-md pl-9 pr-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+            />
+          </div>
+          {errors.phone && (
+            <p className="mt-1 text-xs text-rose-600 font-medium">{errors.phone.message}</p>
+          )}
+        </div>
+
+        {/* PIN */}
+        <div>
+          <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">4-Digit Security PIN</label>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+            <input
+              id="login-pin"
+              type="password"
+              maxLength={4}
+              inputMode="numeric"
+              placeholder="e.g. 1234"
+              {...register("pin")}
+              className="w-full bg-white border border-slate-200 rounded-md pl-9 pr-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+            />
+          </div>
+          {errors.pin && (
+            <p className="mt-1 text-xs text-rose-600 font-medium">{errors.pin.message}</p>
           )}
         </div>
 
@@ -385,7 +428,7 @@ const LoginStep: React.FC<{
           disabled={isSubmitting}
           className="w-full h-10 rounded-md bg-[#23D283] hover:bg-[#11995E] text-white font-bold text-xs transition-colors disabled:opacity-60 cursor-pointer mt-1 flex items-center justify-center gap-1.5"
         >
-          {isSubmitting ? "Sending OTP..." : "Send Passcode"}
+          {isSubmitting ? "Signing In..." : "Sign In"}
           <ArrowRight className="h-3.5 w-3.5" />
         </button>
       </form>
@@ -409,7 +452,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialMode, onClose }) =>
   type Step =
     | { type: "register-client" }
     | { type: "login" }
-    | { type: "otp"; email: string; purpose: "registration" | "login" };
+    | { type: "otp"; phone: string; purpose: "registration" | "login" };
 
   const [step, setStep] = useState<Step>(
     initialMode === "login" ? { type: "login" } : { type: "register-client" }
@@ -448,23 +491,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({ initialMode, onClose }) =>
         <div className="p-6">
           {step.type === "register-client" && (
             <RegisterClientStep
-              onSent={(email) =>
-                setStep({ type: "otp", email, purpose: "registration" })
+              onSent={(phone) =>
+                setStep({ type: "otp", phone, purpose: "registration" })
               }
               onSwitchToLogin={() => setStep({ type: "login" })}
             />
           )}
           {step.type === "login" && (
             <LoginStep
-              onOTPRequired={(email) =>
-                setStep({ type: "otp", email, purpose: "login" })
-              }
+              onSuccess={onClose}
               onSwitchToRegister={() => setStep({ type: "register-client" })}
             />
           )}
           {step.type === "otp" && (
             <OTPStep
-              email={step.email}
+              phone={step.phone}
               purpose={step.purpose}
               onSuccess={onClose}
               onBack={() =>
