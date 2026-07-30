@@ -6,12 +6,6 @@ const nextConfig: NextConfig = {
       {
         protocol: "http",
         hostname: "localhost",
-        port: "8000",
-        pathname: "/**",
-      },
-      {
-        protocol: "http",
-        hostname: "localhost",
       },
       {
         protocol: "http",
@@ -19,7 +13,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
-        hostname: "images.unsplash.com",
+        hostname: "**",
       },
     ],
   },
