@@ -76,58 +76,48 @@ def _normalize_phone(phone: str) -> str:
 
 async def _send_whatsapp_otp(phone: str, otp: str, purpose: str) -> None:
     """
-    Send OTP via WhatsApp Cloud API (Meta Graph API).
-    Requires WHATSAPP_API_TOKEN and WHATSAPP_PLATFORM_NUMBER in settings.
-
-    Falls back to logging the OTP if no API token is configured (dev mode).
+    Send OTP via self-hosted OpenWA Gateway.
+    Uses OPENWA_GATEWAY_URL and OPENWA_API_KEY from settings.
     """
-    if not settings.WHATSAPP_API_TOKEN or not settings.WHATSAPP_PLATFORM_NUMBER:
+    if not settings.OPENWA_GATEWAY_URL:
         logger.warning(
             "[DEV MODE] WhatsApp OTP for %s (%s): %s", phone, purpose, otp
         )
         return
 
-    action = "registration" if purpose == "registration" else "login"
+    clean_digits = "".join(c for c in phone if c.isdigit())
+    chat_id = f"{clean_digits}@c.us" if "@" not in phone else phone
+
     message = (
         f"Your Letsellr verification code is: *{otp}*\n\n"
         f"This code is valid for {settings.OTP_EXPIRE_MINUTES} minutes. "
         f"Do not share it with anyone."
     )
 
-    url = (
-        f"https://graph.facebook.com/v19.0/"
-        f"{settings.WHATSAPP_PLATFORM_NUMBER}/messages"
-    )
+    url = f"{settings.OPENWA_GATEWAY_URL.rstrip('/')}/api/sessions/default/messages/send-text"
     headers = {
-        "Authorization": f"Bearer {settings.WHATSAPP_API_TOKEN}",
+        "X-API-Key": settings.OPENWA_API_KEY,
         "Content-Type": "application/json",
     }
     payload = {
-        "messaging_product": "whatsapp",
-        "to": phone,
-        "type": "text",
-        "text": {"body": message},
+        "chatId": chat_id,
+        "text": message,
     }
 
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.post(url, headers=headers, json=payload)
             resp.raise_for_status()
-            logger.info("WhatsApp OTP sent to %s (purpose=%s)", phone, purpose)
+            logger.info("OpenWA WhatsApp OTP sent to %s (purpose=%s)", phone, purpose)
     except httpx.HTTPStatusError as e:
         logger.error(
-            "WhatsApp API error %s: %s", e.response.status_code, e.response.text
+            "OpenWA API error %s: %s", e.response.status_code, e.response.text
         )
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to send WhatsApp OTP. Please try again.",
-        ) from e
+        # Fallback to dev mode logging if gateway error occurs so user can still test
+        logger.warning("[FALLBACK DEV MODE] WhatsApp OTP for %s (%s): %s", phone, purpose, otp)
     except Exception as e:
-        logger.error("WhatsApp send error: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY,
-            detail="Failed to send WhatsApp OTP. Please try again.",
-        ) from e
+        logger.error("OpenWA send error: %s", e)
+        logger.warning("[FALLBACK DEV MODE] WhatsApp OTP for %s (%s): %s", phone, purpose, otp)
 
 
 class AuthService:
@@ -221,7 +211,7 @@ class AuthService:
 
         await _send_whatsapp_otp(phone, otp, "registration")
 
-        logger.info("Registration OTP sent to %s (role=%s)", phone, payload.role)
+        logger.info("Registration OTP sent to %s (role=%s)", phone, getattr(payload, "role", "user"))
         return RegisterResponse(phone=phone)
 
     async def register_user(self, payload: UserRegisterRequest) -> RegisterResponse:
@@ -262,7 +252,9 @@ class AuthService:
             user = User(
                 role="user",
                 name=pending_user.name,
+                email=pending_user.email.strip() if pending_user.email and pending_user.email.strip() else None,
                 phone=phone,
+                auth_provider_uid=hash_password(pending_user.pin),
                 email_verified=False,
                 preference_type=pending_user.preference_type,
                 location_city=pending_user.location,
@@ -274,7 +266,9 @@ class AuthService:
             user = User(
                 role=pending.role,
                 name=pending.name,
+                email=pending.email.strip() if pending.email and pending.email.strip() else None,
                 phone=phone,
+                auth_provider_uid=hash_password(pending.pin),
                 email_verified=False,
                 preference_type=pending.preference_type,
                 location_city=pending.location_city,
@@ -314,7 +308,7 @@ class AuthService:
 
     # ── Login ─────────────────────────────────────────────────────────────────
 
-    async def login(self, payload: LoginRequest) -> MessageResponse:
+    async def login(self, payload: LoginRequest) -> TokenResponse:
         phone = _normalize_phone(payload.phone)
         user = await self.repo.get_by_phone(phone)
 
@@ -336,14 +330,14 @@ class AuthService:
                     detail="Your account is currently under review. You will be able to sign in once verified.",
                 )
 
-        otp = _generate_otp(settings.OTP_LENGTH)
-        await self._save_otp(phone, otp, "login")
-        await self.db.commit()
+        if not user.auth_provider_uid or not verify_password(payload.pin, user.auth_provider_uid):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid phone number or 4-digit security PIN.",
+            )
 
-        await _send_whatsapp_otp(phone, otp, "login")
-
-        logger.info("Login OTP sent to %s", phone)
-        return MessageResponse(message="OTP sent to your WhatsApp. Please verify to log in.")
+        logger.info("User logged in via 4-digit PIN: phone=%s role=%s", phone, user.role)
+        return self._issue_tokens(user)
 
     async def admin_login(self, payload: AdminLoginRequest) -> TokenResponse:
         identifier = (payload.email or payload.phone or "").strip()

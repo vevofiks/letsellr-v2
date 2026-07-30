@@ -57,9 +57,9 @@ export const RegisterOwnerAgency: React.FC = () => {
   const onSubmit = async (data: OwnerAgencyRegisterInput) => {
     try {
       await registerOwnerAgency(data);
-      toast.success("OTP sent to your email!");
+      toast.success("OTP sent to your WhatsApp!");
       navigate("/verify-otp", {
-        state: { email: data.email, purpose: "registration" },
+        state: { phone: data.phone, purpose: "registration" },
       });
     } catch (err: any) {
       console.error(err);
@@ -156,10 +156,10 @@ export const RegisterOwnerAgency: React.FC = () => {
                 )}
               </div>
 
-              {/* Email Address */}
+              {/* Email Address (Optional) */}
               <div className="space-y-1.5 text-left">
                 <label htmlFor="email" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
-                  Email Address
+                  Email Address <span className="text-slate-400 font-normal lowercase">(optional)</span>
                 </label>
                 <input
                   id="email"
@@ -244,37 +244,41 @@ export const RegisterOwnerAgency: React.FC = () => {
                 )}
               </div>
 
-              {/* Password */}
+              {/* 4-Digit Security PIN */}
               <div className="space-y-1.5 text-left">
-                <label htmlFor="password" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
-                  Password
+                <label htmlFor="pin" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                  Set 4-Digit Security PIN
                 </label>
                 <input
-                  id="password"
+                  id="pin"
                   type="password"
-                  placeholder="••••••••"
-                  {...register("password")}
+                  maxLength={4}
+                  inputMode="numeric"
+                  placeholder="e.g. 1234"
+                  {...register("pin")}
                   className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
                 />
-                {errors.password && (
-                  <p className="text-xs text-rose-600 font-medium text-left">{errors.password.message}</p>
+                {errors.pin && (
+                  <p className="text-xs text-rose-600 font-medium text-left">{errors.pin.message}</p>
                 )}
               </div>
 
-              {/* Confirm Password */}
+              {/* Confirm PIN */}
               <div className="space-y-1.5 text-left">
-                <label htmlFor="confirm_password" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
-                  Confirm Password
+                <label htmlFor="confirm_pin" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                  Confirm 4-Digit PIN
                 </label>
                 <input
-                  id="confirm_password"
+                  id="confirm_pin"
                   type="password"
-                  placeholder="••••••••"
-                  {...register("confirm_password")}
+                  maxLength={4}
+                  inputMode="numeric"
+                  placeholder="e.g. 1234"
+                  {...register("confirm_pin")}
                   className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
                 />
-                {errors.confirm_password && (
-                  <p className="text-xs text-rose-600 font-medium text-left">{errors.confirm_password.message}</p>
+                {errors.confirm_pin && (
+                  <p className="text-xs text-rose-600 font-medium text-left">{errors.confirm_pin.message}</p>
                 )}
               </div>
             </div>

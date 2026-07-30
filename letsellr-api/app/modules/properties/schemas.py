@@ -72,7 +72,7 @@ class StatsSchema(BaseModel):
 class OwnerMinimal(BaseModel):
     id: UUID
     name: str
-    email: str
+    email: Optional[str] = None
     phone: str
     role: str
 

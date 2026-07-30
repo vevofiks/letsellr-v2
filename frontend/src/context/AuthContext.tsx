@@ -23,12 +23,12 @@ export interface UserProfile {
 interface AuthContextType {
   user: UserProfile | null;
   loading: boolean;
-  login: (email: string, password?: string) => Promise<boolean>;
+  login: (phone: string, pin: string) => Promise<boolean>;
   adminLogin: (email: string, password?: string) => Promise<boolean>;
-  verifyLogin: (email: string, otp: string) => Promise<void>;
+  verifyLogin: (phone: string, otp: string) => Promise<void>;
   registerOwnerAgency: (data: any) => Promise<void>;
   registerClient: (data: any) => Promise<void>;
-  verifyRegistration: (email: string, otp: string) => Promise<void>;
+  verifyRegistration: (phone: string, otp: string) => Promise<void>;
   logout: () => void;
   fetchFullProfile: () => Promise<UserProfile | null>;
 }
@@ -77,21 +77,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Initiate Login (Password or OTP)
-  const login = async (email: string, password?: string): Promise<boolean> => {
-    const res = await api.post("/api/auth/login", { email, password });
+  // Initiate Login (Phone + 4-Digit PIN)
+  const login = async (phone: string, pin: string): Promise<boolean> => {
+    const res = await api.post("/api/auth/login", { phone, pin });
     
-    // If we receive an access token, it was a direct password login
     if (res.data.access_token) {
       const { access_token, refresh_token, user: userData } = res.data;
       localStorage.setItem("access_token", access_token);
       localStorage.setItem("refresh_token", refresh_token);
       setUser(userData);
-      return true; // logged in directly
+      return true;
     }
     
-    // Otherwise it was an OTP request
-    return false; // OTP required
+    return false;
   };
 
   // Initiate Admin Login (Password or OTP - strict admin role validation)
@@ -114,8 +112,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Step 2: Verify Login (legacy/fallback)
-  const verifyLogin = async (email: string, otp: string) => {
-    const res = await api.post("/api/auth/verify-login", { email, otp });
+  const verifyLogin = async (phone: string, otp: string) => {
+    const res = await api.post("/api/auth/verify-login", { phone, otp });
     const { access_token, refresh_token, user: userData } = res.data;
 
     localStorage.setItem("access_token", access_token);
@@ -125,19 +123,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Step 1: Initiate Owner/Agency Registration
   const registerOwnerAgency = async (data: any) => {
-    const { confirm_password, ...payload } = data;
+    const { confirm_pin, confirm_password, ...payload } = data;
     await api.post("/api/auth/register", payload);
   };
 
   // Step 1: Initiate Client/Seeker Registration
   const registerClient = async (data: any) => {
-    const { confirm_password, ...payload } = data;
+    const { confirm_pin, confirm_password, ...payload } = data;
     await api.post("/api/auth/register/user", payload);
   };
 
   // Step 2: Verify Registration
-  const verifyRegistration = async (email: string, otp: string) => {
-    const res = await api.post("/api/auth/verify-registration", { email, otp });
+  const verifyRegistration = async (phone: string, otp: string) => {
+    const res = await api.post("/api/auth/verify-registration", { phone, otp });
     const { access_token, refresh_token, user: userData } = res.data;
 
     localStorage.setItem("access_token", access_token);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -6,18 +6,17 @@ import { loginSchema } from "@/lib/validation";
 import type { LoginInput } from "@/lib/validation";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-import { Eye, EyeOff, Lock, Mail, ArrowRight, ArrowLeft } from "lucide-react";
+import { Lock, Phone, ArrowRight, ArrowLeft } from "lucide-react";
 
 export const Login: React.FC = () => {
   const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [showPassword, setShowPassword] = useState(false);
 
   const fromPath = (location.state as any)?.from || null;
 
   // Redirect user based on role upon successful login/session resolution
-  useEffect(() => {
+  React.useEffect(() => {
     if (user) {
       if (fromPath) {
         navigate(fromPath, { replace: true });
@@ -44,19 +43,12 @@ export const Login: React.FC = () => {
 
   const onSubmit = async (data: LoginInput) => {
     try {
-      const isDirectLogin = await login(data.email, data.password);
-      if (isDirectLogin) {
-        toast.success("Successfully signed in!");
-      } else {
-        toast.success("OTP sent to your email!");
-        navigate("/verify-otp", {
-          state: { email: data.email, purpose: "login" },
-        });
-      }
+      await login(data.phone, data.pin);
+      toast.success("Successfully signed in!");
     } catch (err: any) {
       console.error(err);
       toast.error(
-        err.response?.data?.detail || "Invalid email or password. Please try again."
+        err.response?.data?.detail || "Invalid phone number or 4-digit PIN. Please try again."
       );
     }
   };
@@ -90,58 +82,51 @@ export const Login: React.FC = () => {
               Welcome Back
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 max-w-xs mx-auto text-center leading-relaxed -mt-4!">
-              Sign in to access your account.
+              Sign in with your phone number and 4-digit PIN.
             </p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {/* Email Field */}
+            {/* Phone Number Field */}
             <div className="space-y-1.5 text-left">
-              <label htmlFor="email" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
-                Email Address
+              <label htmlFor="phone" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                Phone Number
               </label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
-                  id="email"
-                  type="email"
-                  placeholder="name@example.com"
-                  {...register("email")}
+                  id="phone"
+                  type="tel"
+                  placeholder="+1234567890"
+                  {...register("phone")}
                   className="w-full bg-white border border-slate-200 rounded-md pl-10 pr-3 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
                 />
               </div>
-              {errors.email && (
-                <p className="text-xs text-rose-600 font-medium text-left">{errors.email.message}</p>
+              {errors.phone && (
+                <p className="text-xs text-rose-600 font-medium text-left">{errors.phone.message}</p>
               )}
             </div>
 
-            {/* Password Field */}
+            {/* 4-Digit Security PIN Field */}
             <div className="space-y-1.5 text-left">
-              <div className="flex items-center justify-between">
-                <label htmlFor="password" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
-                  Password <span className="text-slate-400 font-normal lowercase">(optional for OTP)</span>
-                </label>
-              </div>
+              <label htmlFor="pin" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                4-Digit Security PIN
+              </label>
               <div className="relative">
                 <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  {...register("password")}
-                  className="w-full bg-white border border-slate-200 rounded-md pl-10 pr-10 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+                  id="pin"
+                  type="password"
+                  maxLength={4}
+                  inputMode="numeric"
+                  placeholder="e.g. 1234"
+                  {...register("pin")}
+                  className="w-full bg-white border border-slate-200 rounded-md pl-10 pr-3 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none"
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
               </div>
-              {errors.password && (
-                <p className="text-xs text-rose-600 font-medium text-left">{errors.password.message}</p>
+              {errors.pin && (
+                <p className="text-xs text-rose-600 font-medium text-left">{errors.pin.message}</p>
               )}
             </div>
 

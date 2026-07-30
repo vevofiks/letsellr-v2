@@ -467,9 +467,17 @@ export const PropertyDetailsPage: React.FC = () => {
     } catch (err) {
       console.error("Failed to record enquiry", err);
     }
-    const number = "15551398764";
+    const categoryLower = (property.category || property.type || "").toLowerCase();
+    const isPgOrHostel = categoryLower.includes("pg") || categoryLower.includes("hostel");
+
+    const botNumber = import.meta.env.VITE_WHATSAPP_BOT_NUMBER || "918137090018";
+    const salesNumber = import.meta.env.VITE_WHATSAPP_SALES_NUMBER || "918137090018";
+
+    const targetNumber = isPgOrHostel ? botNumber : salesNumber;
+    const cleanNumber = targetNumber.replace(/[^0-9]/g, "");
+
     const message = encodeURIComponent(`Hi, I'm interested in your property ${property.title} (Ref: ${property.ref})`);
-    window.open(`https://wa.me/${number}?text=${message}`, "_blank");
+    window.open(`https://wa.me/${cleanNumber}?text=${message}`, "_blank");
   };
 
   const handleCallContact = (e: React.MouseEvent) => {
