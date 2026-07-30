@@ -118,6 +118,23 @@ export interface LocationData {
   updated_at: string;
 }
 
+export interface PropertyReview {
+  id: string;
+  user_id: string;
+  target_type: string;
+  target_id: string;
+  reviewer_name: string;
+  rating: number;
+  comment: string;
+  status: string;
+  created_at: string;
+  user?: {
+    id: string;
+    name: string;
+    role: string;
+  };
+}
+
 export const adminService = {
   // Get admin stats overview
   getDashboardStats: async (): Promise<AdminDashboardStats> => {
@@ -264,6 +281,17 @@ export const adminService = {
   updateUserLimit: async (userId: string, payload: { msg_limit: number, reset_usage?: boolean, note: string, payment_ref?: string }): Promise<any> => {
     const res = await api.patch(`/api/admin/users/${userId}/limit`, payload);
     return res.data;
+  },
+
+  // ── PROPERTY REVIEWS ──────────────────────────────────────────
+
+  getPropertyReviews: async (propertyId: string): Promise<PropertyReview[]> => {
+    const res = await api.get<PropertyReview[]>(`/api/properties/${propertyId}/reviews`);
+    return res.data;
+  },
+
+  deletePropertyReview: async (reviewId: string): Promise<void> => {
+    await api.delete(`/api/admin/reviews/${reviewId}`);
   },
 };
 

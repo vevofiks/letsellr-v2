@@ -78,12 +78,36 @@ export default function EditorialSection() {
 
       gsap.fromTo(
         ".editorial-stat",
-        { opacity: 0, y: 30 },
+        { opacity: 0, y: 40 },
         {
           opacity: 1, y: 0, duration: 0.8, stagger: 0.12, ease: "power2.out",
           scrollTrigger: { trigger: statsRef.current, start: "top 85%" },
         }
       );
+
+      // Parallax image shift on scroll
+      gsap.to(".editorial-main-img", {
+        yPercent: -12,
+        ease: "none",
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: 1,
+        },
+      });
+
+      // Parallax card drift
+      gsap.to(".editorial-card-drift", {
+        yPercent: -15,
+        ease: "none",
+        scrollTrigger: {
+          trigger: containerRef.current,
+          start: "top bottom",
+          end: "bottom top",
+          scrub: 1.2,
+        },
+      });
     }, containerRef);
 
     return () => ctx.revert();
@@ -102,12 +126,9 @@ export default function EditorialSection() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end mb-12 md:mb-16">
         <div className="lg:col-span-7">
           {/* Eyebrow */}
-          <div className="flex items-center gap-2 mb-5">
-            <span className="w-8 h-px" style={{ background: PRIMARY }} />
-            <span
-              className="text-[10px] font-bold tracking-[0.2em] uppercase"
-              style={{ color: PRIMARY }}
-            >
+          <div className="mb-5">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-[0.15em] uppercase bg-[#D9F7E9] text-[#0B6E4F]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#23D283]"></span>
               The Letsellr Philosophy
             </span>
           </div>
@@ -150,7 +171,7 @@ export default function EditorialSection() {
             src={currentSlide.src}
             alt={currentSlide.alt}
             fill
-            className="object-cover object-center transition-all duration-700 ease-out group-hover:scale-[1.03]"
+            className="editorial-main-img object-cover object-center transition-all duration-700 ease-out group-hover:scale-[1.03]"
           />
           {/* Gradient overlay */}
           <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/10 to-transparent" />
@@ -195,7 +216,7 @@ export default function EditorialSection() {
         </div>
 
         {/* CENTER — Info text card */}
-        <div className="lg:col-span-4 flex flex-col justify-between bg-white rounded-2xl border border-black/8 shadow-sm p-8 md:p-10">
+        <div className="editorial-card-drift lg:col-span-4 flex flex-col justify-between bg-white rounded-2xl border border-black/8 shadow-sm p-8 md:p-10">
           <div>
             <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-zinc-400 block mb-4">
               Cabin &amp; Modular Homes
@@ -210,7 +231,7 @@ export default function EditorialSection() {
             {/* CTA Button */}
             <a
               href="#properties"
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border border-black/20 text-xs font-bold text-[#0F0F11] hover:bg-[#0F0F11] hover:text-white transition-all duration-300 cursor-pointer w-fit mb-8"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full border border-[#23D283]/40 text-xs font-bold text-[#0B6E4F] bg-[#D9F7E9]/40 hover:bg-[#23D283] hover:text-white transition-all duration-300 cursor-pointer w-fit mb-8 shadow-xs"
             >
               Details
             </a>
@@ -259,14 +280,14 @@ export default function EditorialSection() {
               <h4 className="text-sm font-bold text-[#0F0F11] leading-snug line-clamp-2 mb-2">{currentCard.title}</h4>
               <p className="text-[11px] font-semibold text-zinc-500">
                 Pricing Start at{" "}
-                <span className="text-[#0F0F11] font-extrabold text-sm">{currentCard.price}</span>
+                <span className="text-[#0B6E4F] font-extrabold text-sm">{currentCard.price}</span>
               </p>
             </div>
 
             {/* Explore button */}
             <a
               href="http://localhost:5173"
-              className="w-full flex items-center justify-center gap-2 bg-[#0F0F11] hover:bg-zinc-800 text-white text-xs font-bold py-3 rounded-xl transition-all duration-300 cursor-pointer"
+              className="w-full flex items-center justify-center gap-2 bg-[#23D283] hover:bg-[#11995E] text-white text-xs font-bold py-3 rounded-xl transition-all duration-300 shadow-md shadow-[#23D283]/20 cursor-pointer"
             >
               Explore Properties
               <ArrowRight className="w-3.5 h-3.5" />
@@ -276,13 +297,13 @@ export default function EditorialSection() {
             <div className="flex items-center justify-end gap-2">
               <button
                 onClick={prevCard}
-                className="w-8 h-8 rounded-full border border-black/15 flex items-center justify-center text-zinc-600 hover:bg-[#0F0F11] hover:text-white hover:border-[#0F0F11] transition-all duration-200 cursor-pointer"
+                className="w-8 h-8 rounded-full border border-black/15 flex items-center justify-center text-zinc-600 hover:bg-[#23D283] hover:text-white hover:border-[#23D283] transition-all duration-200 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={nextCard}
-                className="w-8 h-8 rounded-full border border-black/15 flex items-center justify-center text-zinc-600 hover:bg-[#0F0F11] hover:text-white hover:border-[#0F0F11] transition-all duration-200 cursor-pointer"
+                className="w-8 h-8 rounded-full border border-black/15 flex items-center justify-center text-zinc-600 hover:bg-[#23D283] hover:text-white hover:border-[#23D283] transition-all duration-200 cursor-pointer"
               >
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
@@ -291,10 +312,10 @@ export default function EditorialSection() {
         </div>
       </div>
 
-      {/* ── Stats row ── */}
+      {/* ── Stats row (Full-bleed edge-to-edge screen width) ── */}
       <div
         ref={statsRef}
-        className="grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10 mt-16 pt-14 border-t border-black/8 text-center max-w-5xl mx-auto"
+        className="-mx-6 md:-mx-12 lg:-mx-20 bg-[#D9F7E9]/60 border-y border-[#23D283]/30 py-10 md:py-14 px-6 md:px-12 lg:px-20 grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10 mt-16 text-center shadow-xs"
       >
         {[
           { value: "15K", suffix: "+", label: "Direct Enquiries" },
@@ -307,7 +328,7 @@ export default function EditorialSection() {
               {stat.value}
               <span style={{ color: PRIMARY }}>{stat.suffix}</span>
             </span>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-400 mt-3">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mt-3">
               {stat.label}
             </span>
           </div>

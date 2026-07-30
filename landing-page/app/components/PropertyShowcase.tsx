@@ -62,6 +62,45 @@ const DEFAULT_PROPERTIES: PropertyItem[] = [
     image: "/images/coastal-penthouse.png",
     verified: true,
   },
+  {
+    id: "prop-4",
+    title: "Emerald Heights Luxury Suite",
+    category: "Apartments",
+    location: "Kakkanad, Kochi",
+    price: "₹85 L",
+    sqft: "1,600 sq.ft",
+    beds: "2 Beds",
+    baths: "2 Baths",
+    intentTag: "For Sale",
+    image: "/images/hero-villa.png",
+    verified: true,
+  },
+  {
+    id: "prop-5",
+    title: "Commercial Business Hub",
+    category: "Commercial",
+    location: "MG Road, Ernakulam",
+    price: "₹1.2 Cr",
+    sqft: "4,500 sq.ft",
+    beds: "Commercial",
+    baths: "4 Baths",
+    intentTag: "For Sale",
+    image: "/images/modular-cabin.png",
+    verified: true,
+  },
+  {
+    id: "prop-6",
+    title: "Lakeside Plantation Estate",
+    category: "Villas",
+    location: "Kumarakom, Kerala",
+    price: "₹4.5 Cr",
+    sqft: "5,200 sq.ft",
+    beds: "5 Beds",
+    baths: "4 Baths",
+    intentTag: "For Sale",
+    image: "/images/coastal-penthouse.png",
+    verified: true,
+  },
 ];
 
 const formatPriceInr = (val: number, unit?: string) => {
@@ -84,12 +123,15 @@ export default function PropertyShowcase() {
     const fetchFeatured = async () => {
       try {
         const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-        const res = await fetch(`${apiBase}/api/v1/properties/featured?limit=9`);
+        let res = await fetch(`${apiBase}/api/properties/featured?limit=6`);
+        if (!res.ok) {
+          res = await fetch(`${apiBase}/api/v1/properties/featured?limit=6`);
+        }
         if (!res.ok) return;
         const data = await res.json();
 
         if (Array.isArray(data) && data.length > 0) {
-          const mapped: PropertyItem[] = data.map((item: any) => {
+          const mapped: PropertyItem[] = data.slice(0, 6).map((item: any) => {
             const firstPhoto =
               Array.isArray(item.photos) && item.photos.length > 0
                 ? typeof item.photos[0] === "string"
@@ -97,14 +139,9 @@ export default function PropertyShowcase() {
                   : item.photos[0]?.photo_url || ""
                 : "";
 
-            let categoryLabel = "Villas";
-            const c = (item.category || "").toLowerCase();
-            if (c.includes("apartment") || c.includes("flat") || c.includes("pg") || c.includes("hostel")) {
-              categoryLabel = "Apartments";
-            } else if (c.includes("commercial") || c.includes("land")) {
-              categoryLabel = "Commercial";
-            } else {
-              categoryLabel = "Villas";
+            let categoryLabel = item.category || "Villas";
+            if (categoryLabel.length > 1) {
+              categoryLabel = categoryLabel.charAt(0).toUpperCase() + categoryLabel.slice(1);
             }
 
             const intentTag = item.intent === "rent" || item.price_unit === "per_month" ? "For Rent" : "For Sale";
@@ -135,37 +172,38 @@ export default function PropertyShowcase() {
     fetchFeatured();
   }, []);
 
+  // Compute dynamic categories based on currently loaded properties
+  const dynamicCategories = ["All", ...Array.from(new Set(propertyList.map((p) => p.category).filter(Boolean)))];
+
   const filteredProperties =
     activeTab === "All"
       ? propertyList
-      : propertyList.filter((p) => p.category === activeTab);
+      : propertyList.filter((p) => p.category.toLowerCase() === activeTab.toLowerCase());
 
   return (
     <section id="properties" className="py-20 px-6 md:px-12 lg:px-20 w-full bg-[#FAF9F6] text-[#0F0F11]">
       {/* Section Header */}
       <div ref={headerRef} className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
         <div>
-          <span
-            className="text-[11px] font-mono font-bold uppercase tracking-widest block mb-2"
-            style={{ color: PRIMARY }}
-          >
-            — FEATURED INVENTORY
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-[0.15em] uppercase bg-[#D9F7E9] text-[#0B6E4F] mb-3">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#23D283]"></span>
+            Featured Inventory
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#0F0F11]">
             Spaces Where Your Story Begins
           </h2>
         </div>
 
-        {/* Category Filter Tabs */}
+        {/* Dynamic Category Filter Tabs */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {["All", "Villas", "Apartments", "Commercial"].map((tab) => (
+          {dynamicCategories.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${
                 activeTab === tab
-                  ? "bg-[#0F0F11] text-white shadow-sm"
-                  : "bg-white text-zinc-600 hover:text-black border border-black/10 hover:bg-zinc-100"
+                  ? "bg-[#23D283] text-white shadow-md shadow-[#23D283]/20"
+                  : "bg-white text-zinc-600 hover:text-[#0B6E4F] border border-black/10 hover:bg-[#D9F7E9]/50"
               }`}
             >
               {tab}
@@ -191,9 +229,10 @@ export default function PropertyShowcase() {
                 className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
               />
 
-              {/* Pill Tag (Top Left) — Always render explicit pill badge text */}
+              {/* Pill Tag (Top Left) — Brand Verified Pill */}
               <div className="absolute top-4 left-4 z-10">
-                <span className="inline-flex items-center justify-center bg-white text-zinc-900 text-xs font-semibold px-4 py-1.5 rounded-full shadow-md leading-none">
+                <span className="inline-flex items-center justify-center gap-1.5 bg-[#D9F7E9]/95 backdrop-blur-xs text-[#0B6E4F] text-xs font-bold px-3.5 py-1.5 rounded-full shadow-xs leading-none border border-[#23D283]/30">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#23D283]"></span>
                   {prop.intentTag || "For Sale"}
                 </span>
               </div>
@@ -215,13 +254,13 @@ export default function PropertyShowcase() {
               </div>
 
               {/* Title Line */}
-              <h3 className="text-xl font-bold text-zinc-900 line-clamp-1 group-hover:text-emerald-600 transition-colors mb-1">
+              <h3 className="text-xl font-bold text-zinc-900 line-clamp-1 group-hover:text-[#23D283] transition-colors mb-1">
                 {prop.title}
               </h3>
 
               {/* Price & Location Line */}
               <div className="flex items-center gap-2 text-sm truncate">
-                <span className="font-bold text-zinc-900 shrink-0">
+                <span className="font-extrabold text-[#0B6E4F] shrink-0">
                   {prop.price}
                 </span>
                 <span className="text-zinc-400 font-bold">·</span>

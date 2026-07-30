@@ -346,13 +346,26 @@ class AuthService:
         return MessageResponse(message="OTP sent to your WhatsApp. Please verify to log in.")
 
     async def admin_login(self, payload: AdminLoginRequest) -> TokenResponse:
-        phone = _normalize_phone(payload.phone)
-        user = await self.repo.get_by_phone(phone)
+        identifier = (payload.email or payload.phone or "").strip()
+        if not identifier:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Please provide an email address or phone number.",
+            )
+
+        user = None
+        if "@" in identifier:
+            user = await self.repo.get_by_email(identifier)
+        if not user:
+            phone = _normalize_phone(identifier)
+            user = await self.repo.get_by_phone(phone)
+        if not user and "@" not in identifier:
+            user = await self.repo.get_by_email(identifier)
 
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="No account found with this phone number.",
+                detail="No administrator account found with this email or phone number.",
             )
         if user.role != "admin":
             raise HTTPException(
@@ -365,15 +378,13 @@ class AuthService:
                 detail="Your account has been suspended. Please contact support.",
             )
 
-        # Admin accounts use password (stored as bcrypt hash in auth_provider_uid field
-        # or a dedicated password column; here we use a simple approach)
         if not user.auth_provider_uid or not verify_password(payload.password, user.auth_provider_uid):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid phone number or password.",
+                detail="Invalid email/phone or password. Access denied.",
             )
 
-        logger.info("Admin logged in: phone=%s", phone)
+        logger.info("Admin logged in: identifier=%s user_id=%s", identifier, user.id)
         return self._issue_tokens(user)
 
     async def verify_login(self, payload: VerifyLoginRequest) -> TokenResponse:

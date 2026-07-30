@@ -23,9 +23,11 @@ import {
   User as UserIcon,
   Calendar,
   Sparkles,
+  Star,
+  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
-import { adminService, type AdminProperty } from "@/services/adminService";
+import { adminService, type AdminProperty, type PropertyReview } from "@/services/adminService";
 import { Badge } from "@/components/ui/badge";
 
 import L from "leaflet";
@@ -106,6 +108,39 @@ export const AdminPropertiesQueuePage: React.FC = () => {
   const [inspectModalOpen, setInspectModalOpen] = useState<boolean>(false);
   const [approveModalOpen, setApproveModalOpen] = useState<boolean>(false);
   const [rejectModalOpen, setRejectModalOpen] = useState<boolean>(false);
+
+  // Property Reviews state
+  const [propertyReviews, setPropertyReviews] = useState<PropertyReview[]>([]);
+  const [loadingReviews, setLoadingReviews] = useState<boolean>(false);
+  const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
+
+  const fetchPropertyReviews = async (propertyId: string) => {
+    try {
+      setLoadingReviews(true);
+      const data = await adminService.getPropertyReviews(propertyId);
+      setPropertyReviews(data || []);
+    } catch (err) {
+      console.error("Failed to fetch reviews:", err);
+      setPropertyReviews([]);
+    } finally {
+      setLoadingReviews(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!window.confirm("Are you sure you want to delete this user review?")) return;
+    try {
+      setDeletingReviewId(reviewId);
+      await adminService.deletePropertyReview(reviewId);
+      setPropertyReviews((prev) => prev.filter((r) => r.id !== reviewId));
+      toast.success("Review deleted successfully!");
+    } catch (err: any) {
+      console.error("Failed to delete review:", err);
+      toast.error(err.response?.data?.detail || "Failed to delete review.");
+    } finally {
+      setDeletingReviewId(null);
+    }
+  };
 
   // Approval/Rejection input state
   const [approveReason, setApproveReason] = useState("Meets all listing standards & verified");
@@ -872,6 +907,7 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                 <button
                   onClick={() => {
                     setSelectedProperty(prop);
+                    fetchPropertyReviews(prop.id);
                     setInspectModalOpen(true);
                   }}
                   className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
@@ -1224,6 +1260,113 @@ export const AdminPropertiesQueuePage: React.FC = () => {
               <p className="text-xs text-slate-700 leading-relaxed bg-slate-50/50 p-3 rounded-lg border border-slate-200/60 font-medium">
                 {selectedProperty.description || "No description provided by owner."}
               </p>
+            </div>
+
+            {/* User Reviews & Ratings Section */}
+            <div className="space-y-2 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4 text-[#014645]" />
+                  <h4 className="text-xs font-extrabold uppercase text-slate-900 tracking-wider my-0">
+                    User Reviews &amp; Ratings ({propertyReviews.length})
+                  </h4>
+                </div>
+                {propertyReviews.length > 0 && (
+                  <div className="flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200 px-2 py-0.5 rounded-md text-[11px] font-extrabold">
+                    <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                    <span>
+                      {(
+                        propertyReviews.reduce((acc, r) => acc + (r.rating || 5), 0) /
+                        propertyReviews.length
+                      ).toFixed(1)}{" "}
+                      / 5.0
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {loadingReviews ? (
+                <div className="flex items-center justify-center py-6 bg-slate-50 rounded-xl border border-slate-200/60 space-y-2">
+                  <Loader2 className="h-4 w-4 text-[#014645] animate-spin" />
+                  <span className="text-xs font-semibold text-slate-500 ml-2">Loading user reviews...</span>
+                </div>
+              ) : propertyReviews.length === 0 ? (
+                <div className="bg-slate-50/60 rounded-xl p-4 border border-slate-200/60 text-center">
+                  <p className="text-xs text-slate-400 font-medium italic my-0">
+                    No user reviews submitted for this property yet.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+                  {propertyReviews.map((review) => (
+                    <div
+                      key={review.id}
+                      className="bg-slate-50 hover:bg-slate-100/80 rounded-xl p-3.5 border border-slate-200/80 flex flex-col justify-between gap-2.5 transition-colors"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-2.5">
+                          <div className="h-8 w-8 rounded-full bg-[#014645]/10 text-[#014645] font-black text-xs flex items-center justify-center border border-[#014645]/20 shrink-0">
+                            {review.reviewer_name?.[0]?.toUpperCase() || "U"}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-extrabold text-slate-900">
+                                {review.reviewer_name || "Anonymous User"}
+                              </span>
+                              {review.user?.role && (
+                                <Badge variant="outline" className="text-[9px] font-black uppercase px-1.5 py-0">
+                                  {review.user.role}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              {Array.from({ length: 5 }).map((_, idx) => (
+                                <Star
+                                  key={idx}
+                                  className={`h-3 w-3 ${
+                                    idx < (review.rating || 5)
+                                      ? "fill-amber-400 text-amber-400"
+                                      : "text-slate-200 fill-slate-200"
+                                  }`}
+                                />
+                              ))}
+                              <span className="text-[10px] text-slate-400 font-medium ml-1.5">
+                                {new Date(review.created_at).toLocaleDateString("en-IN", {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                })}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Delete Review Button */}
+                        <button
+                          onClick={() => handleDeleteReview(review.id)}
+                          disabled={deletingReviewId === review.id}
+                          className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 p-1.5 rounded-lg transition-colors cursor-pointer shrink-0 disabled:opacity-50 flex items-center gap-1 text-[11px] font-extrabold"
+                          title="Delete unwanted review"
+                        >
+                          {deletingReviewId === review.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <>
+                              <Trash2 className="h-3.5 w-3.5" />
+                              <span>Delete</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Comment text */}
+                      <p className="text-xs font-medium text-slate-700 bg-white p-2.5 rounded-lg border border-slate-200/60 my-0 leading-relaxed">
+                        &quot;{review.comment}&quot;
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Inspect Modal Footer */}

@@ -24,7 +24,7 @@ import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
 import { AdminReportsPage } from "@/pages/admin/AdminReportsPage";
 import { AdminCategoriesPage } from "@/pages/admin/AdminCategoriesPage";
 import { AdminLocationsPage } from "@/pages/admin/AdminLocationsPage";
-import { AdminTestimonialsPage } from "@/pages/admin/AdminTestimonialsPage";
+import { AdminLandingPageConfig } from "@/pages/admin/AdminLandingPageConfig";
 import { Toaster } from "@/components/ui/sonner";
 
 function App() {
@@ -156,7 +156,8 @@ function App() {
               <Route path="reports" element={<AdminReportsPage />} />
               <Route path="categories" element={<AdminCategoriesPage />} />
               <Route path="locations" element={<AdminLocationsPage />} />
-              <Route path="testimonials" element={<AdminTestimonialsPage />} />
+              <Route path="landing-page" element={<AdminLandingPageConfig />} />
+              <Route path="testimonials" element={<Navigate to="../landing-page" replace />} />
               <Route path="settings" element={<AdminDashboardPage />} />
               <Route path="*" element={<Navigate to="dashboard" replace />} />
             </Route>

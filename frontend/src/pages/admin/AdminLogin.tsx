@@ -57,7 +57,19 @@ export const AdminLogin: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Admin login error:", err);
-      const detail = err.response?.data?.detail || "Invalid email or password. Access denied.";
+      let detail = "Invalid credentials or unauthorized access.";
+      if (err.response?.data?.detail) {
+        const rawDetail = err.response.data.detail;
+        if (typeof rawDetail === "string") {
+          detail = rawDetail;
+        } else if (Array.isArray(rawDetail)) {
+          detail = rawDetail
+            .map((item: any) => (typeof item === "string" ? item : item.msg || JSON.stringify(item)))
+            .join(", ");
+        } else if (typeof rawDetail === "object") {
+          detail = rawDetail.msg || JSON.stringify(rawDetail);
+        }
+      }
       setErrorMessage(detail);
       toast.error(detail);
     } finally {

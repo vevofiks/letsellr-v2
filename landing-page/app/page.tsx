@@ -9,7 +9,6 @@ import SearchBar from "./components/SearchBar";
 import EditorialSection from "./components/EditorialSection";
 import PropertyShowcase from "./components/PropertyShowcase";
 import FeaturesGrid from "./components/FeaturesGrid";
-
 import CTABanner from "./components/CTABanner";
 import Footer from "./components/Footer";
 
@@ -35,9 +34,15 @@ export default function Home() {
           <SearchBar />
         </div>
 
-        <EditorialSection />
+        {/* Property Showcase (Featured Inventory) — directly under the search bar */}
         <PropertyShowcase />
+        
+        {/* Editorial Philosophy Section */}
+        <EditorialSection />
+        
+        {/* Dynamic Testimonials Marquee Grid */}
         <FeaturesGrid />
+
         <CTABanner />
         <Footer />
       </main>

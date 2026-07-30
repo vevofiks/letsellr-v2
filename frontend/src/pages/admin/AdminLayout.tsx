@@ -16,6 +16,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   MessageSquareQuote,
+  LayoutTemplate,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -263,14 +264,14 @@ export const AdminLayout: React.FC = () => {
             </Link>
 
             <Link
-              to="/admin-platform/testimonials"
-              className={navItemClass("/admin-platform/testimonials")}
+              to="/admin-platform/landing-page"
+              className={navItemClass("/admin-platform/landing-page")}
               onClick={() => setSidebarOpen(false)}
-              title="Testimonials"
+              title="Landing Page"
             >
               <div className="flex items-center gap-2.5">
-                <MessageSquareQuote className="h-4 w-4 shrink-0" />
-                {!sidebarCollapsed && <span>Testimonials</span>}
+                <LayoutTemplate className="h-4 w-4 shrink-0" />
+                {!sidebarCollapsed && <span>Landing Page</span>}
               </div>
             </Link>
           </div>

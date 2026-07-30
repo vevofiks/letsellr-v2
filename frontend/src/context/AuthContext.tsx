@@ -95,8 +95,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Initiate Admin Login (Password or OTP - strict admin role validation)
-  const adminLogin = async (email: string, password?: string): Promise<boolean> => {
-    const res = await api.post("/api/auth/admin/login", { email, password });
+  const adminLogin = async (emailOrPhone: string, password?: string): Promise<boolean> => {
+    const res = await api.post("/api/auth/admin/login", {
+      email: emailOrPhone,
+      phone: emailOrPhone,
+      password,
+    });
     
     if (res.data.access_token) {
       const { access_token, refresh_token, user: userData } = res.data;

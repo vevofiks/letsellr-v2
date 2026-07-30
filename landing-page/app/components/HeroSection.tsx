@@ -70,12 +70,15 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
         {/* Layer 1 — Left: tag + description */}
         <div
           className="hero-left absolute flex flex-col gap-2.5"
-          style={{ top: "96px", left: "clamp(2rem, 4vw, 3.5rem)", zIndex: 20, maxWidth: "230px", opacity: 0 }}
+          style={{ top: "96px", left: "clamp(2rem, 4vw, 3.5rem)", zIndex: 20, maxWidth: "240px", opacity: 0 }}
         >
-         
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-wider uppercase bg-[#D9F7E9] text-[#0B6E4F] w-fit shadow-xs">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#23D283]"></span>
+            Direct Owners
+          </span>
           <p className="text-[12px] text-zinc-600 leading-relaxed font-normal">
             Verified homes, direct from owners across India.{" "}
-            <span style={{ color: "#23D283", fontWeight: 600 }}>100% Admin-Verified.</span>{" "}Direct owner connect.
+            <span style={{ color: "#23D283", fontWeight: 600 }}>100% Admin-Verified.</span>
           </p>
         </div>
 
@@ -154,12 +157,10 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
           {/* Left: desc */}
           <div
             className="hero-left flex flex-col gap-2"
-            style={{ maxWidth: "45%", opacity: 0 }}
+            style={{ maxWidth: "48%", opacity: 0 }}
           >
-            <span
-              className="inline-block text-[7px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full w-fit"
-              style={{ border: "1px solid #23D283", color: "#23D283", background: "rgba(35,210,131,0.08)" }}
-            >
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[8px] font-bold tracking-wider uppercase bg-[#D9F7E9] text-[#0B6E4F] w-fit">
+              <span className="w-1 h-1 rounded-full bg-[#23D283]"></span>
               Direct Owners
             </span>
             <p className="text-[10px] text-zinc-600 leading-relaxed font-normal">

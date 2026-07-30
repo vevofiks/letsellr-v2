@@ -50,6 +50,9 @@ async def create_admin_user(email: str, password: str, name: str, phone: str):
     logger.info("Supabase Auth user ready. UID: %s", auth_uid)
 
     # 2. Local Database User Record Creation/Update
+    from app.core.security import hash_password
+    hashed_password = hash_password(password)
+
     async with AsyncSessionLocal() as db:
         result = await db.execute(select(User).where(User.email == email))
         user = result.scalar_one_or_none()
@@ -58,14 +61,15 @@ async def create_admin_user(email: str, password: str, name: str, phone: str):
             logger.info("Updating existing DB record for %s to admin role...", email)
             user.role = "admin"
             user.name = name
-            user.auth_provider_uid = auth_uid
+            user.phone = phone
+            user.auth_provider_uid = hashed_password
             user.email_verified = True
             user.verification_status = "verified"
             user.status = "active"
         else:
             logger.info("Creating new local DB record for admin %s...", email)
             user = User(
-                auth_provider_uid=auth_uid,
+                auth_provider_uid=hashed_password,
                 role="admin",
                 name=name,
                 email=email,

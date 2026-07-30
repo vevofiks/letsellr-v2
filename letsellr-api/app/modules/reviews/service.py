@@ -155,8 +155,8 @@ class ReviewService:
                 detail="Review not found."
             )
 
-        # Enforce ownership check
-        if review.user_id != current_user.id:
+        # Enforce ownership check or allow admin
+        if current_user.role != "admin" and review.user_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You can only manage your own reviews."

@@ -45,25 +45,25 @@ export default function Navbar() {
         <nav className="hidden md:flex items-center gap-8">
           <a
             href="#properties"
-            className="text-xs font-semibold text-zinc-700 hover:text-black transition-colors"
+            className="text-xs font-semibold text-zinc-700 hover:text-[#23D283] transition-colors"
           >
             Properties
           </a>
           <a
             href="#editorial"
-            className="text-xs font-semibold text-zinc-700 hover:text-black transition-colors"
+            className="text-xs font-semibold text-zinc-700 hover:text-[#23D283] transition-colors"
           >
             Our Philosophy
           </a>
           <a
             href="#testimonials"
-            className="text-xs font-semibold text-zinc-700 hover:text-black transition-colors"
+            className="text-xs font-semibold text-zinc-700 hover:text-[#23D283] transition-colors"
           >
             Testimonials
           </a>
           <a
             href="#contact"
-            className="text-xs font-semibold text-zinc-700 hover:text-black transition-colors"
+            className="text-xs font-semibold text-zinc-700 hover:text-[#23D283] transition-colors"
           >
             Contact
           </a>
@@ -72,7 +72,7 @@ export default function Navbar() {
         {/* Right CTA Button */}
         <a
           href="http://localhost:5173"
-          className="bg-[#0F0F11] hover:bg-zinc-800 text-white text-xs font-bold px-5 py-2.5 rounded-full transition-all shadow-sm hover:scale-105"
+          className="bg-[#23D283] hover:bg-[#11995E] text-white text-xs font-bold px-5 py-2.5 rounded-full transition-all shadow-md shadow-[#23D283]/20 hover:scale-105"
         >
           List Property
         </a>

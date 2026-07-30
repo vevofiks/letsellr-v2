@@ -26,6 +26,7 @@ from app.modules.admin.schemas import (
 )
 from app.modules.properties.models import Property, PropertyType, LocationData
 from app.modules.properties.schemas import PropertyResponse
+from app.modules.reviews.models import Review
 
 router = APIRouter()
 
@@ -283,14 +284,22 @@ async def toggle_feature_property(
 ):
     """Admin toggle to feature / unfeature a property listing on the landing page."""
     require_admin(current_user)
-    property_obj = await db.get(Property, property_id)
+    from sqlalchemy.orm import selectinload
+
+    result = await db.execute(
+        select(Property).options(selectinload(Property.owner)).where(Property.id == property_id)
+    )
+    property_obj = result.scalars().first()
     if not property_obj:
         raise HTTPException(status_code=404, detail="Property not found")
 
     property_obj.is_featured = not property_obj.is_featured
     await db.commit()
-    await db.refresh(property_obj)
-    return property_obj
+
+    result_updated = await db.execute(
+        select(Property).options(selectinload(Property.owner)).where(Property.id == property_id)
+    )
+    return result_updated.scalars().first()
 
 
 @router.get("/property-types", response_model=list[PropertyTypeResponse], tags=["Admin - Property Types"])
@@ -497,5 +506,20 @@ async def update_user_limit(
         "remaining": user.msg_limit - user.msg_usage,
         "limit_reached": user.msg_usage >= user.msg_limit
     }
+
+
+@router.delete("/reviews/{review_id}", status_code=204, tags=["Admin - Reviews"])
+async def delete_property_review_admin(
+    review_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+):
+    require_admin(current_user)
+    review = await db.get(Review, review_id)
+    if not review:
+        raise HTTPException(status_code=404, detail="Review not found")
+    await db.delete(review)
+    await db.commit()
+
 
 
