@@ -1,0 +1,68 @@
+[tool.poetry]
+name = "letsellr-api"
+version = "0.1.0"
+description = "Letsellr — No-Brokerage Property Platform API"
+authors = ["Letsellr Team"]
+readme = "README.md"
+packages = [{ include = "app" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+
+# --- Core Framework ---
+fastapi = { version = "^0.115.0", extras = ["standard"] }
+uvicorn = { version = "^0.32.0", extras = ["standard"] }
+
+# --- Database (Async Postgres) ---
+sqlalchemy = { version = "^2.0.36", extras = ["asyncio"] }
+asyncpg = "^0.30.0"
+alembic = "^1.14.0"
+
+# --- Settings & Validation ---
+pydantic = { version = "^2.10.0", extras = ["email"] }
+pydantic-settings = "^2.6.0"
+python-dotenv = "^1.0.0"
+
+# --- Security ---
+python-jose = { version = "^3.3.0", extras = ["cryptography"] }
+passlib = { version = "^1.7.4", extras = ["bcrypt"] }
+
+# --- Auth Providers ---
+firebase-admin = "^6.6.0"                   # Firebase Auth SDK
+supabase = "^2.10.0"                        # Supabase Auth SDK (alternative)
+
+# --- HTTP & Utils ---
+httpx = "^0.28.0"
+python-multipart = "^0.0.19"               # File uploads
+boto3 = "^1.35.0"                          # Cloudflare R2 (S3-compatible)
+aiosmtplib = "^3.0.0"                      # Async SMTP email sending
+
+# --- Real-time ---
+websockets = "^14.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.0"
+pytest-asyncio = "^0.24.0"
+pytest-cov = "^6.0.0"
+httpx = "^0.28.0"
+ruff = "^0.8.0"
+mypy = "^1.13.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
+testpaths = ["tests"]
