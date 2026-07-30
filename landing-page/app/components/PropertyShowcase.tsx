@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { BedDouble, Bath } from "lucide-react";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { getAppUrl } from "@/lib/utils";
 
 const PRIMARY = "#23D283";
 
@@ -217,7 +218,7 @@ export default function PropertyShowcase() {
         {filteredProperties.map((prop) => (
           <a
             key={prop.id}
-            href="http://localhost:5173"
+            href={`${getAppUrl()}/properties/${prop.id}`}
             className="group flex flex-col cursor-pointer text-left"
           >
             {/* Image Container with rounded corners & Top-left pill badge */}

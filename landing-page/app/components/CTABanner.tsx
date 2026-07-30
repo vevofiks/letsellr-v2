@@ -6,6 +6,7 @@ import { ArrowRight } from "lucide-react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { getAppUrl } from "@/lib/utils";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -70,7 +71,7 @@ export default function CTABanner() {
           </p>
 
           <a
-            href="http://localhost:5173"
+            href={getAppUrl()}
             className="inline-flex items-center gap-2 bg-[#23D283] hover:bg-[#11995E] text-white text-sm font-bold px-9 py-4 rounded-full transition-all duration-300 shadow-xl shadow-[#23D283]/30 hover:scale-105"
           >
             Get Started Now

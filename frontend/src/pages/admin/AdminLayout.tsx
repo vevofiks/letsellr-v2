@@ -15,7 +15,6 @@ import {
   X,
   PanelLeftClose,
   PanelLeftOpen,
-  MessageSquareQuote,
   LayoutTemplate,
 } from "lucide-react";
 import { toast } from "sonner";

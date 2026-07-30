@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { getAppUrl } from "@/lib/utils";
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -71,7 +72,7 @@ export default function Navbar() {
 
         {/* Right CTA Button */}
         <a
-          href="http://localhost:5173"
+          href={getAppUrl()}
           className="bg-[#23D283] hover:bg-[#11995E] text-white text-xs font-bold px-5 py-2.5 rounded-full transition-all shadow-md shadow-[#23D283]/20 hover:scale-105"
         >
           List Property
