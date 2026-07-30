@@ -1,0 +1,86 @@
+name: Deploy FastAPI Backend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'letsellr-api/**'
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy to VPS
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: SSH and Deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
+          script_stop_on_error: true
+          script: |
+            PROJECT_DIR="/root/letsellr-v2"
+            BACKEND_DIR="$PROJECT_DIR/letsellr-api"
+            
+            echo "==> Navigating to repository..."
+            cd "$PROJECT_DIR"
+            
+            # 1. Pull the code safely
+            git sparse-checkout set letsellr-api
+            git fetch origin main
+            git reset --hard origin/main
+            
+            echo "==> Navigating to backend directory..."
+            cd "$BACKEND_DIR"
+            
+            VENV_DIR="/root/env"
+            
+            # 2. Update Virtual Environment
+            if [ -d "$VENV_DIR" ]; then
+              echo "==> Installing Python dependencies..."
+              $VENV_DIR/bin/pip install --upgrade pip
+              $VENV_DIR/bin/pip install -r requirements.txt --no-cache-dir
+            else
+              echo "==> Creating virtual environment..."
+              python3 -m venv $VENV_DIR
+              $VENV_DIR/bin/pip install --upgrade pip
+              $VENV_DIR/bin/pip install -r requirements.txt
+            fi
+            
+            # 3. Handle Database Migrations (Hard-Downtime Approach for Safety)
+            if [ -f "alembic.ini" ]; then
+              echo "==> Stopping service to safely run database migrations..."
+              sudo systemctl stop fastapi
+              
+              echo "==> Running Alembic migrations..."
+              # Use PYTHONPATH to prevent ModuleNotFoundError
+              PYTHONPATH=. $VENV_DIR/bin/alembic upgrade head
+              
+              echo "==> Starting FastAPI service..."
+              sudo systemctl start fastapi
+            else
+              # If no migrations, just reload workers gracefully
+              echo "==> Reloading FastAPI application service gracefully..."
+              sudo systemctl reload fastapi
+            fi
+            
+            # 4. Realistic Health Check
+            echo "==> Waiting 5 seconds for service workers to initialize..."
+            sleep 5
+            
+            echo "==> Checking HTTP health status..."
+            # Adjust the port or path (/docs, /api/health) to match your setup
+            if curl -f -s http://127.0.0.1:8000/docs > /dev/null; then
+                echo "SUCCESS: App is responding with 200 OK!"
+            else
+                echo "ERROR: App failed to respond! Check 'sudo journalctl -u fastapi -n 50' on the server."
+                exit 1
+            fi

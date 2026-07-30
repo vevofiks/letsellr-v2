@@ -82,7 +82,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-
+    print("allowed_hosts:", settings.ALLOWED_HOSTS)
     if settings.ENVIRONMENT == "production":
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.ALLOWED_HOSTS)
 

@@ -4,61 +4,62 @@ Service — Local Storage File Handling (Cloudflare R2 commented out)
 """
 import os
 import uuid
+import boto3
+from botocore.config import Config
 from fastapi import UploadFile, HTTPException, status
 from app.core.config import settings
 
-UPLOAD_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "uploads"))
-
-
 class MediaService:
     def __init__(self):
-        # Cloudflare R2 client initialization commented out in favor of local storage
-        # if not getattr(settings, "R2_ACCOUNT_ID", None) or not getattr(settings, "R2_ACCESS_KEY_ID", None) or not getattr(settings, "R2_SECRET_ACCESS_KEY", None):
-        #     self.s3 = None
-        # else:
-        #     self.s3 = boto3.client(
-        #         "s3",
-        #         endpoint_url=f"https://{settings.R2_ACCOUNT_ID}.r2.cloudflarestorage.com",
-        #         aws_access_key_id=settings.R2_ACCESS_KEY_ID,
-        #         aws_secret_access_key=settings.R2_SECRET_ACCESS_KEY,
-        #         config=Config(signature_version="s3v4"),
-        #         region_name="auto"
-        #     )
-        self.s3 = None
+        if not getattr(settings, "R2_ACCOUNT_ID", None) or not getattr(settings, "R2_ACCESS_KEY_ID", None) or not getattr(settings, "R2_SECRET_ACCESS_KEY", None):
+            self.s3 = None
+        else:
+            self.s3 = boto3.client(
+                "s3",
+                endpoint_url=f"https://{settings.R2_ACCOUNT_ID}.r2.cloudflarestorage.com",
+                aws_access_key_id=settings.R2_ACCESS_KEY_ID,
+                aws_secret_access_key=settings.R2_SECRET_ACCESS_KEY,
+                config=Config(signature_version="s3v4"),
+                region_name="auto"
+            )
 
     async def upload_file(self, file: UploadFile, folder: str = "uploads", base_url: str | None = None) -> tuple[str, str]:
         """
-        Uploads a file to local storage and returns the public URL and key.
+        Uploads a file to Cloudflare R2 storage and returns the public URL and key.
         """
+        if not self.s3:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Cloudflare R2 is not configured on the server."
+            )
+
         # Generate a unique key
         filename = file.filename or ""
         ext = filename.split(".")[-1] if "." in filename else "bin"
         unique_id = str(uuid.uuid4())
         filename = f"{unique_id}.{ext}"
-        key = f"{folder}/{filename}"
+        
+        # Standardize uploads to the "uploads" folder
+        key = f"uploads/{filename}"
 
-        # Ensure folder directory exists
-        target_dir = os.path.join(UPLOAD_DIR, folder)
-        os.makedirs(target_dir, exist_ok=True)
-        file_path = os.path.join(target_dir, filename)
-
-        # Read and save file contents
+        # Read and upload file contents
         try:
             contents = await file.read()
-            with open(file_path, "wb") as f:
-                f.write(contents)
+            self.s3.put_object(
+                Bucket=settings.R2_BUCKET_NAME,
+                Key=key,
+                Body=contents,
+                ContentType=file.content_type or "application/octet-stream"
+            )
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to save file to local storage: {str(e)}"
+                detail=f"Failed to save file to R2 storage: {str(e)}"
             )
 
-        # Construct public URL
-        if base_url:
-            clean_base = base_url.rstrip("/")
-            public_url = f"{clean_base}/uploads/{key}"
-        else:
-            public_url = f"http://localhost:8000/uploads/{key}"
+        # Construct public URL using R2_PUBLIC_URL
+        base_url = settings.R2_PUBLIC_URL.rstrip('/')
+        public_url = f"{base_url}/{key}"
 
         return public_url, key
 
