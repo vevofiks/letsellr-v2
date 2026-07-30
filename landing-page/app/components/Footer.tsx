@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { ArrowUpRight, ShieldCheck, MapPin, Phone, Mail } from "lucide-react";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
+import { getAppUrl } from "@/lib/utils";
 
 const PRIMARY = "#23D283";
 
@@ -91,7 +92,7 @@ export default function Footer() {
               <ul className="space-y-3 text-sm text-zinc-400">
                 {[
                   { label: "About Letsellr", href: "#" },
-                  { label: "List Property Free", href: "http://localhost:5173" },
+                  { label: "List Property Free", href: getAppUrl() },
                   { label: "Admin Verified", href: "#why-us" },
                   { label: "Privacy Policy", href: "#" },
                   { label: "Terms of Use", href: "#" },
@@ -117,7 +118,7 @@ export default function Footer() {
           </p>
         </div>
         <a
-          href="http://localhost:5173"
+          href={getAppUrl()}
           className="inline-flex items-center gap-2 text-sm font-semibold px-6 py-3 rounded-full transition-all duration-200 hover:scale-105 shrink-0 text-black"
           style={{ backgroundColor: PRIMARY }}
         >

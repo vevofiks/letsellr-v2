@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { MapPin, Building2, Home, ChevronDown, Search, Check } from "lucide-react";
+import { getAppUrl } from "@/lib/utils";
 
 const PURPOSE_OPTIONS = [
   { value: "buy", label: "Buy Property" },
@@ -43,8 +44,7 @@ export default function SearchBar() {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
 
-    const isProd = typeof window !== "undefined" && window.location.hostname !== "localhost";
-    const baseUrl = isProd ? "https://app.letsellr.in" : "http://localhost:5173";
+    const baseUrl = getAppUrl();
 
     const params = new URLSearchParams();
     if (location.trim()) params.append("search", location.trim());

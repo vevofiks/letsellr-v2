@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ArrowUpRight, ArrowLeft, ArrowRight, Play } from "lucide-react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
+import { getAppUrl } from "@/lib/utils";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -286,7 +287,7 @@ export default function EditorialSection() {
 
             {/* Explore button */}
             <a
-              href="http://localhost:5173"
+              href={getAppUrl()}
               className="w-full flex items-center justify-center gap-2 bg-[#23D283] hover:bg-[#11995E] text-white text-xs font-bold py-3 rounded-xl transition-all duration-300 shadow-md shadow-[#23D283]/20 cursor-pointer"
             >
               Explore Properties
