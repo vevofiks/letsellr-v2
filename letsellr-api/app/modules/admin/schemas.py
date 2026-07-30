@@ -15,7 +15,7 @@ class UserAdminResponse(BaseModel):
     id: uuid.UUID
     role: str
     name: str
-    email: EmailStr
+    email: EmailStr | None = None
     phone: str
     preference_type: str | None = None
     location_city: str | None = None

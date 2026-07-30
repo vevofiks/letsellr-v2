@@ -12,7 +12,7 @@ Login flow:
   POST /api/auth/verify-login          → verify OTP, return JWT
 
 Admin login:
-  POST /api/auth/admin/login           → phone + password → JWT (no OTP)
+  POST /api/auth/admin/login           → email + password → JWT (no OTP)
 
 Utility:
   POST /api/auth/resend-otp            → resend OTP
@@ -121,11 +121,11 @@ async def login(payload: LoginRequest, db: DbSession) -> TokenResponse:
 @router.post(
     "/admin/login",
     response_model=TokenResponse,
-    summary="Admin login — phone + password",
+    summary="Admin login — email + password",
 )
 async def admin_login(payload: AdminLoginRequest, db: DbSession) -> TokenResponse:
     """
-    **Admin login via phone + password.**
+    **Admin login via email + password.**
 
     No OTP required for admin accounts — direct password verification.
     """

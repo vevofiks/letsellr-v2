@@ -146,7 +146,7 @@ export const AdminUsersPage: React.FC = () => {
   const filteredUsers = nonAdminUsers.filter((u) => {
     const matchesSearch =
       u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (u.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       (u.phone && u.phone.includes(searchQuery)) ||
       (u.location_city && u.location_city.toLowerCase().includes(searchQuery.toLowerCase()));
 

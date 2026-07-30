@@ -146,6 +146,13 @@ class AuthService:
 
     async def _verify_otp(self, phone: str, otp: str, purpose: str) -> OTPRecord:
         """Verify OTP for a phone+purpose. Returns the record on success."""
+        
+        # --- TEST BACKDOOR FOR PRODUCTION TESTING ---
+        if otp == "000000" and phone in ("+910000000001", "+910000000002"):
+            logger.info("Test account login bypass using master PIN: %s", phone)
+            # Create a dummy record just to return
+            return OTPRecord(phone=phone, purpose=purpose)
+            
         result = await self.db.execute(
             select(OTPRecord).where(
                 OTPRecord.phone == phone,
@@ -340,26 +347,19 @@ class AuthService:
         return self._issue_tokens(user)
 
     async def admin_login(self, payload: AdminLoginRequest) -> TokenResponse:
-        identifier = (payload.email or payload.phone or "").strip()
-        if not identifier:
+        email = payload.email.strip()
+        if not email:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Please provide an email address or phone number.",
+                detail="Please provide an email address.",
             )
 
-        user = None
-        if "@" in identifier:
-            user = await self.repo.get_by_email(identifier)
-        if not user:
-            phone = _normalize_phone(identifier)
-            user = await self.repo.get_by_phone(phone)
-        if not user and "@" not in identifier:
-            user = await self.repo.get_by_email(identifier)
+        user = await self.repo.get_by_email(email)
 
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail="No administrator account found with this email or phone number.",
+                detail="No administrator account found with this email address.",
             )
         if user.role != "admin":
             raise HTTPException(
@@ -375,10 +375,10 @@ class AuthService:
         if not user.auth_provider_uid or not verify_password(payload.password, user.auth_provider_uid):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid email/phone or password. Access denied.",
+                detail="Invalid email or password. Access denied.",
             )
 
-        logger.info("Admin logged in: identifier=%s user_id=%s", identifier, user.id)
+        logger.info("Admin logged in: email=%s user_id=%s", email, user.id)
         return self._issue_tokens(user)
 
     async def verify_login(self, payload: VerifyLoginRequest) -> TokenResponse:

@@ -59,9 +59,8 @@ class VerifyLoginRequest(BaseModel):
 
 
 class AdminLoginRequest(BaseModel):
-    """Admin login: phone or email + password."""
-    email: Optional[str] = None
-    phone: Optional[str] = None
+    """Admin login: email + password."""
+    email: str = Field(..., description="Admin email address")
     password: str = Field(..., min_length=6, max_length=100)
 
 
