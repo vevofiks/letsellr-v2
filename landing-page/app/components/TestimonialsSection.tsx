@@ -181,7 +181,7 @@ export default function TestimonialsSection() {
 
                 {/* Author Info Footer */}
                 <div className="flex items-center gap-4 pt-6 border-t border-white/10">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-[#23D283] to-[#014645] border-2 border-white/20 flex items-center justify-center text-white font-bold text-lg shadow-inner overflow-hidden">
+                  <div className="w-12 h-12 rounded-full bg-linear-to-tr from-[#23D283] to-[#014645] border-2 border-white/20 flex items-center justify-center text-white font-bold text-lg shadow-inner overflow-hidden">
                     {t.avatar_url ? (
                       <img src={t.avatar_url} alt={t.author_name} className="w-full h-full object-cover" />
                     ) : (
