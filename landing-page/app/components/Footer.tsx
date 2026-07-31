@@ -2,12 +2,36 @@
 
 import Image from "next/image";
 import { ArrowUpRight, ShieldCheck, MapPin, Phone, Mail } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { getAppUrl } from "@/lib/utils";
+
+interface DbPropertyType {
+  slug: string;
+  label: string;
+}
 
 const PRIMARY = "#23D283";
 
 export default function Footer() {
+  const [propertyTypes, setPropertyTypes] = useState<DbPropertyType[]>([]);
+
+  useEffect(() => {
+    const fetchTypes = async () => {
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const res = await fetch(`${apiBase}/api/properties/config/types`);
+        if (res.ok) {
+          const data: DbPropertyType[] = await res.json();
+          setPropertyTypes(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch types for footer", err);
+      }
+    };
+    fetchTypes();
+  }, []);
+
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -60,13 +84,15 @@ export default function Footer() {
                 Property Types
               </h4>
               <ul className="space-y-3 text-sm text-zinc-400">
-                {["Luxury Villas", "Penthouse & Apts", "PG & Hostels", "Commercial Space", "Land & Plots"].map(l => (
-                  <li key={l}>
-                    <a href="#properties" className="hover:text-white transition-colors duration-150">
-                      {l}
+                {propertyTypes.length > 0 ? propertyTypes.map(t => (
+                  <li key={t.slug}>
+                    <a href="#properties" className="hover:text-white transition-colors duration-150 capitalize">
+                      {t.label}
                     </a>
                   </li>
-                ))}
+                )) : (
+                  <li><span className="opacity-50">Loading...</span></li>
+                )}
               </ul>
             </div>
 
@@ -75,7 +101,13 @@ export default function Footer() {
                 Top Cities
               </h4>
               <ul className="space-y-3 text-sm text-zinc-400">
-                {["Kozhikode, Kerala", "Kochi, Kerala", "Bangalore Urban", "Mumbai South", "Hyderabad"].map(l => (
+                {[
+                  "Calicut town",
+                  "Thondayad",
+                  "Palazhi",
+                  "Mankave",
+                  "Nadakkave"
+                ].map(l => (
                   <li key={l}>
                     <a href="#properties" className="hover:text-white transition-colors duration-150">
                       {l}
@@ -91,9 +123,7 @@ export default function Footer() {
               </h4>
               <ul className="space-y-3 text-sm text-zinc-400">
                 {[
-                  { label: "About Letsellr", href: "#" },
-                  { label: "List Property Free", href: getAppUrl() },
-                  { label: "Admin Verified", href: "#why-us" },
+                  { label: "Company", href: "#" },
                   { label: "Privacy Policy", href: "#" },
                   { label: "Terms of Use", href: "#" },
                 ].map(({ label, href }) => (
