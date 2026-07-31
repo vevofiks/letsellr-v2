@@ -95,7 +95,7 @@ async def _get_active_session_id() -> str:
     except Exception as e:
         logger.warning("Failed to auto-resolve OpenWA session ID: %s", e)
 
-    return session_target
+    return session_target   
 
 
 async def _send_whatsapp_otp(phone: str, otp: str, purpose: str) -> None:
