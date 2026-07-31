@@ -30,8 +30,16 @@ const GALLERY_SLIDES = [
   },
 ];
 
-// Right-side property cards (rotating)
-const PROPERTY_CARDS = [
+interface PropertyCardItem {
+  id?: string;
+  image: string;
+  title: string;
+  location: string;
+  price: string;
+}
+
+// Right-side property cards fallback
+const DEFAULT_PROPERTY_CARDS: PropertyCardItem[] = [
   {
     image: "/images/coastal-penthouse.png",
     title: "Sunset Oceanfront Penthouse",
@@ -52,6 +60,19 @@ const PROPERTY_CARDS = [
   },
 ];
 
+const formatPriceInr = (val: number, unit?: string) => {
+  let priceStr = "";
+  if (val >= 10000000) {
+    priceStr = `₹${(val / 10000000).toFixed(1)} Cr`;
+  } else if (val >= 100000) {
+    priceStr = `₹${(val / 100000).toFixed(1)} L`;
+  } else {
+    priceStr = `₹${val.toLocaleString("en-IN")}`;
+  }
+  if (unit === "per_month") priceStr += " / mo";
+  return priceStr;
+};
+
 export default function EditorialSection() {
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLHeadingElement>(null);
@@ -59,12 +80,50 @@ export default function EditorialSection() {
 
   const [activeSlide, setActiveSlide] = useState(0);
   const [activePropCard, setActivePropCard] = useState(0);
+  const [propertyCards, setPropertyCards] = useState<PropertyCardItem[]>(DEFAULT_PROPERTY_CARDS);
+
+  useEffect(() => {
+    const fetchFeatured = async () => {
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        let res = await fetch(`${apiBase}/api/properties/featured?limit=8`);
+        if (!res.ok) {
+          res = await fetch(`${apiBase}/api/v1/properties/featured?limit=8`);
+        }
+        if (!res.ok) return;
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          const mapped: PropertyCardItem[] = data.map((item: any) => {
+            const firstPhoto =
+              Array.isArray(item.photos) && item.photos.length > 0
+                ? typeof item.photos[0] === "string"
+                  ? item.photos[0]
+                  : item.photos[0]?.photo_url || ""
+                : "";
+
+            const areaCity = [item.location_area, item.location_city].filter(Boolean).join(", ") || "Location Unspecified";
+            return {
+              id: item.id || item.ref,
+              image: firstPhoto || "/images/hero-villa.png",
+              title: item.title,
+              location: areaCity,
+              price: formatPriceInr(item.price, item.price_unit),
+            };
+          });
+          setPropertyCards(mapped);
+        }
+      } catch (err) {
+        console.error("Failed to fetch featured properties for EditorialSection:", err);
+      }
+    };
+    fetchFeatured();
+  }, []);
 
   const prevSlide = () => setActiveSlide((p) => (p - 1 + GALLERY_SLIDES.length) % GALLERY_SLIDES.length);
   const nextSlide = () => setActiveSlide((p) => (p + 1) % GALLERY_SLIDES.length);
 
-  const prevCard = () => setActivePropCard((p) => (p - 1 + PROPERTY_CARDS.length) % PROPERTY_CARDS.length);
-  const nextCard = () => setActivePropCard((p) => (p + 1) % PROPERTY_CARDS.length);
+  const prevCard = () => setActivePropCard((p) => (p - 1 + propertyCards.length) % propertyCards.length);
+  const nextCard = () => setActivePropCard((p) => (p + 1) % propertyCards.length);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -115,7 +174,7 @@ export default function EditorialSection() {
   }, []);
 
   const currentSlide = GALLERY_SLIDES[activeSlide];
-  const currentCard = PROPERTY_CARDS[activePropCard];
+  const currentCard = propertyCards[activePropCard] || propertyCards[0] || DEFAULT_PROPERTY_CARDS[0];
 
   return (
     <section
@@ -126,12 +185,13 @@ export default function EditorialSection() {
       {/* ── Top Headline Block ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end mb-12 md:mb-16">
         <div className="lg:col-span-7">
-          {/* Eyebrow */}
           <div className="mb-5">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-[0.15em] uppercase bg-[#D9F7E9] text-[#0B6E4F]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#23D283]"></span>
-              The Letsellr Philosophy
-            </span>
+            <div className="inline-flex items-center gap-2.5">
+              <span className="w-5 h-0.5 bg-[#23D283] rounded-full"></span>
+              <span className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#014645]">
+                The Letsellr Philosophy
+              </span>
+            </div>
           </div>
 
           <h2
@@ -263,19 +323,18 @@ export default function EditorialSection() {
         {/* RIGHT — Property card + nav arrows */}
         <div className="lg:col-span-3 flex flex-col gap-4">
           {/* Property image card */}
-          <div className="relative rounded-2xl overflow-hidden bg-zinc-200 flex-1 min-h-50 md:min-h-70 group">
-            <Image
+          <div className="relative rounded-2xl overflow-hidden bg-zinc-900 flex-1 min-h-50 md:min-h-70 group">
+            <img
               key={activePropCard}
               src={currentCard.image}
               alt={currentCard.title}
-              fill
-              className="object-cover object-center transition-all duration-700 ease-out group-hover:scale-[1.05]"
+              className="absolute inset-0 w-full h-full object-cover object-center transition-all duration-700 ease-out group-hover:scale-[1.05]"
             />
-            <div className="absolute inset-0 bg-linear-to-t from-black/50 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent" />
           </div>
 
           {/* Info + nav */}
-          <div className="bg-white rounded-2xl border border-black/8 shadow-sm p-5 flex flex-col gap-4">
+          <div className="bg-white rounded-2xl border border-black/8 shadow-xs p-5 flex flex-col gap-4">
             <div>
               <p className="text-xs text-zinc-400 font-semibold mb-1 truncate">{currentCard.location}</p>
               <h4 className="text-sm font-bold text-[#0F0F11] leading-snug line-clamp-2 mb-2">{currentCard.title}</h4>
@@ -287,7 +346,7 @@ export default function EditorialSection() {
 
             {/* Explore button */}
             <a
-              href={getAppUrl()}
+              href={currentCard.id ? `${getAppUrl()}/properties/${currentCard.id}` : `${getAppUrl()}/dashboard`}
               className="w-full flex items-center justify-center gap-2 bg-[#23D283] hover:bg-[#11995E] text-white text-xs font-bold py-3 rounded-xl transition-all duration-300 shadow-md shadow-[#23D283]/20 cursor-pointer"
             >
               Explore Properties
@@ -295,19 +354,26 @@ export default function EditorialSection() {
             </a>
 
             {/* Navigation arrows */}
-            <div className="flex items-center justify-end gap-2">
-              <button
-                onClick={prevCard}
-                className="w-8 h-8 rounded-full border border-black/15 flex items-center justify-center text-zinc-600 hover:bg-[#23D283] hover:text-white hover:border-[#23D283] transition-all duration-200 cursor-pointer"
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={nextCard}
-                className="w-8 h-8 rounded-full border border-black/15 flex items-center justify-center text-zinc-600 hover:bg-[#23D283] hover:text-white hover:border-[#23D283] transition-all duration-200 cursor-pointer"
-              >
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-[10px] font-extrabold text-zinc-400 uppercase tracking-wider">
+                {activePropCard + 1} of {propertyCards.length}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={prevCard}
+                  className="w-8 h-8 rounded-full border border-black/15 flex items-center justify-center text-zinc-600 hover:bg-[#23D283] hover:text-white hover:border-[#23D283] transition-all duration-200 cursor-pointer"
+                  aria-label="Previous Property"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={nextCard}
+                  className="w-8 h-8 rounded-full border border-black/15 flex items-center justify-center text-zinc-600 hover:bg-[#23D283] hover:text-white hover:border-[#23D283] transition-all duration-200 cursor-pointer"
+                  aria-label="Next Property"
+                >
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           </div>
         </div>

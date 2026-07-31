@@ -1,11 +1,20 @@
 "use client";
 
 import Image from "next/image";
-import { ArrowUpRight, ShieldCheck, MapPin, Phone, Mail } from "lucide-react";
+import { ArrowUpRight, MapPin, Mail } from "lucide-react";
 import { useScrollReveal } from "@/hooks/useScrollReveal";
 import { getAppUrl } from "@/lib/utils";
 
 const PRIMARY = "#23D283";
+
+// Static JSON list for Property Types
+const PROPERTY_TYPES = [
+  { label: "Apartment", slug: "apartment" },
+  { label: "Commercial", slug: "commercial" },
+  { label: "Co-working Space", slug: "coworking" },
+  { label: "Hostel", slug: "hostel" },
+  { label: "Land", slug: "land" },
+];
 
 export default function Footer() {
   const scrollToTop = () => {
@@ -35,10 +44,9 @@ export default function Footer() {
                 <span className="font-extrabold text-2xl tracking-tight text-white">LETSELLR</span>
               </div>
               <p className="text-zinc-400 text-sm leading-relaxed max-w-xs font-light">
-                India's direct property platform. Admin-verified listings, owner connect, transparent pricing.
+                India&apos;s direct property platform. Admin-verified listings, owner connect, transparent pricing.
               </p>
             </div>
-
 
             {/* Contact info */}
             <div className="flex flex-col gap-2 text-xs text-zinc-500">
@@ -60,10 +68,13 @@ export default function Footer() {
                 Property Types
               </h4>
               <ul className="space-y-3 text-sm text-zinc-400">
-                {["Luxury Villas", "Penthouse & Apts", "PG & Hostels", "Commercial Space", "Land & Plots"].map(l => (
-                  <li key={l}>
-                    <a href="#properties" className="hover:text-white transition-colors duration-150">
-                      {l}
+                {PROPERTY_TYPES.map((t) => (
+                  <li key={t.slug}>
+                    <a
+                      href={`${getAppUrl()}/dashboard?category=${t.slug}`}
+                      className="hover:text-white transition-colors duration-150"
+                    >
+                      {t.label}
                     </a>
                   </li>
                 ))}
@@ -75,9 +86,18 @@ export default function Footer() {
                 Top Cities
               </h4>
               <ul className="space-y-3 text-sm text-zinc-400">
-                {["Kozhikode, Kerala", "Kochi, Kerala", "Bangalore Urban", "Mumbai South", "Hyderabad"].map(l => (
+                {[
+                  "Calicut town",
+                  "Thondayad",
+                  "Palazhi",
+                  "Mankave",
+                  "Nadakkave",
+                ].map((l) => (
                   <li key={l}>
-                    <a href="#properties" className="hover:text-white transition-colors duration-150">
+                    <a
+                      href={`${getAppUrl()}/dashboard?city=${encodeURIComponent(l)}`}
+                      className="hover:text-white transition-colors duration-150"
+                    >
                       {l}
                     </a>
                   </li>
@@ -91,9 +111,7 @@ export default function Footer() {
               </h4>
               <ul className="space-y-3 text-sm text-zinc-400">
                 {[
-                  { label: "About Letsellr", href: "#" },
-                  { label: "List Property Free", href: getAppUrl() },
-                  { label: "Admin Verified", href: "#why-us" },
+                  { label: "Company", href: "#" },
                   { label: "Privacy Policy", href: "#" },
                   { label: "Terms of Use", href: "#" },
                 ].map(({ label, href }) => (
@@ -134,7 +152,7 @@ export default function Footer() {
         </span>
         <button
           onClick={scrollToTop}
-          className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-zinc-500 hover:bg-white/10 hover:text-white transition-all"
+          className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-zinc-500 hover:bg-white/10 hover:text-white transition-all cursor-pointer"
           aria-label="Scroll to top"
         >
           <ArrowUpRight className="w-4 h-4 -rotate-45" />

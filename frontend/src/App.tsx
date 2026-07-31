@@ -77,6 +77,18 @@ function App() {
               path="/dashboard"
               element={<ClientDashboard />}
             />
+            <Route
+              path="/dashboard/search"
+              element={<ClientDashboard />}
+            />
+            <Route
+              path="/search"
+              element={<ClientDashboard />}
+            />
+            <Route
+              path="/properties"
+              element={<ClientDashboard />}
+            />
 
             <Route
               path="/properties/:propertyId"

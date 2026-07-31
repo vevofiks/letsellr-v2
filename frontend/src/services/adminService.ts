@@ -104,6 +104,7 @@ export interface PropertyType {
   slug: string;
   label: string;
   description: string;
+  image_url?: string | null;
   is_active: boolean;
   allowed_roles: string[];
   created_at: string;
@@ -235,6 +236,14 @@ export const adminService = {
   },
   deletePropertyType: async (id: string): Promise<{ message: string }> => {
     const res = await api.delete<{ message: string }>(`/api/admin/property-types/${id}`);
+    return res.data;
+  },
+  uploadPropertyTypeImage: async (id: string, file: File): Promise<PropertyType> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await api.post<PropertyType>(`/api/admin/property-types/${id}/image`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return res.data;
   },
 

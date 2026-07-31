@@ -160,12 +160,12 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
           </h1>
         </div>
 
-        {/* Top Row: Description left, Stats right */}
+        {/* Top Row: Description left */}
         <div className="absolute top-0 left-0 right-0 flex justify-between items-start px-5 pt-20 z-20">
           {/* Left: desc */}
           <div
             className="hero-left flex flex-col gap-2"
-            style={{ maxWidth: "45%", opacity: 0 }}
+            style={{ maxWidth: "75%", opacity: 0 }}
           >
             <span
               className="inline-block text-[7px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full w-fit"
@@ -177,29 +177,12 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
               Verified homes, direct from owners. <span style={{ color: "#23D283", fontWeight: 600 }}>100% admin-checked</span> listings.
             </p>
           </div>
-
-          {/* Right: stats */}
-          <div
-            className="hero-right flex flex-col items-end gap-3 mt-6"
-            style={{ opacity: 0 }}
-          >
-            {[
-              { val: "10K", label: "Clients" },
-              { val: "100%", label: "Verified" },
-              { val: "15+", label: "Cities" },
-            ].map((s) => (
-              <div key={s.label} className="text-right">
-                <div className="text-xl font-extrabold tracking-tighter text-[#0F0F11] leading-none">{s.val}</div>
-                <div className="text-[8px] font-bold uppercase tracking-widest mt-0.5" style={{ color: "#23D283" }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
         </div>
 
         {/* Villa centerpiece — fits within screen, overlaps LETSELLR text */}
         <div
           className="hero-building absolute left-0 right-0 px-4"
-          style={{ top: "30%", bottom: "clamp(70px, 12vh, 100px)", zIndex: 10, opacity: 0 }}
+          style={{ top: "10%", bottom: "clamp(100px, 16vh, 140px)", zIndex: 10, opacity: 0 }}
         >
           <div className="relative w-full h-full">
             <Image
@@ -210,24 +193,46 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
               className="object-contain object-bottom"
               style={{
                 filter: "drop-shadow(0 12px 28px rgba(0,0,0,0.12))",
-                transform: "scale(1.25) translateY(2%)",
+                transform: "scale(1.22) translateY(0%)",
                 transformOrigin: "bottom center",
               }}
             />
           </div>
         </div>
 
-        {/* Bottom Tagline */}
+        {/* Bottom Row: Left Tagline + Right Stats */}
         <div
-          className="hero-tagline absolute bottom-5 left-5 right-5 mb-15  z-30"
-          style={{ opacity: 0 }}
+          className="absolute bottom-5 left-5 right-5 flex justify-between items-end z-30 pointer-events-none"
         >
-          <h2
-            className="font-extrabold tracking-tight text-[#0F0F11] uppercase leading-tight"
-            style={{ fontSize: "8vw" }}
+          {/* Bottom Tagline */}
+          <div
+            className="hero-tagline pointer-events-auto"
+            style={{ opacity: 0 }}
           >
-            Choose Your<br /><span style={{ color: "#23D283" }}>Next </span> Home
-          </h2>
+            <h2
+              className="font-extrabold tracking-tight text-[#0F0F11] uppercase leading-tight"
+              style={{ fontSize: "7.5vw" }}
+            >
+              Choose Your<br /><span style={{ color: "#23D283" }}>Next </span> Home
+            </h2>
+          </div>
+
+          {/* Right: stats (Mobile bottom-right) */}
+          <div
+            className="hero-right flex flex-col items-end gap-2 pointer-events-auto"
+            style={{ opacity: 0 }}
+          >
+            {[
+              { val: "10K", label: "Clients" },
+              { val: "15+", label: "Cities" },
+              { val: "100%", label: "Verified" },
+            ].map((s) => (
+              <div key={s.label} className="text-right">
+                <div className="text-[21px] font-extrabold tracking-tighter text-[#0F0F11] leading-none">{s.val}</div>
+                <div className="text-[9px] font-bold uppercase tracking-widest mt-0.5" style={{ color: "#23D283" }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </section>

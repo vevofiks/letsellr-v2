@@ -184,6 +184,7 @@ class PropertyService:
         intent: Optional[str] = None,
         category: Optional[str] = None,
         city: Optional[str] = None,
+        q: Optional[str] = None,
         owner_id: Optional[uuid.UUID] = None,
         min_price: Optional[int] = None,
         max_price: Optional[int] = None,
@@ -198,6 +199,7 @@ class PropertyService:
         if intent: filters["intent"] = intent
         if category: filters["category"] = category
         if city: filters["city"] = city
+        if q: filters["q"] = q
         if owner_id: filters["owner_id"] = owner_id
         if min_price is not None: filters["min_price"] = min_price
         if max_price is not None: filters["max_price"] = max_price

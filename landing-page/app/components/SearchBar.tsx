@@ -64,7 +64,7 @@ export default function SearchBar() {
     if (locationQuery.trim()) params.append("search", locationQuery.trim());
     params.append("type", activeTab);
 
-    const targetUrl = `${baseUrl}/?${params.toString()}`;
+    const targetUrl = `${baseUrl}/dashboard/search?${params.toString()}`;
     window.location.href = targetUrl;
   };
 

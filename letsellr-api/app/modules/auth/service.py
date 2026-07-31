@@ -23,6 +23,7 @@ All JWTs are self-issued (HS256, SECRET_KEY). No Supabase dependency.
 import logging
 import random
 import string
+import asyncio
 from datetime import UTC, datetime, timedelta
 
 import httpx
@@ -157,8 +158,30 @@ async def _send_whatsapp_otp(phone: str, otp: str, purpose: str) -> None:
         logger.error("[OTP ERROR] OpenWA returned HTTP Status Error %s: %s", e.response.status_code, e.response.text)
         logger.warning("[FALLBACK DEV MODE] WhatsApp OTP for %s (%s): %s", phone, purpose, otp)
     except Exception as e:
-        logger.error("[OTP ERROR] Failed to connect to OpenWA Gateway: %s", e)
-        logger.warning("[FALLBACK DEV MODE] WhatsApp OTP for %s (%s): %s", phone, purpose, otp)
+        logger.error(f"WhatsApp OTP failed to send to {phone}: {e}")
+
+
+async def _trigger_crm_webhook(user: User):
+    url = "https://revucrm.larahub.io/api/v1/lead-intake/0488d536-a0ec-4919-b548-345e7ee84bce"
+    headers = {
+        "Authorization": "Bearer 4PvdLEkkCm4EhNITsiksFY7A2EKpRhhs",
+        "X-Secret-Key": "4PvdLEkkCm4EhNITsiksFY7A2EKpRhhs",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "customer_name": user.name or "New User",
+        "mobile_1": user.phone,
+        "preferred_locations": [user.location_city] if user.location_city else []
+    }
+    if user.email:
+        payload["email"] = user.email
+        
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(url, json=payload, headers=headers, timeout=5.0)
+            logger.info("CRM Webhook fired for %s, status: %s", user.phone, resp.status_code)
+    except Exception as e:
+        logger.error("Failed to fire CRM Webhook for %s: %s", user.phone, e)
 
 
 class AuthService:
@@ -360,6 +383,9 @@ class AuthService:
         await self.db.commit()
         await self.db.refresh(created)
         logger.info("User created via phone OTP: phone=%s role=%s", phone, created.role)
+
+        # Trigger CRM webhook asynchronously
+        asyncio.create_task(_trigger_crm_webhook(created))
 
         return self._issue_tokens(created)
 

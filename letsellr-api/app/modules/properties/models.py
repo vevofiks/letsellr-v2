@@ -28,6 +28,7 @@ class PropertyType(UUIDMixin, TimestampMixin, Base):
     slug: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
     label: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str] = mapped_column(Text, default="")
+    image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     # Roles allowed to list in this category
     allowed_roles: Mapped[list[str]] = mapped_column(ARRAY(String), default=list, nullable=False)

@@ -35,7 +35,6 @@ import {
   ChevronRight,
   Share2,
   CheckCircle2,
-  PhoneCall
 } from "lucide-react";
 
 const getYoutubeEmbedUrl = (url: string | undefined): string | null => {
@@ -58,79 +57,7 @@ const getYoutubeThumbnailUrl = (url: string | undefined): string | null => {
   return null;
 };
 
-const getCategoryFallbackImage = (category: string) => {
-  switch (category) {
-    case "apartment":
-      return "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80";
-    case "villa_house":
-      return "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80";
-    case "land":
-      return "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80";
-    case "commercial":
-      return "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80";
-    case "pg":
-    case "hostel":
-      return "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80";
-    default:
-      return "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80";
-  }
-};
 
-const getPhotosGrid = (photos: string[] | undefined, category: string) => {
-  const fallbackPhotos = {
-    apartment: [
-      "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1484154218962-a197022b5858?auto=format&fit=crop&w=800&q=80"
-    ],
-    villa_house: [
-      "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80"
-    ],
-    commercial: [
-      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1497366811353-6870744d04b2?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1431540015161-0bf868a2d407?auto=format&fit=crop&w=800&q=80"
-    ],
-    pg: [
-      "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&w=800&q=80"
-    ],
-    hostel: [
-      "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1507089947368-19c1da9775ae?auto=format&fit=crop&w=800&q=80"
-    ],
-    land: [
-      "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800&q=80",
-      "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=800&q=80"
-    ]
-  };
-
-  const list = photos && photos.length > 0 ? [...photos] : [];
-  const catKey = (category in fallbackPhotos) ? (category as keyof typeof fallbackPhotos) : 'villa_house';
-  const defaults = fallbackPhotos[catKey];
-
-  while (list.length < 5) {
-    list.push(defaults[list.length % defaults.length]);
-  }
-  return list.slice(0, 5);
-};
 
 export const PropertyDetailsPage: React.FC = () => {
   const { propertyId } = useParams<{ propertyId: string }>();
@@ -308,8 +235,6 @@ export const PropertyDetailsPage: React.FC = () => {
     );
   };
 
-  const photosGrid = property ? getPhotosGrid(property.photos, property.category) : [];
-
   const mediaList = React.useMemo(() => {
     if (!property) return [];
     const list: { type: "image" | "video"; url: string; rawUrl?: string }[] = [];
@@ -322,11 +247,13 @@ export const PropertyDetailsPage: React.FC = () => {
         }
       });
     }
-    photosGrid.forEach((img) => {
-      list.push({ type: "image", url: img });
-    });
+    if (property.photos && Array.isArray(property.photos) && property.photos.length > 0) {
+      property.photos.forEach((img: string) => {
+        if (img) list.push({ type: "image", url: img });
+      });
+    }
     return list;
-  }, [property, photosGrid]);
+  }, [property]);
 
   const handleNextPhoto = () => {
     if (mediaList.length === 0) return;
@@ -480,15 +407,6 @@ export const PropertyDetailsPage: React.FC = () => {
     window.open(`https://wa.me/${cleanNumber}?text=${message}`, "_blank");
   };
 
-  const handleCallContact = (e: React.MouseEvent) => {
-    if (!property) return;
-    if (!user) {
-      e.preventDefault();
-      toast.error("Please sign in to view contact details.");
-      setAuthModal({ open: true, mode: "login" });
-    }
-  };
-
   const handleShareLink = () => {
     if (navigator.share) {
       navigator.share({
@@ -579,7 +497,12 @@ export const PropertyDetailsPage: React.FC = () => {
               <div className="relative h-56 sm:h-72 md:h-100 w-full overflow-hidden rounded-2xl bg-slate-900 border border-slate-200/80 shadow-xs group">
                 
                 {/* Active Slide */}
-                {mediaList[activePhotoIndex]?.type === "video" ? (
+                {mediaList.length === 0 ? (
+                  <div className="h-full w-full flex flex-col items-center justify-center bg-slate-800 text-slate-400 gap-3">
+                    <Building2 className="h-12 w-12 text-slate-500" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-400">No images uploaded for this listing</span>
+                  </div>
+                ) : mediaList[activePhotoIndex]?.type === "video" ? (
                   <iframe
                     src={mediaList[activePhotoIndex].url}
                     title="Property Video Tour"
@@ -631,9 +554,11 @@ export const PropertyDetailsPage: React.FC = () => {
                 )}
 
                 {/* Counter Pill */}
-                <div className="absolute bottom-3 right-3 bg-slate-950/80 backdrop-blur-md text-white text-[10px] font-extrabold rounded-full px-3 py-1 shadow-sm border border-white/10">
-                  {activePhotoIndex + 1} / {mediaList.length}
-                </div>
+                {mediaList.length > 0 && (
+                  <div className="absolute bottom-3 right-3 bg-slate-950/80 backdrop-blur-md text-white text-[10px] font-extrabold rounded-full px-3 py-1 shadow-sm border border-white/10">
+                    {activePhotoIndex + 1} / {mediaList.length}
+                  </div>
+                )}
               </div>
 
               {/* Thumbnails Row */}
@@ -649,7 +574,7 @@ export const PropertyDetailsPage: React.FC = () => {
                     >
                       {media.type === "video" ? (
                         <div className="relative h-full w-full bg-slate-900">
-                          <img src={getYoutubeThumbnailUrl(media.rawUrl || property.video_link) || photosGrid[0]} alt="" className="h-full w-full object-cover opacity-60" />
+                          <img src={getYoutubeThumbnailUrl(media.rawUrl || property.video_link) || (property.photos && property.photos[0]) || ""} alt="" className="h-full w-full object-cover opacity-60" />
                           <div className="absolute inset-0 flex items-center justify-center">
                             <Play className="h-5 w-5 text-white fill-white" />
                           </div>
@@ -1066,22 +991,12 @@ export const PropertyDetailsPage: React.FC = () => {
               <div className="space-y-3 pt-2">
                 <Button
                   onClick={handleWhatsAppContact}
-                  className="w-full bg-[#23D283] hover:bg-[#11995E] text-white font-extrabold py-3.5 text-sm rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all active:scale-98"
+                  className="w-full bg-[#23D283] hover:bg-[#11995E] text-white font-extrabold py-7 text-sm rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all active:scale-98"
                 >
                   <MessageSquare className="h-4.5 w-4.5" />
                   Chat on WhatsApp
                 </Button>
                 
-                {property.owner_phone && (
-                  <a 
-                    href={`tel:${property.owner_phone}`} 
-                    onClick={handleCallContact}
-                    className="w-full border border-slate-200 hover:bg-slate-50 text-slate-800 font-extrabold py-3 text-xs rounded-xl flex items-center justify-center gap-2 cursor-pointer transition-colors"
-                  >
-                    <PhoneCall className="h-4 w-4 text-slate-500" />
-                    Call Owner / Agency
-                  </a>
-                )}
               </div>
 
               {/* Verified listing note */}
@@ -1166,12 +1081,19 @@ export const PropertyDetailsPage: React.FC = () => {
                   >
                     {/* Image box */}
                     <div className="h-44 w-full rounded-xl overflow-hidden relative shrink-0">
-                      <img
-                        src={related.photos && related.photos.length > 0 ? related.photos[0] : getCategoryFallbackImage(related.category)}
-                        alt={related.title}
-                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                      />
+                      {related.photos && related.photos.length > 0 ? (
+                        <img
+                          src={related.photos[0]}
+                          alt={related.title}
+                          className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-slate-800 flex flex-col items-center justify-center text-slate-400 gap-1">
+                          <Building2 className="h-8 w-8 text-slate-500" />
+                          <span className="text-[10px] font-bold text-slate-400">No Image Available</span>
+                        </div>
+                      )}
                       <div className="absolute top-2 left-2">
                         <span className="inline-flex rounded-md bg-white/95 backdrop-blur-md px-2 py-0.5 text-[9px] font-black text-slate-800 shadow-2xs uppercase tracking-wider">
                           For {related.intent === "buy" ? "Sale" : related.intent === "rent" ? "Rent" : "Lease"}

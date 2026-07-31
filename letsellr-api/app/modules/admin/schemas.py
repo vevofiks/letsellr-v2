@@ -62,6 +62,7 @@ class PropertyTypeResponse(BaseModel):
     slug: str
     label: str
     description: str
+    image_url: str | None = None
     is_active: bool
     allowed_roles: list[str]
     created_at: datetime
@@ -72,6 +73,7 @@ class PropertyTypeCreate(BaseModel):
     slug: str
     label: str
     description: str = ""
+    image_url: str | None = None
     is_active: bool = True
     allowed_roles: list[str] = []
 
@@ -79,6 +81,7 @@ class PropertyTypeUpdate(BaseModel):
     slug: str | None = None
     label: str | None = None
     description: str | None = None
+    image_url: str | None = None
     is_active: bool | None = None
     allowed_roles: list[str] | None = None
 

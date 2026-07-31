@@ -63,6 +63,14 @@ class PropertyRepository:
             stmt = stmt.where(Property.intent == filters["intent"])
         if "city" in filters:
             stmt = stmt.where(Property.location_city.ilike(f"%{filters['city']}%"))
+        if "q" in filters and filters["q"]:
+            q_term = f"%{filters['q']}%"
+            stmt = stmt.where(
+                Property.title.ilike(q_term) |
+                Property.description.ilike(q_term) |
+                Property.location_area.ilike(q_term) |
+                Property.location_city.ilike(q_term)
+            )
         if "owner_id" in filters:
             stmt = stmt.where(Property.owner_id == filters["owner_id"])
         if "min_price" in filters:

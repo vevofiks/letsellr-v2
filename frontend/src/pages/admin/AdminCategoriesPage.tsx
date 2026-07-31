@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { adminService, type PropertyType } from "@/services/adminService";
 import { Badge } from "@/components/ui/badge";
 
-const ROLE_OPTIONS = ["owner", "agency", "user", "admin"];
+const ROLE_OPTIONS = ["owner", "agency"];
 
 const slugify = (str: string) =>
   str.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
@@ -15,8 +15,15 @@ const slugify = (str: string) =>
 const fmt = (iso: string) =>
   new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
-type FormState = { slug: string; label: string; description: string; is_active: boolean; allowed_roles: string[] };
-const EMPTY: FormState = { slug: "", label: "", description: "", is_active: true, allowed_roles: [] };
+type FormState = {
+  slug: string;
+  label: string;
+  description: string;
+  image_url: string;
+  is_active: boolean;
+  allowed_roles: string[];
+};
+const EMPTY: FormState = { slug: "", label: "", description: "", image_url: "", is_active: true, allowed_roles: [] };
 
 export const AdminCategoriesPage: React.FC = () => {
   const [types, setTypes] = useState<PropertyType[]>([]);
@@ -50,7 +57,14 @@ export const AdminCategoriesPage: React.FC = () => {
 
   const openEdit = (t: PropertyType) => {
     setEditTarget(t);
-    setForm({ slug: t.slug, label: t.label, description: t.description, is_active: t.is_active, allowed_roles: [...t.allowed_roles] });
+    setForm({
+      slug: t.slug,
+      label: t.label,
+      description: t.description,
+      image_url: t.image_url || "",
+      is_active: t.is_active,
+      allowed_roles: t.allowed_roles ? t.allowed_roles.filter(r => ROLE_OPTIONS.includes(r)) : [],
+    });
     setModalOpen(true);
   };
 
@@ -74,15 +88,25 @@ export const AdminCategoriesPage: React.FC = () => {
     }
     try {
       setSaving(true);
+      const payload = {
+        slug: form.slug.trim(),
+        label: form.label.trim(),
+        description: form.description.trim(),
+        image_url: form.image_url.trim() || undefined,
+        is_active: form.is_active,
+        allowed_roles: form.allowed_roles,
+      };
+
       if (editTarget) {
-        const updated = await adminService.updatePropertyType(editTarget.id, form);
+        const updated = await adminService.updatePropertyType(editTarget.id, payload);
         setTypes(prev => prev.map(t => t.id === updated.id ? updated : t));
         toast.success(`"${updated.label}" updated.`);
       } else {
-        const created = await adminService.createPropertyType(form);
+        const created = await adminService.createPropertyType(payload);
         setTypes(prev => [...prev, created]);
         toast.success(`"${created.label}" created.`);
       }
+
       setModalOpen(false);
     } catch (e: any) {
       toast.error(e?.response?.data?.detail || "Save failed.");
@@ -171,7 +195,7 @@ export const AdminCategoriesPage: React.FC = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200/80 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                  {["Label / Slug", "Description", "Allowed Roles", "Status", "Created", "Actions"].map(h => (
+                  {["Category / Slug", "Description", "Allowed Roles", "Status", "Created", "Actions"].map(h => (
                     <th key={h} className={`py-3 px-4 sm:px-5 whitespace-nowrap ${h === 'Actions' ? 'text-right' : ''}`}>{h}</th>
                   ))}
                 </tr>
@@ -181,9 +205,13 @@ export const AdminCategoriesPage: React.FC = () => {
                   <tr key={t.id} className="hover:bg-slate-50/70 transition-colors">
                     <td className="py-3 px-4 sm:px-5 whitespace-nowrap">
                       <div className="flex items-center gap-2.5">
-                        <div className="h-8 w-8 rounded-lg bg-emerald-50 border border-emerald-200/60 text-[#014645] flex items-center justify-center shrink-0">
-                          <Tag className="h-4 w-4" />
-                        </div>
+                        {t.image_url ? (
+                          <img src={t.image_url} alt={t.label} className="h-8 w-8 rounded-lg object-cover border border-slate-200/80 shrink-0" />
+                        ) : (
+                          <div className="h-8 w-8 rounded-lg bg-emerald-50 border border-emerald-200/60 text-[#014645] flex items-center justify-center shrink-0">
+                            <Tag className="h-4 w-4" />
+                          </div>
+                        )}
                         <div>
                           <p className="text-xs font-extrabold text-slate-900 leading-tight my-0">{t.label}</p>
                           <p className="text-[10.5px] font-mono text-slate-400 my-0">{t.slug}</p>
@@ -287,12 +315,33 @@ export const AdminCategoriesPage: React.FC = () => {
               </div>
 
               <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-slate-400 block">Category Image URL</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="url"
+                    value={form.image_url}
+                    onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))}
+                    placeholder="Paste image URL address (e.g. https://...)"
+                    className="w-full bg-slate-50 border border-slate-200/80 rounded-lg px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#014645]"
+                  />
+                  {form.image_url.trim() && (
+                    <img
+                      src={form.image_url.trim()}
+                      alt="Preview"
+                      className="h-9 w-9 object-cover rounded-lg border border-slate-200 shrink-0"
+                      onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-slate-400 block">Allowed Roles (empty = all)</label>
                 <div className="flex flex-wrap gap-1.5">
                   {ROLE_OPTIONS.map(role => {
                     const selected = form.allowed_roles.includes(role);
                     return (
-                      <button key={role} onClick={() => toggleRole(role)}
+                      <button key={role} type="button" onClick={() => toggleRole(role)}
                         className={`px-3 py-1 rounded-lg text-xs font-extrabold capitalize cursor-pointer transition-all flex items-center gap-1 ${
                           selected ? "bg-emerald-50 text-[#014645] border border-emerald-200" : "bg-slate-50 text-slate-600 border border-slate-200/80"
                         }`}
