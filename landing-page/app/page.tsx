@@ -22,13 +22,12 @@ export default function Home() {
       <main className="min-h-screen bg-[#FAF9F6] text-[#0F0F11] overflow-hidden selection:bg-black selection:text-white">
         <Navbar />
         <HeroSection isLoading={isLoading} />
-        
+
         {/* Search Bar — sits directly below Hero, full width */}
         <div
-          className="relative z-30 w-full px-4 py-6 bg-[#FAFAF8] transition-opacity duration-700 ease-out"
+          className="relative z-40 w-full px-4 pt-6 md:-mt-12 pb-6 transition-opacity duration-700 ease-out flex justify-center pointer-events-auto"
           style={{
             opacity: isLoading ? 0 : 1,
-            pointerEvents: isLoading ? "none" : "auto"
           }}
         >
           <SearchBar />
@@ -36,10 +35,10 @@ export default function Home() {
 
         {/* Property Showcase (Featured Inventory) — directly under the search bar */}
         <PropertyShowcase />
-        
+
         {/* Editorial Philosophy Section */}
         <EditorialSection />
-        
+
         {/* Dynamic Testimonials Marquee Grid */}
         <FeaturesGrid />
 
