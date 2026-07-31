@@ -126,7 +126,7 @@ export default function SearchBar() {
 
         {/* Suggestions Dropdown */}
         {showSuggestions && query.trim() !== "" && suggestions.length > 0 && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-zinc-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+          <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-zinc-100 py-2 z-30 animate-in fade-in slide-in-from-top-2 duration-150">
             {suggestions.map((loc) => (
               <div
                 key={loc}

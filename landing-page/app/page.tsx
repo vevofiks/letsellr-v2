@@ -27,7 +27,7 @@ export default function Home() {
 
         {/* Search Bar — sits directly below Hero, full width */}
         <div
-          className="relative z-40 w-full px-4 pt-6 md:mt-5 pb-6 transition-opacity duration-700 ease-out flex justify-center pointer-events-auto"
+          className="relative z-20 w-full px-4 pt-6 md:mt-5 pb-6 transition-opacity duration-700 ease-out flex justify-center pointer-events-auto"
           style={{
             opacity: isLoading ? 0 : 1,
           }}
