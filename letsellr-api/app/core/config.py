@@ -73,6 +73,8 @@ class Settings(BaseSettings):
 
     # ── WhatsApp ──────────────────────────────────────────────────────────────
     WHATSAPP_PLATFORM_NUMBER: str = ""
+    WHATSAPP_BOT_NUMBER: str = "918136990018"
+    WHATSAPP_SALES_NUMBER: str = "918137090018"
     WHATSAPP_API_TOKEN: str = ""
     WHATSAPP_WEBHOOK_VERIFY_TOKEN: str = ""
     OPENWA_GATEWAY_URL: str = ""

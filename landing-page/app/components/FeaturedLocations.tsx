@@ -23,7 +23,15 @@ const CITY_FALLBACK_IMAGES: Record<string, string> = {
 
 export default function FeaturedLocations() {
   const [locations, setLocations] = useState<LocationData[]>([]);
+  const [isScrollable, setIsScrollable] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const checkScrollable = () => {
+    if (scrollRef.current) {
+      const { scrollWidth, clientWidth } = scrollRef.current;
+      setIsScrollable(scrollWidth > clientWidth + 5);
+    }
+  };
 
   useEffect(() => {
     const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -36,6 +44,17 @@ export default function FeaturedLocations() {
       })
       .catch((err) => console.error("Failed to fetch locations:", err));
   }, []);
+
+  useEffect(() => {
+    checkScrollable();
+    // Add a slight timeout to ensure image & layout calculations are completed
+    const timer = setTimeout(checkScrollable, 200);
+    window.addEventListener("resize", checkScrollable);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", checkScrollable);
+    };
+  }, [locations]);
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -64,29 +83,32 @@ export default function FeaturedLocations() {
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-center text-[#0F0F11]">
             Explore by Location
           </h2>
-
-          
         </div>
 
         {/* Carousel Wrapper with Floating Arrow Keys */}
         <div className="relative group/carousel">
-          {/* Left Arrow Button */}
-          <button
-            onClick={() => scroll("left")}
-            className="hidden sm:flex absolute -left-3 md:-left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-slate-200 shadow-md items-center justify-center text-slate-800 hover:bg-[#014645] hover:text-white hover:border-[#014645] transition-all duration-300 cursor-pointer"
-            aria-label="Scroll Left"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
+          {/* Arrow Buttons - Only rendered if items overflow and container is scrollable */}
+          {isScrollable && (
+            <>
+              {/* Left Arrow Button */}
+              <button
+                onClick={() => scroll("left")}
+                className="hidden sm:flex absolute -left-3 md:-left-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-slate-200 shadow-md items-center justify-center text-slate-800 hover:bg-[#014645] hover:text-white hover:border-[#014645] transition-all duration-300 cursor-pointer"
+                aria-label="Scroll Left"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
 
-          {/* Right Arrow Button */}
-          <button
-            onClick={() => scroll("right")}
-            className="hidden sm:flex absolute -right-3 md:-right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-slate-200 shadow-md items-center justify-center text-slate-800 hover:bg-[#014645] hover:text-white hover:border-[#014645] transition-all duration-300 cursor-pointer"
-            aria-label="Scroll Right"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
+              {/* Right Arrow Button */}
+              <button
+                onClick={() => scroll("right")}
+                className="hidden sm:flex absolute -right-3 md:-right-5 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-white/95 backdrop-blur-md border border-slate-200 shadow-md items-center justify-center text-slate-800 hover:bg-[#014645] hover:text-white hover:border-[#014645] transition-all duration-300 cursor-pointer"
+                aria-label="Scroll Right"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </>
+          )}
 
           {/* X-Scrollable Container */}
           <div

@@ -146,10 +146,13 @@ class PropertyService:
         if not prop:
             raise HTTPException(status_code=404, detail="Property not found")
 
-        is_pg_or_hostel = prop.category in ["pg", "hostel"]
+        category_lower = (prop.category or "").lower()
+        is_pg_or_hostel = category_lower in ["pg", "hostel"]
 
-        # Use a static defined number instead of the owner's phone
-        phone = "15551398764"
+        bot_num = getattr(settings, "WHATSAPP_BOT_NUMBER", "918136990018").replace("+", "").replace(" ", "").replace("-", "")
+        sales_num = getattr(settings, "WHATSAPP_SALES_NUMBER", "918137090018").replace("+", "").replace(" ", "").replace("-", "")
+
+        phone = bot_num if is_pg_or_hostel else sales_num
 
         # Pre-filled message text
         message = (

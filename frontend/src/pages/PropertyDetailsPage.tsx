@@ -389,22 +389,31 @@ export const PropertyDetailsPage: React.FC = () => {
       setAuthModal({ open: true, mode: "login" });
       return;
     }
+    let serverWaLink = "";
     try {
-      await api.get(`/api/properties/ref/${property.ref}/enquiry-link`);
+      const res = await api.get(`/api/properties/ref/${property.ref}/enquiry-link`);
+      if (res.data?.link) {
+        serverWaLink = res.data.link;
+      }
     } catch (err) {
       console.error("Failed to record enquiry", err);
     }
-    const categoryLower = (property.category || property.type || "").toLowerCase();
-    const isPgOrHostel = categoryLower.includes("pg") || categoryLower.includes("hostel");
 
-    const botNumber = import.meta.env.VITE_WHATSAPP_BOT_NUMBER || "918137090018";
-    const salesNumber = import.meta.env.VITE_WHATSAPP_SALES_NUMBER || "918137090018";
+    if (serverWaLink) {
+      window.open(serverWaLink, "_blank");
+    } else {
+      const categoryLower = (property.category || property.type || "").toLowerCase();
+      const isPgOrHostel = categoryLower.includes("pg") || categoryLower.includes("hostel");
 
-    const targetNumber = isPgOrHostel ? botNumber : salesNumber;
-    const cleanNumber = targetNumber.replace(/[^0-9]/g, "");
+      const botNumber = import.meta.env.VITE_WHATSAPP_BOT_NUMBER || "918136990018";
+      const salesNumber = import.meta.env.VITE_WHATSAPP_SALES_NUMBER || "918137090018";
 
-    const message = encodeURIComponent(`Hi, I'm interested in your property ${property.title} (Ref: ${property.ref})`);
-    window.open(`https://wa.me/${cleanNumber}?text=${message}`, "_blank");
+      const targetNumber = isPgOrHostel ? botNumber : salesNumber;
+      const cleanNumber = targetNumber.replace(/[^0-9]/g, "");
+
+      const message = encodeURIComponent(`Hi, I'm interested in your property ${property.title} (Ref: ${property.ref})`);
+      window.open(`https://wa.me/${cleanNumber}?text=${message}`, "_blank");
+    }
   };
 
   const handleShareLink = () => {

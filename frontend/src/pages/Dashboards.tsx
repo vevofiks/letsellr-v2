@@ -1642,16 +1642,9 @@ export const ClientDashboard: React.FC = () => {
           </div>
 
           {/* Active Filter Chips — visible on all screen sizes */}
-          {(city || searchQuery || limit !== 12 || (searchMode !== "agencies" && (intent || category || priceRange !== "all" || gpsActive))) && (
+          {(city || limit !== 12 || (searchMode !== "agencies" && (intent || category || priceRange !== "all" || gpsActive))) && (
             <div className="hidden lg:flex items-center gap-2 mt-4 flex-wrap relative z-20 w-full px-0">
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mr-1">Active:</span>
-
-              {searchQuery && (
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
-                  Query: "{searchQuery}"
-                  <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => setSearchQuery("")} />
-                </span>
-              )}
 
               {intent && searchMode !== "agencies" && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">

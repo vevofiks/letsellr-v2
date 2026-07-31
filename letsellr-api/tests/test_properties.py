@@ -409,6 +409,7 @@ async def test_delete_property_unauthorized(client, db, test_owner, test_other_o
 
 @pytest.mark.asyncio
 async def test_get_enquiry_link_success(client, db, test_owner):
+    app.dependency_overrides[get_current_user] = lambda: test_owner
     # Enquiry link applies to PG/Hostel
     prop = Property(
         owner_id=test_owner.id,
@@ -432,13 +433,14 @@ async def test_get_enquiry_link_success(client, db, test_owner):
     assert response.status_code == 200
     link_data = response.json()
     assert "link" in link_data
-    assert "wa.me/" in link_data["link"]
+    assert "wa.me/918136990018" in link_data["link"]
     assert "PROP-ENQ-PG" in link_data["link"]
     assert link_data["is_pg_or_hostel"] is True
 
 @pytest.mark.asyncio
 async def test_get_enquiry_link_invalid_category(client, db, test_owner):
-    # Non-PG categories set is_pg_or_hostel to False
+    app.dependency_overrides[get_current_user] = lambda: test_owner
+    # Non-PG categories set is_pg_or_hostel to False and route to sales number 918137090018
     prop = Property(
         owner_id=test_owner.id,
         owner_role="owner",
@@ -460,6 +462,7 @@ async def test_get_enquiry_link_invalid_category(client, db, test_owner):
     response = await client.get(f"/api/properties/ref/{prop.ref}/enquiry-link")
     assert response.status_code == 200
     link_data = response.json()
+    assert "wa.me/918137090018" in link_data["link"]
     assert link_data["is_pg_or_hostel"] is False
     assert link_data["enquiry_type"] == "manual_chat"
 

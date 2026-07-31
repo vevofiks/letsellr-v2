@@ -9,7 +9,7 @@ or replaced on resend (upsert by phone).
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, String, func
+from sqlalchemy import JSON, Boolean, DateTime, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base, UUIDMixin
@@ -42,6 +42,10 @@ class OTPRecord(UUIDMixin, Base):
     )
     # True once used — prevents replay attacks within the expiry window
     used: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    payload: Mapped[dict | None] = mapped_column(
+        JSON, nullable=True,
+        comment="JSON dictionary of pending registration data",
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False,
     )
