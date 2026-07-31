@@ -71,8 +71,22 @@ def _generate_otp(length: int = 6) -> str:
 
 
 def _normalize_phone(phone: str) -> str:
-    """Strip spaces/dashes. Keep leading + if present."""
-    return phone.strip().replace(" ", "").replace("-", "")
+    """
+    Standardize phone number format into canonical E.164 format (+91... for 10-digit Indian numbers).
+    Strips spaces, dashes, parentheses, and leading zeros.
+    """
+    if not phone:
+        return ""
+    clean = "".join(c for c in phone if c.isdigit() or c == "+").strip()
+    if clean.startswith("+"):
+        return clean
+    if clean.startswith("0"):
+        clean = clean[1:]
+    if len(clean) == 10:
+        return f"+91{clean}"
+    if len(clean) == 12 and clean.startswith("91"):
+        return f"+{clean}"
+    return f"+{clean}" if clean else phone
 
 
 async def _get_active_session_id() -> str:
@@ -191,8 +205,10 @@ class AuthService:
 
     # ── OTP Helpers ───────────────────────────────────────────────────────────
 
-    async def _save_otp(self, phone: str, otp: str, purpose: str) -> None:
-        """Delete any existing OTP for this phone+purpose, then save new one."""
+    async def _save_otp(
+        self, phone: str, otp: str, purpose: str, payload: dict | None = None
+    ) -> None:
+        """Delete any existing OTP for this phone+purpose, then save new one with payload."""
         await self.db.execute(
             delete(OTPRecord).where(
                 OTPRecord.phone == phone, OTPRecord.purpose == purpose
@@ -204,6 +220,7 @@ class AuthService:
             hashed_otp=hash_otp(otp),
             purpose=purpose,
             expires_at=expires_at,
+            payload=payload,
         )
         self.db.add(record)
         await self.db.flush()
@@ -214,7 +231,6 @@ class AuthService:
         # --- TEST BACKDOOR FOR PRODUCTION TESTING ---
         if otp == "000000" and phone in ("+910000000001", "+910000000002"):
             logger.info("Test account login bypass using master PIN: %s", phone)
-            # Create a dummy record just to return
             return OTPRecord(phone=phone, purpose=purpose)
             
         result = await self.db.execute(
@@ -229,13 +245,16 @@ class AuthService:
         if not record:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No OTP found. Please request a new one.",
+                detail="No verification OTP found. Please request a new code.",
             )
-        if record.expires_at.replace(tzinfo=UTC) < datetime.now(UTC):
+
+        exp = record.expires_at if record.expires_at.tzinfo else record.expires_at.replace(tzinfo=UTC)
+        if exp < datetime.now(UTC):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="OTP has expired. Please request a new one.",
             )
+
         if not verify_otp_hash(otp, record.hashed_otp):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -276,8 +295,9 @@ class AuthService:
             )
 
         otp = _generate_otp(settings.OTP_LENGTH)
-        await self._save_otp(phone, otp, "registration")
-        _pending_registrations[phone] = payload
+        reg_payload = payload.model_dump()
+        reg_payload["_registration_type"] = "owner_agency"
+        await self._save_otp(phone, otp, "registration", payload=reg_payload)
         await self.db.commit()
 
         await _send_whatsapp_otp(phone, otp, "registration")
@@ -295,8 +315,9 @@ class AuthService:
             )
 
         otp = _generate_otp(settings.OTP_LENGTH)
-        await self._save_otp(phone, otp, "registration")
-        _pending_user_registrations[phone] = payload
+        reg_payload = payload.model_dump()
+        reg_payload["_registration_type"] = "user"
+        await self._save_otp(phone, otp, "registration", payload=reg_payload)
         await self.db.commit()
 
         await _send_whatsapp_otp(phone, otp, "registration")
@@ -307,71 +328,70 @@ class AuthService:
     async def verify_registration(self, payload: VerifyRegistrationRequest) -> TokenResponse:
         phone = _normalize_phone(payload.phone)
 
-        pending = _pending_registrations.get(phone)
-        pending_user = _pending_user_registrations.get(phone)
+        # 1. Fetch OTP record to get saved registration payload
+        result = await self.db.execute(
+            select(OTPRecord).where(
+                OTPRecord.phone == phone,
+                OTPRecord.purpose == "registration",
+                OTPRecord.used == False,
+            )
+        )
+        record = result.scalar_one_or_none()
 
-        if not pending and not pending_user:
+        if not record or not record.payload:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Registration session expired or not found. Please register again.",
             )
 
-        # Ensure we only pop after verifying, so an incorrect OTP doesn't destroy the session.
-        try:
-            await self._verify_otp(phone, payload.otp, "registration")
-        except HTTPException:
-            raise
-            
-        if pending:
-            pending = _pending_registrations.pop(phone, None)
-        if pending_user:
-            pending_user = _pending_user_registrations.pop(phone, None)
+        reg_data = record.payload
+
+        # 2. Verify the OTP code
+        await self._verify_otp(phone, payload.otp, "registration")
+
+        reg_type = reg_data.get("_registration_type", "user")
 
         # Build user
-        if pending_user:
+        if reg_type == "user" or ("preference_type" in reg_data and "location" in reg_data):
             user = User(
                 role="user",
-                name=pending_user.name,
-                email=pending_user.email.strip() if pending_user.email and pending_user.email.strip() else None,
+                name=reg_data.get("name"),
+                email=reg_data["email"].strip() if reg_data.get("email") and reg_data["email"].strip() else None,
                 phone=phone,
-                auth_provider_uid=hash_password(pending_user.pin),
+                auth_provider_uid=hash_password(reg_data["pin"]),
                 email_verified=False,
-                preference_type=pending_user.preference_type,
-                location_city=pending_user.location,
+                preference_type=reg_data.get("preference_type", "buy"),
+                location_city=reg_data.get("location", reg_data.get("location_city", "")),
                 location_area="N/A",
                 verification_status="unverified",
                 status="active",
             )
-        elif pending:
+        else:
+            role = reg_data.get("role", "owner")
             user = User(
-                role=pending.role,
-                name=pending.name,
-                email=pending.email.strip() if pending.email and pending.email.strip() else None,
+                role=role,
+                name=reg_data.get("name"),
+                email=reg_data["email"].strip() if reg_data.get("email") and reg_data["email"].strip() else None,
                 phone=phone,
-                auth_provider_uid=hash_password(pending.pin),
+                auth_provider_uid=hash_password(reg_data["pin"]),
                 email_verified=False,
-                preference_type=pending.preference_type,
-                location_city=pending.location_city,
-                location_area=pending.location_area,
-                verification_status="pending" if pending.role in ("agency", "owner") else "unverified",
-                status="pending" if pending.role in ("agency", "owner") else "active",
+                preference_type=reg_data.get("preference_type", "buy"),
+                location_city=reg_data.get("location_city", ""),
+                location_area=reg_data.get("location_area", "N/A"),
+                verification_status="pending" if role in ("agency", "owner") else "unverified",
+                status="pending" if role in ("agency", "owner") else "active",
             )
 
-            if pending.role == "agency":
+            if role == "agency":
                 user.agency_profile = AgencyProfile(
-                    display_name=pending.agency_display_name or pending.name,
-                    about=pending.agency_about or "",
-                    areas_served=pending.agency_areas_served,
+                    display_name=reg_data.get("agency_display_name") or reg_data.get("name"),
+                    about=reg_data.get("agency_about") or "",
+                    areas_served=reg_data.get("agency_areas_served", []),
                 )
-        else:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Registration session expired.",
-            )
 
         created = await self.repo.create(user)
 
-        if pending and pending.role == "agency":
+        if user.role == "agency":
             from app.modules.admin.models import VerificationRequest
             req = VerificationRequest(
                 user_id=created.id,
@@ -406,12 +426,11 @@ class AuthService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Your account has been suspended. Please contact support.",
             )
-        if user.verification_status in ("review_request", "pending", "unverified"):
-            if user.role in ("owner", "agency"):
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Your account is currently under review. You will be able to sign in once verified.",
-                )
+        if (user.status == "pending" or user.verification_status in ("review_request", "pending", "unverified")) and user.role in ("owner", "agency"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account is currently under review by admin. You will be able to sign in once verified and approved.",
+            )
 
         if not user.auth_provider_uid or not verify_password(payload.pin, user.auth_provider_uid):
             raise HTTPException(
@@ -468,6 +487,17 @@ class AuthService:
                 detail="Account not found.",
             )
 
+        if user.status == "suspended":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account has been suspended. Contact support.",
+            )
+        if (user.status == "pending" or user.verification_status in ("review_request", "pending", "unverified")) and user.role in ("owner", "agency"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account is currently under review by admin. You will be able to sign in once verified and approved.",
+            )
+
         logger.info("User verified login: phone=%s", phone)
         return self._issue_tokens(user)
 
@@ -476,6 +506,7 @@ class AuthService:
     async def resend_otp(self, payload: ResendOTPRequest) -> MessageResponse:
         phone = _normalize_phone(payload.phone)
 
+        existing_payload = None
         if payload.purpose == "login":
             user = await self.repo.get_by_phone(phone)
             if not user:
@@ -484,14 +515,22 @@ class AuthService:
                     detail="No account found with this phone number.",
                 )
         else:
-            if phone not in _pending_registrations and phone not in _pending_user_registrations:
+            result = await self.db.execute(
+                select(OTPRecord).where(
+                    OTPRecord.phone == phone,
+                    OTPRecord.purpose == "registration",
+                )
+            )
+            record = result.scalar_one_or_none()
+            if not record or not record.payload:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="No pending registration found. Please register again.",
                 )
+            existing_payload = record.payload
 
         otp = _generate_otp(settings.OTP_LENGTH)
-        await self._save_otp(phone, otp, payload.purpose)
+        await self._save_otp(phone, otp, payload.purpose, payload=existing_payload)
         await self.db.commit()
 
         await _send_whatsapp_otp(phone, otp, payload.purpose)

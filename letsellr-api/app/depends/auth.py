@@ -106,10 +106,10 @@ async def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Your account has been suspended. Contact support.",
         )
-    if user.verification_status in ("review_request", "pending") and user.role in ("owner", "agency"):
+    if (user.status == "pending" or user.verification_status in ("review_request", "pending", "unverified")) and user.role in ("owner", "agency"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Your account is currently under review. Access will be enabled once verified.",
+            detail="Your account is currently under review. Access will be enabled once verified and approved by an administrator.",
         )
 
     return user

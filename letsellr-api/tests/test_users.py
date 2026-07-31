@@ -228,17 +228,16 @@ async def test_update_profile_cannot_change_email(client, test_owner):
 
 
 @pytest.mark.asyncio
-async def test_update_profile_cannot_change_phone(client, test_owner):
-    """Phone field is not accepted in the update payload (UserUpdateRequest ignores it)."""
+async def test_update_profile_can_change_phone(client, test_owner):
+    """Phone field is accepted in the update payload and updates successfully."""
     app.dependency_overrides[get_current_user] = lambda: test_owner
-    original_phone = test_owner.phone
 
-    payload = {"name": "No Phone Change", "phone": "+911234567890"}
+    payload = {"name": "Phone Change User", "phone": "+911234567890"}
     response = await client.put("/api/users/me", json=payload)
     assert response.status_code == 200
 
     data = response.json()
-    assert data["phone"] == original_phone
+    assert data["phone"] == "+911234567890"
 
 
 @pytest.mark.asyncio

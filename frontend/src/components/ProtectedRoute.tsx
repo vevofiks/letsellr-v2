@@ -39,7 +39,12 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (user.status === "suspended") {
+  const isPendingOrUnverified =
+    user.status === "suspended" ||
+    user.status === "pending" ||
+    ((user.role === "owner" || user.role === "agency") && user.verification_status !== "verified");
+
+  if (isPendingOrUnverified) {
     const { logout } = useAuth();
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 font-sans">
@@ -49,7 +54,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
           </div>
           <h2 className="text-2xl font-black text-slate-900 tracking-tight">Account Under Review</h2>
           <p className="text-sm font-semibold text-slate-500 leading-relaxed max-w-sm mx-auto">
-            Your {user.role} account is currently under review by our moderation team. You will receive access to your dashboard once your account is verified and activated.
+            Your <span className="capitalize font-bold text-slate-800">{user.role}</span> account details are currently under review by our administration team. You will be granted full access to your dashboard once an administrator verifies and approves your account.
           </p>
           <div className="pt-6">
             <button 
