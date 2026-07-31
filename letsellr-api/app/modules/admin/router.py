@@ -2,7 +2,7 @@
 
 import uuid
 from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile, File
 from sqlalchemy.orm import selectinload
 from sqlalchemy import select, func
 
@@ -373,7 +373,8 @@ async def delete_property_type(
 
 @router.get("/locations", response_model=list[LocationDataResponse], tags=["Admin - Locations"])
 async def list_locations(current_user: CurrentUser, db: DbSession):
-    require_admin(current_user)
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin required")
     result = await db.execute(select(LocationData).order_by(LocationData.created_at.desc()))
     return result.scalars().all()
 
@@ -384,7 +385,8 @@ async def create_location(
     current_user: CurrentUser,
     db: DbSession,
 ):
-    require_admin(current_user)
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin required")
     new_location = LocationData(**payload.model_dump())
     db.add(new_location)
     await db.commit()
@@ -399,7 +401,8 @@ async def update_location(
     current_user: CurrentUser,
     db: DbSession,
 ):
-    require_admin(current_user)
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin required")
     location = await db.get(LocationData, location_id)
     if not location:
         raise HTTPException(status_code=404, detail="Location not found")
@@ -419,7 +422,8 @@ async def delete_location(
     current_user: CurrentUser,
     db: DbSession,
 ):
-    require_admin(current_user)
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin required")
     location = await db.get(LocationData, location_id)
     if not location:
         raise HTTPException(status_code=404, detail="Location not found")
@@ -427,6 +431,33 @@ async def delete_location(
     await db.delete(location)
     await db.commit()
     return {"message": "Location deleted successfully"}
+
+
+@router.post("/locations/{location_id}/image", response_model=LocationDataResponse, tags=["Admin - Locations"])
+async def upload_location_image(
+    location_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+    file: UploadFile = File(...)
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Admin required")
+    location = await db.get(LocationData, location_id)
+    if not location:
+        raise HTTPException(status_code=404, detail="Location not found")
+        
+    from app.modules.media.service import MediaService
+    media_service = MediaService()
+    public_url, key = await media_service.upload_file(file, folder="location")
+    
+    # Optionally delete old image if exists
+    if location.image_url:
+        await media_service.delete_file_by_url(location.image_url)
+        
+    location.image_url = public_url
+    await db.commit()
+    await db.refresh(location)
+    return location
 
 
 # ── User Limits Management ──────────────────────────────────────

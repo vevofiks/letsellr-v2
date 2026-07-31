@@ -42,6 +42,7 @@ class LocationData(UUIDMixin, TimestampMixin, Base):
 
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     google_map_url: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_important: Mapped[bool] = mapped_column(default=False, nullable=False)
 
     def __repr__(self) -> str:

@@ -39,8 +39,8 @@ class MediaService:
         unique_id = str(uuid.uuid4())
         filename = f"{unique_id}.{ext}"
         
-        # Standardize uploads to the "uploads" folder
-        key = f"uploads/{filename}"
+        # Use the specified folder (defaults to 'uploads')
+        key = f"{folder}/{filename}"
 
         # Read and upload file contents
         try:

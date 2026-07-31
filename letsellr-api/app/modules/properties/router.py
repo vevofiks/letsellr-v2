@@ -203,4 +203,65 @@ async def list_active_property_types(db: DbSession):
     types = result.scalars().all()
     return [PropertyTypeResponse.model_validate(t) for t in types]
 
+@router.get("/config/locations", tags=["Properties"])
+async def list_active_locations(db: DbSession):
+    """Get all locations for the landing page showcase."""
+    from sqlalchemy import select
+    from app.modules.properties.models import LocationData
+    from app.modules.admin.schemas import LocationDataResponse
+    
+    result = await db.execute(select(LocationData).order_by(LocationData.is_important.desc(), LocationData.title.asc()))
+    locations = result.scalars().all()
+    return [LocationDataResponse.model_validate(loc) for loc in locations]
 
+
+@router.get("/autocomplete/locations", response_model=list[str], tags=["Properties"])
+async def autocomplete_locations(
+    q: str,
+    db: DbSession,
+    limit: int = 10
+):
+    """Get location suggestions based on prefix search."""
+    from sqlalchemy import select, or_
+    from app.modules.properties.models import Property, LocationData
+    
+    if len(q) < 2:
+        return []
+
+    stmt = (
+        select(Property.location_area, Property.location_city)
+        .where(
+            or_(
+                Property.location_area.ilike(f"{q}%"),
+                Property.location_city.ilike(f"{q}%"),
+                Property.location_area.ilike(f"% {q}%"),
+                Property.location_city.ilike(f"% {q}%")
+            )
+        )
+        .where(Property.status == "live")
+        .distinct()
+        .limit(limit)
+    )
+    result = await db.execute(stmt)
+    rows = result.all()
+    
+    locations = set()
+    for area, city in rows:
+        if area and city and area.lower() != city.lower() and area.lower() != "n/a":
+            locations.add(f"{area}, {city}")
+        elif city:
+            locations.add(city)
+            
+    # Also fetch from LocationData table
+    loc_stmt = (
+        select(LocationData.title)
+        .where(LocationData.title.ilike(f"%{q}%"))
+        .limit(limit)
+    )
+    loc_result = await db.execute(loc_stmt)
+    loc_rows = loc_result.scalars().all()
+    
+    for title in loc_rows:
+        locations.add(title)
+        
+    return sorted(list(locations))[:limit]
