@@ -67,6 +67,8 @@ export const OwnerDashboard: React.FC = () => {
   // Mobile sheet state
   const [sheetOpen, setSheetOpen] = useState(false);
 
+  const [propertyTypes, setPropertyTypes] = useState<any[]>([]);
+
   const fetchOwnerProperties = async () => {
     try {
       setLoading(true);
@@ -86,6 +88,15 @@ export const OwnerDashboard: React.FC = () => {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchOwnerProperties();
+    const fetchConfig = async () => {
+      try {
+        const res = await api.get("/api/properties/config/types");
+        setPropertyTypes(res.data);
+      } catch (err) {
+        console.error("Failed to load property types", err);
+      }
+    };
+    fetchConfig();
   }, []);
 
   const handleDeleteProperty = async (id: string) => {
@@ -518,15 +529,14 @@ export const OwnerDashboard: React.FC = () => {
               </SelectTrigger>
               <SelectContent className="bg-white border border-slate-100 shadow-md rounded-lg p-1 z-50">
                 <SelectItem value="all">All Categories</SelectItem>
-                <SelectItem value="pg">PG / Co-Living</SelectItem>
-                <SelectItem value="hostel">Hostels</SelectItem>
-                {isAgency && (
-                  <>
-                    <SelectItem value="apartment">Apartments</SelectItem>
-                    <SelectItem value="house">Houses</SelectItem>
-                    <SelectItem value="villa">Villas</SelectItem>
-                    <SelectItem value="land">Plot / Land</SelectItem>
-                  </>
+                {propertyTypes.length > 0 ? (
+                  propertyTypes
+                    .filter((t: any) => t.allowed_roles.includes(user?.role || "owner"))
+                    .map((t: any) => (
+                      <SelectItem key={t.slug} value={t.slug}>{t.label}</SelectItem>
+                    ))
+                ) : (
+                  <SelectItem value="loading" disabled>Loading...</SelectItem>
                 )}
               </SelectContent>
             </Select>

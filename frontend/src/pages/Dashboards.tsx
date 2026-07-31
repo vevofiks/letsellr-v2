@@ -93,6 +93,15 @@ export const ClientDashboard: React.FC = () => {
     () => (sessionStorage.getItem("dashboard_searchMode") as "properties" | "agencies") || "properties"
   );
   const [agencies, setAgencies] = useState<any[]>([]);
+  const [propertyTypes, setPropertyTypes] = useState<any[]>([]);
+
+  useEffect(() => {
+    api.get("/api/properties/config/types").then((res) => {
+      setPropertyTypes(res.data || []);
+    }).catch(err => {
+      console.error("Failed to fetch property types config:", err);
+    });
+  }, []);
 
   // Persist filters to sessionStorage
   useEffect(() => {
@@ -150,14 +159,10 @@ export const ClientDashboard: React.FC = () => {
         }
       });
     } else {
-      const categoriesMap: Record<string, string> = {
-        apartment: "Apartment",
-        villa_house: "Villa / House",
-        land: "Land",
-        commercial: "Commercial",
-        pg: "PG",
-        hostel: "Hostel",
-      };
+      const categoriesMap: Record<string, string> = {};
+      propertyTypes.forEach(t => {
+        categoriesMap[t.slug] = t.label;
+      });
       Object.entries(categoriesMap).forEach(([val, label]) => {
         if (label.toLowerCase().includes(q) || val.toLowerCase().includes(q)) {
           const key = `cat-${val}`;
@@ -858,17 +863,14 @@ export const ClientDashboard: React.FC = () => {
                         >
                           <SelectTrigger className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-md h-8 px-2 font-semibold text-slate-800 text-[10px]">
                             <SelectValue placeholder="Residence">
-                              {category === "apartment" ? "Apartment" : category === "villa_house" ? "Villa/House" : category === "land" ? "Land" : category === "commercial" ? "Commercial" : category === "pg" ? "PG" : category === "hostel" ? "Hostel" : "All Types"}
+                              {category ? propertyTypes.find(t => t.slug === category)?.label || category : "All Types"}
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-50">
                             <SelectItem value="all">All Types</SelectItem>
-                            <SelectItem value="apartment">Apartment</SelectItem>
-                            <SelectItem value="villa_house">Villa / House</SelectItem>
-                            <SelectItem value="land">Land</SelectItem>
-                            <SelectItem value="commercial">Commercial</SelectItem>
-                            <SelectItem value="pg">PG</SelectItem>
-                            <SelectItem value="hostel">Hostel</SelectItem>
+                            {propertyTypes.map((t: any) => (
+                              <SelectItem key={t.slug} value={t.slug}>{t.label}</SelectItem>
+                            ))}
                           </SelectContent>
                         </Select>
                       </div>
@@ -1183,17 +1185,14 @@ export const ClientDashboard: React.FC = () => {
                       "focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green"
                     )}>
                       <SelectValue placeholder="Residence">
-                        {category === "apartment" ? "Apartment" : category === "villa_house" ? "Villa / House" : category === "land" ? "Land" : category === "commercial" ? "Commercial" : category === "pg" ? "PG" : category === "hostel" ? "Hostel" : "Residence"}
+                        {category ? propertyTypes.find(t => t.slug === category)?.label || category : "Residence"}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="bg-white border border-slate-100 shadow-md rounded-lg p-1 z-30">
                       <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="apartment">Apartment</SelectItem>
-                      <SelectItem value="villa_house">Villa / House</SelectItem>
-                      <SelectItem value="land">Land</SelectItem>
-                      <SelectItem value="commercial">Commercial</SelectItem>
-                      <SelectItem value="pg">PG</SelectItem>
-                      <SelectItem value="hostel">Hostel</SelectItem>
+                      {propertyTypes.map((t: any) => (
+                        <SelectItem key={t.slug} value={t.slug}>{t.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1455,16 +1454,15 @@ export const ClientDashboard: React.FC = () => {
                                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Type</span>
                                 <Select value={category || undefined} onValueChange={(val) => { setCategory(val === "all" || !val ? "" : val); setPage(1); }}>
                                   <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
-                                    <SelectValue placeholder="All">{category === "apartment" ? "Apt" : category === "villa_house" ? "Villa" : category === "land" ? "Land" : category === "commercial" ? "Comm" : category === "pg" ? "PG" : category === "hostel" ? "Hostel" : "All"}</SelectValue>
+                                    <SelectValue placeholder="All">
+                                      {category ? propertyTypes.find(t => t.slug === category)?.label || category : "All"}
+                                    </SelectValue>
                                   </SelectTrigger>
                                   <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
                                     <SelectItem value="all">All</SelectItem>
-                                    <SelectItem value="apartment">Apartment</SelectItem>
-                                    <SelectItem value="villa_house">Villa / House</SelectItem>
-                                    <SelectItem value="land">Land</SelectItem>
-                                    <SelectItem value="commercial">Commercial</SelectItem>
-                                    <SelectItem value="pg">PG</SelectItem>
-                                    <SelectItem value="hostel">Hostel</SelectItem>
+                                    {propertyTypes.map((t: any) => (
+                                      <SelectItem key={t.slug} value={t.slug}>{t.label}</SelectItem>
+                                    ))}
                                   </SelectContent>
                                 </Select>
                               </div>
@@ -1742,8 +1740,8 @@ export const ClientDashboard: React.FC = () => {
                 {/* Agency Directory Grid */}
                 <div className="grid gap-4 grid-cols-1 md:grid-cols-3 lg:grid-cols-4">
                   {filteredAgencies.map((agency) => {
-                    const savedBanner = localStorage.getItem(`agency_banner_${agency.id}`);
-                    const savedLogo = localStorage.getItem(`agency_logo_${agency.id}`);
+                    const savedBanner = (agency as any).banner_key || localStorage.getItem(`agency_banner_${agency.id}`);
+                    const savedLogo = agency.logo_key || localStorage.getItem(`agency_logo_${agency.id}`);
 
                     return (
                       <div

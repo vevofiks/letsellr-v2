@@ -23,6 +23,7 @@ interface AgencyProfile {
   display_name: string;
   about: string;
   logo_key: string | null;
+  banner_key: string | null;
   areas_served: string[];
   location_city: string;
   location_area: string;
@@ -89,14 +90,21 @@ export const AgencyProfilePage: React.FC = () => {
     fetchAgencyData();
   }, [agencyId, navigate]);
 
-  // Load branding images from localStorage once we know the agency id
+  // Load branding images from backend or local fallback
   useEffect(() => {
     if (!agency) return;
-    const savedBanner = localStorage.getItem(`agency_banner_${agency.id}`);
-    const savedLogo   = localStorage.getItem(`agency_logo_${agency.id}`);
-    if (savedBanner) setBannerUrl(savedBanner);
-    if (savedLogo)   setLogoUrl(savedLogo);
-  }, [agency?.id]);
+    if (agency.banner_key) setBannerUrl(agency.banner_key);
+    else {
+      const savedBanner = localStorage.getItem(`agency_banner_${agency.id}`);
+      if (savedBanner) setBannerUrl(savedBanner);
+    }
+    
+    if (agency.logo_key) setLogoUrl(agency.logo_key);
+    else {
+      const savedLogo = localStorage.getItem(`agency_logo_${agency.id}`);
+      if (savedLogo) setLogoUrl(savedLogo);
+    }
+  }, [agency]);
 
   const handleShareProfile = () => {
     navigator.clipboard.writeText(window.location.href);

@@ -150,7 +150,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
         {/* LETSELLR text below navbar — villa overlaps from below */}
         <div
           className="hero-title absolute inset-x-0 pointer-events-none select-none flex justify-center"
-          style={{ top: "clamp(200px, 30vh, 320px)", zIndex: 1, opacity: 0 }}
+          style={{ top: "clamp(160px, 28vh, 280px)", zIndex: 1, opacity: 0 }}
         >
           <h1
             className="font-extrabold uppercase tracking-tighter text-[#0F0F11] text-center leading-none"
@@ -199,7 +199,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
         {/* Villa centerpiece — fits within screen, overlaps LETSELLR text */}
         <div
           className="hero-building absolute left-0 right-0 px-4"
-          style={{ top: "20%", bottom: "clamp(60px, 10vh, 90px)", zIndex: 10, opacity: 0 }}
+          style={{ top: "30%", bottom: "clamp(70px, 12vh, 100px)", zIndex: 10, opacity: 0 }}
         >
           <div className="relative w-full h-full">
             <Image
@@ -210,7 +210,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
               className="object-contain object-bottom"
               style={{
                 filter: "drop-shadow(0 12px 28px rgba(0,0,0,0.12))",
-                transform: "scale(1.45) translateY(-4%)",
+                transform: "scale(1.25) translateY(2%)",
                 transformOrigin: "bottom center",
               }}
             />

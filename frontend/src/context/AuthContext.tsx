@@ -16,6 +16,7 @@ export interface UserProfile {
     display_name: string;
     about: string;
     logo_key: string | null;
+    banner_key: string | null;
     areas_served: string[];
   } | null;
 }

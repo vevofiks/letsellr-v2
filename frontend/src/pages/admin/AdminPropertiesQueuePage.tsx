@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { adminService, type AdminProperty, type PropertyReview } from "@/services/adminService";
+import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 
 import L from "leaflet";
@@ -93,6 +94,7 @@ export const AdminPropertiesQueuePage: React.FC = () => {
   // Dual state management
   const [pendingProperties, setPendingProperties] = useState<AdminProperty[]>([]);
   const [liveProperties, setLiveProperties] = useState<AdminProperty[]>([]);
+  const [propertyTypes, setPropertyTypes] = useState<any[]>([]);
 
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
@@ -199,13 +201,17 @@ export const AdminPropertiesQueuePage: React.FC = () => {
       if (isManualRefresh) setRefreshing(true);
       else setLoading(true);
 
-      const [pendingData, liveData] = await Promise.all([
+      const [pendingData, liveData, typesRes] = await Promise.all([
         adminService.getPendingProperties(),
         adminService.getLiveProperties(),
+        api.get("/api/properties/config/types").catch(() => ({ data: [] }))
       ]);
 
       setPendingProperties(pendingData || []);
       setLiveProperties(liveData || []);
+      if (typesRes && typesRes.data) {
+        setPropertyTypes(typesRes.data);
+      }
     } catch (err: any) {
       console.error("Failed to load properties:", err);
       toast.error(err.response?.data?.detail || "Failed to load properties queue.");
@@ -747,12 +753,9 @@ export const AdminPropertiesQueuePage: React.FC = () => {
               className="bg-slate-50 border border-slate-200/80 rounded-lg px-3 py-2 text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
             >
               <option value="all">All Categories</option>
-              <option value="apartment">Apartments</option>
-              <option value="villa_house">Villa / House</option>
-              <option value="pg">PGs</option>
-              <option value="hostel">Hostels</option>
-              <option value="land">Land / Plots</option>
-              <option value="commercial">Commercial</option>
+              {propertyTypes.map((t: any) => (
+                <option key={t.slug} value={t.slug}>{t.label}</option>
+              ))}
             </select>
 
             <select
@@ -1471,12 +1474,13 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                       onChange={(e) => setEditCategory(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-[#014645]/20"
                     >
-                      <option value="apartment">Apartment</option>
-                      <option value="villa_house">Villa / House</option>
-                      <option value="pg">PG (Paying Guest)</option>
-                      <option value="hostel">Hostel</option>
-                      <option value="land">Land / Plot</option>
-                      <option value="commercial">Commercial Space</option>
+                      {propertyTypes.length > 0 ? (
+                        propertyTypes.map((t: any) => (
+                          <option key={t.slug} value={t.slug}>{t.label}</option>
+                        ))
+                      ) : (
+                        <option value="apartment">Apartment</option>
+                      )}
                     </select>
                   </div>
 
