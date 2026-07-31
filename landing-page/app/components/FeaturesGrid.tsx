@@ -144,10 +144,13 @@ export default function FeaturesGrid() {
   return (
     <section id="testimonials" className="py-24 px-4 md:px-8 max-w-7xl mx-auto w-full bg-[#FAF9F6] text-[#0F0F11]">
       <div className="flex flex-col items-center text-center mb-14 max-w-2xl mx-auto">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-[0.15em] uppercase bg-[#D9F7E9] text-[#0B6E4F] mb-3">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#23D283]"></span>
-          Testimonials
-        </span>
+        <div className="inline-flex items-center gap-2.5 mb-3">
+          <span className="w-5 h-0.5 bg-[#23D283] rounded-full"></span>
+          <span className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#014645]">
+            Testimonials
+          </span>
+          <span className="w-5 h-0.5 bg-[#23D283] rounded-full"></span>
+        </div>
         <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#0F0F11] mb-3">
           Loved by Buyers &amp; Owners
         </h2>

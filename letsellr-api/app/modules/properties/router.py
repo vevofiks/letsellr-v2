@@ -58,6 +58,7 @@ async def list_properties(
     intent: Optional[str] = None,
     category: Optional[str] = None,
     city: Optional[str] = None,
+    q: Optional[str] = Query(None, description="Search query across title, description, area, city"),
     owner_id: Optional[UUID] = None,
     min_price: Optional[int] = Query(None, ge=0),
     max_price: Optional[int] = Query(None, ge=0),
@@ -71,7 +72,7 @@ async def list_properties(
     """
     Public property browse — returns paginated live listings.
 
-    **Filters:** category, intent, city (case-insensitive partial), min/max price, owner_id.
+    **Filters:** category, intent, city (case-insensitive partial), q (general search), min/max price, owner_id.
     **Sorting:** newest (default), price_asc, price_desc.
     """
     service = PropertyService(db)
@@ -79,6 +80,7 @@ async def list_properties(
         intent=intent,
         category=category,
         city=city,
+        q=q,
         owner_id=owner_id,
         min_price=min_price,
         max_price=max_price,

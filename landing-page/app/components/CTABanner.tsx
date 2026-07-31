@@ -57,10 +57,13 @@ export default function CTABanner() {
 
         {/* Centered Content Overlay */}
         <div ref={contentRef} className="relative z-10 flex flex-col items-center justify-center text-center px-6 py-24 sm:py-32 min-h-105">
-          <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-[10px] font-bold tracking-[0.15em] uppercase bg-[#D9F7E9]/90 backdrop-blur-xs text-[#0B6E4F] mb-6 shadow-xs border border-[#23D283]/30">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#23D283]"></span>
-            Start Your Journey
-          </span>
+          <div className="inline-flex items-center gap-2.5 mb-6">
+            <span className="w-5 h-0.5 bg-[#23D283] rounded-full"></span>
+            <span className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#23D283]">
+              Start Your Journey
+            </span>
+            <span className="w-5 h-0.5 bg-[#23D283] rounded-full"></span>
+          </div>
 
           <h2 className="text-3xl sm:text-5xl md:text-6xl font-extrabold text-white tracking-tight leading-[1.1] max-w-3xl mb-5">
             Ready to Make Your Dream Property a Reality?

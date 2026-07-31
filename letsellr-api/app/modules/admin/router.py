@@ -371,6 +371,31 @@ async def delete_property_type(
     return {"message": "Property type deleted successfully"}
 
 
+@router.post("/property-types/{type_id}/image", response_model=PropertyTypeResponse, tags=["Admin - Property Types"])
+async def upload_property_type_image(
+    type_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+    file: UploadFile = File(...)
+):
+    require_admin(current_user)
+    property_type = await db.get(PropertyType, type_id)
+    if not property_type:
+        raise HTTPException(status_code=404, detail="Property type not found")
+
+    from app.modules.media.service import MediaService
+    media_service = MediaService()
+    public_url, key = await media_service.upload_file(file, folder="category")
+
+    if property_type.image_url:
+        await media_service.delete_file_by_url(property_type.image_url)
+
+    property_type.image_url = public_url
+    await db.commit()
+    await db.refresh(property_type)
+    return property_type
+
+
 @router.get("/locations", response_model=list[LocationDataResponse], tags=["Admin - Locations"])
 async def list_locations(current_user: CurrentUser, db: DbSession):
     if current_user.role != "admin":

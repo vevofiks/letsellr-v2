@@ -184,32 +184,18 @@ export default function PropertyShowcase() {
   return (
     <section id="properties" className="pt-8 pb-20 md:py-20 px-6 md:px-12 lg:px-20 w-full bg-[#FAF9F6] text-[#0F0F11]">
       {/* Section Header */}
-      <div ref={headerRef} className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
-        <div>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-[0.15em] uppercase bg-[#D9F7E9] text-[#0B6E4F] mb-3">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#23D283]"></span>
-            Featured Inventory
-          </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#0F0F11]">
+      <div ref={headerRef} className="flex flex-col items-center justify-center text-center mb-12 gap-6">
+        <div className="flex flex-col items-center justify-center text-center">
+          <div className="inline-flex items-center gap-2.5 mb-3">
+            <span className="w-5 h-0.5 bg-[#23D283] rounded-full"></span>
+            <span className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#014645]">
+              Featured Inventory
+            </span>
+            <span className="w-5 h-0.5 bg-[#23D283] rounded-full"></span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#0F0F11] text-center">
             Spaces Where Your Story Begins
           </h2>
-        </div>
-
-        {/* Dynamic Category Filter Tabs */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {dynamicCategories.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-5 py-2.5 rounded-full text-xs font-bold transition-all shrink-0 cursor-pointer ${
-                activeTab === tab
-                  ? "bg-[#23D283] text-white shadow-md shadow-[#23D283]/20"
-                  : "bg-white text-zinc-600 hover:text-[#0B6E4F] border border-black/10 hover:bg-[#D9F7E9]/50"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
         </div>
       </div>
 

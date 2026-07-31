@@ -52,10 +52,34 @@ import {
 export const ClientDashboard: React.FC = () => {
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [intent, setIntent] = useState<string>(() => sessionStorage.getItem("dashboard_intent") || "");
-  const [category, setCategory] = useState<string>(() => sessionStorage.getItem("dashboard_category") || "");
-  const [city, setCity] = useState<string>("");
-  const [searchCity, setSearchCity] = useState<string>("");
+  // Helper to read initial URL params synchronously before first render
+  const getInitialUrlParams = () => {
+    if (typeof window === "undefined") return { q: "", type: "", category: "", city: "" };
+    const searchParams = new URLSearchParams(window.location.search);
+    const q = searchParams.get("search") || searchParams.get("q") || "";
+    const type = searchParams.get("type") || searchParams.get("intent") || "";
+    const category = searchParams.get("category") || "";
+    const city = searchParams.get("city") || searchParams.get("location") || "";
+    return { q, type, category, city };
+  };
+
+  const initialParams = useMemo(() => getInitialUrlParams(), []);
+
+  const [intent, setIntent] = useState<string>(() => {
+    if (initialParams.type && initialParams.type !== "agent" && initialParams.type !== "agencies") {
+      return initialParams.type;
+    }
+    return sessionStorage.getItem("dashboard_intent") || "";
+  });
+  const [category, setCategory] = useState<string>(() => {
+    return initialParams.category || sessionStorage.getItem("dashboard_category") || "";
+  });
+  const [city, setCity] = useState<string>(() => {
+    return initialParams.city || initialParams.q || "";
+  });
+  const [searchCity, setSearchCity] = useState<string>(() => {
+    return initialParams.city || initialParams.q || "";
+  });
   const [lat, setLat] = useState<number | null>(() => {
     const saved = localStorage.getItem("user_lat");
     return saved ? parseFloat(saved) : null;
@@ -76,8 +100,12 @@ export const ClientDashboard: React.FC = () => {
   const [sortBy, setSortBy] = useState<string>("newest");
   const [radius, setRadius] = useState<number>(20);
   const [limit, setLimit] = useState<number>(12);
-  const [searchQuery, setSearchQuery] = useState<string>(() => sessionStorage.getItem("dashboard_searchQuery") || "");
-  const [inputQuery, setInputQuery] = useState<string>(() => sessionStorage.getItem("dashboard_searchQuery") || "");
+  const [searchQuery, setSearchQuery] = useState<string>(() => {
+    return initialParams.q || initialParams.city || sessionStorage.getItem("dashboard_searchQuery") || "";
+  });
+  const [inputQuery, setInputQuery] = useState<string>(() => {
+    return initialParams.q || initialParams.city || sessionStorage.getItem("dashboard_searchQuery") || "";
+  });
   const [showDrawerSuggestions, setShowDrawerSuggestions] = useState<boolean>(false);
   const [showTopSuggestions, setShowTopSuggestions] = useState<boolean>(false);
   const [showAdvancedPopover, setShowAdvancedPopover] = useState<boolean>(false);
@@ -90,7 +118,10 @@ export const ClientDashboard: React.FC = () => {
   const [hasMore, setHasMore] = useState<boolean>(true);
 
   const [searchMode, setSearchMode] = useState<"properties" | "agencies">(
-    () => (sessionStorage.getItem("dashboard_searchMode") as "properties" | "agencies") || "properties"
+    () => {
+      if (initialParams.type === "agent" || initialParams.type === "agencies") return "agencies";
+      return (sessionStorage.getItem("dashboard_searchMode") as "properties" | "agencies") || "properties";
+    }
   );
   const [agencies, setAgencies] = useState<any[]>([]);
   const [propertyTypes, setPropertyTypes] = useState<any[]>([]);
@@ -101,6 +132,48 @@ export const ClientDashboard: React.FC = () => {
     }).catch(err => {
       console.error("Failed to fetch property types config:", err);
     });
+  }, []);
+
+  // Read initial search params from URL on mount (e.g. from landing page navigation)
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const qParam = searchParams.get("search") || searchParams.get("q");
+    const typeParam = searchParams.get("type") || searchParams.get("intent");
+    const categoryParam = searchParams.get("category");
+    const cityParam = searchParams.get("city") || searchParams.get("location");
+
+    if (typeParam) {
+      if (typeParam === "agent" || typeParam === "agencies") {
+        setSearchMode("agencies");
+        sessionStorage.setItem("dashboard_searchMode", "agencies");
+      } else {
+        setSearchMode("properties");
+        setIntent(typeParam);
+        sessionStorage.setItem("dashboard_searchMode", "properties");
+        sessionStorage.setItem("dashboard_intent", typeParam);
+      }
+    }
+
+    if (categoryParam) {
+      setCategory(categoryParam);
+      sessionStorage.setItem("dashboard_category", categoryParam);
+    }
+
+    if (cityParam) {
+      setCity(cityParam);
+      setSearchCity(cityParam);
+    }
+
+    if (qParam) {
+      setInputQuery(qParam);
+      setSearchQuery(qParam);
+      sessionStorage.setItem("dashboard_searchQuery", qParam);
+
+      if (!cityParam) {
+        setCity(qParam);
+        setSearchCity(qParam);
+      }
+    }
   }, []);
 
   // Persist filters to sessionStorage
@@ -492,6 +565,7 @@ export const ClientDashboard: React.FC = () => {
         if (intent) params.intent = intent;
         if (category) params.category = category;
         if (city && !gpsActive) params.city = city;
+        if (searchQuery && !gpsActive) params.q = searchQuery;
 
         // Map price range dropdown value to min_price and max_price API parameters
         if (priceRange === "under-50k") {
@@ -549,7 +623,7 @@ export const ClientDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [searchMode, intent, category, city, lat, lng, gpsActive, page, priceRange, sortBy, radius, limit]);
+  }, [searchMode, intent, category, city, searchQuery, lat, lng, gpsActive, page, priceRange, sortBy, radius, limit]);
 
   const handleDrawerScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
