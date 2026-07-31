@@ -86,6 +86,7 @@ class LocationDataResponse(BaseModel):
     id: uuid.UUID
     title: str
     google_map_url: str | None
+    image_url: str | None = None
     is_important: bool
     created_at: datetime
     updated_at: datetime

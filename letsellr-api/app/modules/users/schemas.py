@@ -12,6 +12,7 @@ class AgencyProfileResponse(BaseModel):
     display_name: str
     about: str
     logo_key: str | None
+    banner_key: str | None = None
     areas_served: list[str]
     model_config = {"from_attributes": True}
 
@@ -33,6 +34,8 @@ class UserProfileResponse(BaseModel):
 
 class UserUpdateRequest(BaseModel):
     name: str | None = None
+    phone: str | None = None
+    agency_display_name: str | None = None
     location_city: str | None = None
     preference_type: str | None = None
 
@@ -40,3 +43,7 @@ class UserUpdateRequest(BaseModel):
 class VerificationSubmitRequest(BaseModel):
     document_keys: list[str]
 
+
+class ChangePinRequest(BaseModel):
+    old_pin: str
+    new_pin: str

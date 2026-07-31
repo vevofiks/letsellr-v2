@@ -16,6 +16,7 @@ class AgencyPublicResponse(BaseModel):
     display_name: str            # AgencyProfile.display_name
     about: str                   # AgencyProfile.about
     logo_key: Optional[str]      # AgencyProfile.logo_key  (R2 object key)
+    banner_key: Optional[str]    # AgencyProfile.banner_key (R2 object key)
     areas_served: list[str]      # AgencyProfile.areas_served
     location_city: str           # User.location_city
     location_area: str           # User.location_area

@@ -79,6 +79,7 @@ async def _send_whatsapp_otp(phone: str, otp: str, purpose: str) -> None:
     Send OTP via self-hosted OpenWA Gateway.
     Uses OPENWA_GATEWAY_URL and OPENWA_API_KEY from settings.
     """
+    print(f"\n[🚀 OTP LOG 🚀] For {phone} ({purpose}): {otp}\n")
     if not settings.OPENWA_GATEWAY_URL:
         logger.warning(
             "[DEV MODE] WhatsApp OTP for %s (%s): %s", phone, purpose, otp
@@ -243,8 +244,8 @@ class AuthService:
     async def verify_registration(self, payload: VerifyRegistrationRequest) -> TokenResponse:
         phone = _normalize_phone(payload.phone)
 
-        pending = _pending_registrations.pop(phone, None)
-        pending_user = _pending_user_registrations.pop(phone, None)
+        pending = _pending_registrations.get(phone)
+        pending_user = _pending_user_registrations.get(phone)
 
         if not pending and not pending_user:
             raise HTTPException(
@@ -252,7 +253,16 @@ class AuthService:
                 detail="Registration session expired or not found. Please register again.",
             )
 
-        await self._verify_otp(phone, payload.otp, "registration")
+        # Ensure we only pop after verifying, so an incorrect OTP doesn't destroy the session.
+        try:
+            await self._verify_otp(phone, payload.otp, "registration")
+        except HTTPException:
+            raise
+            
+        if pending:
+            pending = _pending_registrations.pop(phone, None)
+        if pending_user:
+            pending_user = _pending_user_registrations.pop(phone, None)
 
         # Build user
         if pending_user:

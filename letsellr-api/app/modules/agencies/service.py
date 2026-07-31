@@ -20,6 +20,7 @@ def _build_response(user: User, profile: AgencyProfile, listing_count: int) -> A
         display_name=profile.display_name,
         about=profile.about,
         logo_key=profile.logo_key,
+        banner_key=profile.banner_key,
         areas_served=profile.areas_served,
         location_city=user.location_city,
         location_area=user.location_area,

@@ -96,6 +96,7 @@ class AgencyProfile(UUIDMixin, TimestampMixin, Base):
     display_name: Mapped[str] = mapped_column(String(200), nullable=False)
     about: Mapped[str] = mapped_column(Text, default="", nullable=False)
     logo_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    banner_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     areas_served: Mapped[list[str]] = mapped_column(ARRAY(String), default=list, nullable=False)
 
     user: Mapped["User"] = relationship("User", back_populates="agency_profile")
