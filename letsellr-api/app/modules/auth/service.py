@@ -74,28 +74,66 @@ def _normalize_phone(phone: str) -> str:
     return phone.strip().replace(" ", "").replace("-", "")
 
 
+async def _get_active_session_id() -> str:
+    """Fetch active session UUID from OpenWA gateway if name is configured."""
+    session_target = getattr(settings, "OPENWA_SESSION_ID", "production") or "production"
+    if "-" in session_target and len(session_target) > 30:
+        return session_target
+
+    try:
+        url = f"{settings.OPENWA_GATEWAY_URL.rstrip('/')}/api/sessions"
+        headers = {"X-API-Key": settings.OPENWA_API_KEY}
+        async with httpx.AsyncClient(timeout=5) as client:
+            resp = await client.get(url, headers=headers)
+            if resp.status_code == 200:
+                sessions = resp.json()
+                for s in sessions:
+                    if s.get("name") == session_target or s.get("status") in ("ready", "CONNECTED", "connected"):
+                        return s.get("id", session_target)
+                if sessions:
+                    return sessions[0].get("id", session_target)
+    except Exception as e:
+        logger.warning("Failed to auto-resolve OpenWA session ID: %s", e)
+
+    return session_target
+
+
 async def _send_whatsapp_otp(phone: str, otp: str, purpose: str) -> None:
     """
-    Send OTP via self-hosted OpenWA Gateway.
-    Uses OPENWA_GATEWAY_URL and OPENWA_API_KEY from settings.
+    Send OTP via self-hosted OpenWA Gateway with line-by-line detailed execution logging.
     """
-    print(f"\n[🚀 OTP LOG 🚀] For {phone} ({purpose}): {otp}\n")
+    logger.info("=== [OTP STEP 1] Initiating WhatsApp OTP dispatch for phone='%s', purpose='%s' ===", phone, purpose)
+
     if not settings.OPENWA_GATEWAY_URL:
-        logger.warning(
-            "[DEV MODE] WhatsApp OTP for %s (%s): %s", phone, purpose, otp
-        )
+        logger.warning("[OTP STEP 1.1] OPENWA_GATEWAY_URL is not configured. Falling back to DEV MODE.")
+        logger.warning("[DEV MODE] WhatsApp OTP for %s (%s): %s", phone, purpose, otp)
         return
 
+    logger.info("[OTP STEP 2] Cleaning raw phone number string '%s'...", phone)
     clean_digits = "".join(c for c in phone if c.isdigit())
+    logger.info("[OTP STEP 2.1] Extracted numeric digits: '%s' (length=%d)", clean_digits, len(clean_digits))
+
+    if len(clean_digits) == 10:
+        clean_digits = "91" + clean_digits
+        logger.info("[OTP STEP 2.2] 10-digit number detected. Prepended country code '91': '%s'", clean_digits)
+
     chat_id = f"{clean_digits}@c.us" if "@" not in phone else phone
+    logger.info("[OTP STEP 2.3] Constructed WhatsApp Chat JID chatId='%s'", chat_id)
 
     message = (
         f"Your Letsellr verification code is: *{otp}*\n\n"
         f"This code is valid for {settings.OTP_EXPIRE_MINUTES} minutes. "
         f"Do not share it with anyone."
     )
+    logger.info("[OTP STEP 3] Prepared OTP message body: '%s'", message.replace('\n', ' '))
 
-    url = f"{settings.OPENWA_GATEWAY_URL.rstrip('/')}/api/sessions/default/messages/send-text"
+    logger.info("[OTP STEP 4] Resolving active OpenWA Session ID...")
+    session_id = await _get_active_session_id()
+    logger.info("[OTP STEP 4.1] Resolved active OpenWA session_id='%s'", session_id)
+
+    url = f"{settings.OPENWA_GATEWAY_URL.rstrip('/')}/api/sessions/{session_id}/messages/send-text"
+    logger.info("[OTP STEP 5] Constructed OpenWA API target URL='%s'", url)
+
     headers = {
         "X-API-Key": settings.OPENWA_API_KEY,
         "Content-Type": "application/json",
@@ -104,20 +142,22 @@ async def _send_whatsapp_otp(phone: str, otp: str, purpose: str) -> None:
         "chatId": chat_id,
         "text": message,
     }
+    logger.info("[OTP STEP 6] Payload prepared: chatId='%s', text_len=%d", chat_id, len(message))
+    logger.info("[OTP STEP 7] Dispatching HTTP POST request to OpenWA Gateway...")
 
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.post(url, headers=headers, json=payload)
+            logger.info("[OTP STEP 8] HTTP Response Received! StatusCode=%s", resp.status_code)
+            logger.info("[OTP STEP 8.1] Raw Response Body: %s", resp.text)
+
             resp.raise_for_status()
-            logger.info("OpenWA WhatsApp OTP sent to %s (purpose=%s)", phone, purpose)
+            logger.info("=== [OTP SUCCESS] WhatsApp OTP successfully dispatched to %s (chatId=%s, session_id=%s) ===", phone, chat_id, session_id)
     except httpx.HTTPStatusError as e:
-        logger.error(
-            "OpenWA API error %s: %s", e.response.status_code, e.response.text
-        )
-        # Fallback to dev mode logging if gateway error occurs so user can still test
+        logger.error("[OTP ERROR] OpenWA returned HTTP Status Error %s: %s", e.response.status_code, e.response.text)
         logger.warning("[FALLBACK DEV MODE] WhatsApp OTP for %s (%s): %s", phone, purpose, otp)
     except Exception as e:
-        logger.error("OpenWA send error: %s", e)
+        logger.error("[OTP ERROR] Failed to connect to OpenWA Gateway: %s", e)
         logger.warning("[FALLBACK DEV MODE] WhatsApp OTP for %s (%s): %s", phone, purpose, otp)
 
 
