@@ -316,7 +316,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
 
       setTitle(data.title || "");
       setDescription(data.description || "");
-      setCategory(data.category || (isOwner ? "pg" : "apartment"));
+      setCategory(data.category || "");
       setIntent(data.intent || "rent");
       setPrice(data.price || "");
       setPriceUnit(data.price_unit || "per_month");
@@ -634,7 +634,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className={`w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20 ${isOwner ? 'cursor-not-allowed bg-slate-100' : ''}`}
+                  className={`w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20 ${isOwner && propertyTypes.filter((t: any) => t.allowed_roles.includes("owner")).length <= 1 ? 'cursor-not-allowed bg-slate-100' : ''}`}
                   disabled={isOwner && propertyTypes.filter((t: any) => t.allowed_roles.includes("owner")).length <= 1}
                 >
                   {propertyTypes.length > 0 ? (

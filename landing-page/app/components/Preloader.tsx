@@ -21,7 +21,7 @@ export default function Preloader({ onComplete }: PreloaderProps) {
           onComplete(); // Trigger parent load completion immediately so Hero animations start sync'd with exit
           gsap.to(containerRef.current, {
             yPercent: -100,
-            duration: 0.7,
+            duration: 0.5,
             ease: "power4.inOut",
           });
         },
@@ -29,7 +29,7 @@ export default function Preloader({ onComplete }: PreloaderProps) {
 
       tl.to(counterObj, {
         value: 100,
-        duration: 0.7,
+        duration: 0.45,
         ease: "power2.out",
         onUpdate: () => {
           setProgress(Math.floor(counterObj.value));

@@ -8,6 +8,8 @@ import HeroSection from "./components/HeroSection";
 import SearchBar from "./components/SearchBar";
 import EditorialSection from "./components/EditorialSection";
 import PropertyShowcase from "./components/PropertyShowcase";
+import FeaturedLocations from "./components/FeaturedLocations";
+import FeaturedCategories from "./components/FeaturedCategories";
 import FeaturesGrid from "./components/FeaturesGrid";
 import CTABanner from "./components/CTABanner";
 import Footer from "./components/Footer";
@@ -25,13 +27,19 @@ export default function Home() {
 
         {/* Search Bar — sits directly below Hero, full width */}
         <div
-          className="relative z-40 w-full px-4 pt-6 md:-mt-12 pb-6 transition-opacity duration-700 ease-out flex justify-center pointer-events-auto"
+          className="relative z-40 w-full px-4 pt-6 md:mt-5 pb-6 transition-opacity duration-700 ease-out flex justify-center pointer-events-auto"
           style={{
             opacity: isLoading ? 0 : 1,
           }}
         >
           <SearchBar />
         </div>
+
+        {/* Featured Locations (Hidden if empty) */}
+        <FeaturedLocations />
+
+        {/* Featured Categories (Bento Grid) */}
+        <FeaturedCategories />
 
         {/* Property Showcase (Featured Inventory) — directly under the search bar */}
         <PropertyShowcase />

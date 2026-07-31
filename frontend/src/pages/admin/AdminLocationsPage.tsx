@@ -10,8 +10,8 @@ import { Badge } from "@/components/ui/badge";
 const fmt = (iso: string) =>
   new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
-type FormState = { title: string; google_map_url: string; is_important: boolean };
-const EMPTY: FormState = { title: "", google_map_url: "", is_important: false };
+type FormState = { title: string; google_map_url: string; is_important: boolean; imageFile: File | null };
+const EMPTY: FormState = { title: "", google_map_url: "", is_important: false, imageFile: null };
 
 export const AdminLocationsPage: React.FC = () => {
   const [locations, setLocations] = useState<LocationData[]>([]);
@@ -45,7 +45,7 @@ export const AdminLocationsPage: React.FC = () => {
   const openCreate = () => { setEditTarget(null); setForm(EMPTY); setModalOpen(true); };
   const openEdit = (l: LocationData) => {
     setEditTarget(l);
-    setForm({ title: l.title, google_map_url: l.google_map_url || "", is_important: l.is_important });
+    setForm({ title: l.title, google_map_url: l.google_map_url || "", is_important: l.is_important, imageFile: null });
     setModalOpen(true);
   };
 
@@ -54,15 +54,27 @@ export const AdminLocationsPage: React.FC = () => {
     try {
       setSaving(true);
       const payload = { title: form.title.trim(), google_map_url: form.google_map_url.trim() || null, is_important: form.is_important };
+      
+      let savedLocation: LocationData;
       if (editTarget) {
-        const updated = await adminService.updateLocation(editTarget.id, payload);
-        setLocations(prev => prev.map(l => l.id === updated.id ? updated : l));
-        toast.success(`"${updated.title}" updated.`);
+        savedLocation = await adminService.updateLocation(editTarget.id, payload);
+        toast.success(`"${savedLocation.title}" updated.`);
       } else {
-        const created = await adminService.createLocation(payload);
-        setLocations(prev => [created, ...prev]);
-        toast.success(`"${created.title}" added.`);
+        savedLocation = await adminService.createLocation(payload);
+        toast.success(`"${savedLocation.title}" added.`);
       }
+
+      if (form.imageFile) {
+        savedLocation = await adminService.uploadLocationImage(savedLocation.id, form.imageFile);
+        toast.success(`Image uploaded for "${savedLocation.title}".`);
+      }
+
+      setLocations(prev => {
+        const exists = prev.find(l => l.id === savedLocation.id);
+        if (exists) return prev.map(l => l.id === savedLocation.id ? savedLocation : l);
+        return [savedLocation, ...prev];
+      });
+      
       setModalOpen(false);
     } catch (e: any) {
       toast.error(e?.response?.data?.detail || "Save failed.");
@@ -290,6 +302,24 @@ export const AdminLocationsPage: React.FC = () => {
                   placeholder="https://maps.google.com/..."
                   className="w-full bg-slate-50 border border-slate-200/80 rounded-lg px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#014645]"
                 />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase text-slate-400 block">Location Image</label>
+                <div className="flex items-center gap-3">
+                  {editTarget?.image_url && !form.imageFile && (
+                    <img src={editTarget.image_url} alt="" className="h-10 w-10 object-cover rounded-lg border border-slate-200" />
+                  )}
+                  {form.imageFile && (
+                    <div className="h-10 w-10 bg-slate-100 flex items-center justify-center rounded-lg border border-slate-200 text-[8px] font-bold text-slate-400">NEW</div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={e => setForm(f => ({ ...f, imageFile: e.target.files?.[0] || null }))}
+                    className="flex-1 bg-slate-50 border border-slate-200/80 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#014645]"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200/80">

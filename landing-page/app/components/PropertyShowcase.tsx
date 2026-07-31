@@ -182,7 +182,7 @@ export default function PropertyShowcase() {
       : propertyList.filter((p) => p.category.toLowerCase() === activeTab.toLowerCase());
 
   return (
-    <section id="properties" className="py-20 px-6 md:px-12 lg:px-20 w-full bg-[#FAF9F6] text-[#0F0F11]">
+    <section id="properties" className="pt-8 pb-20 md:py-20 px-6 md:px-12 lg:px-20 w-full bg-[#FAF9F6] text-[#0F0F11]">
       {/* Section Header */}
       <div ref={headerRef} className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6">
         <div>

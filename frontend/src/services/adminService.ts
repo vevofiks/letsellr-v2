@@ -18,6 +18,7 @@ export interface AgencyProfile {
   display_name: string;
   about: string;
   logo_key?: string | null;
+  banner_key?: string | null;
   areas_served: string[];
   created_at: string;
 }
@@ -113,6 +114,7 @@ export interface LocationData {
   id: string;
   title: string;
   google_map_url?: string | null;
+  image_url?: string | null;
   is_important: boolean;
   created_at: string;
   updated_at: string;
@@ -241,7 +243,7 @@ export const adminService = {
     const res = await api.get<LocationData[]>("/api/admin/locations");
     return res.data;
   },
-  createLocation: async (payload: Omit<LocationData, "id" | "created_at" | "updated_at">): Promise<LocationData> => {
+  createLocation: async (payload: Omit<LocationData, "id" | "created_at" | "updated_at" | "image_url">): Promise<LocationData> => {
     const res = await api.post<LocationData>("/api/admin/locations", payload);
     return res.data;
   },
@@ -251,6 +253,14 @@ export const adminService = {
   },
   deleteLocation: async (id: string): Promise<{ message: string }> => {
     const res = await api.delete<{ message: string }>(`/api/admin/locations/${id}`);
+    return res.data;
+  },
+  uploadLocationImage: async (id: string, file: File): Promise<LocationData> => {
+    const formData = new FormData();
+    formData.append("file", file);
+    const res = await api.post<LocationData>(`/api/admin/locations/${id}/image`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return res.data;
   },
 

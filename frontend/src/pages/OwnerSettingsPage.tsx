@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 
 export const OwnerSettingsPage: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, fetchFullProfile } = useAuth();
 
   const isAgency = user?.role === "agency";
   const isVerified = user?.verification_status === "verified";
@@ -22,7 +22,7 @@ export const OwnerSettingsPage: React.FC = () => {
   const [name, setName] = useState(user?.name || "");
   const [phone, setPhone] = useState(user?.phone || "");
   const [agencyName, setAgencyName] = useState(
-    (user as any)?.agency_display_name || ""
+    (user as any)?.agency_profile?.display_name || (user as any)?.agency_display_name || ""
   );
 
   const [oldPassword, setOldPassword] = useState("");
@@ -30,7 +30,7 @@ export const OwnerSettingsPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const [savingProfile, setSavingProfile] = useState(false);
-  const [changingPassword, setChangingPassword] = useState(false);
+  const [changingPin, setChangingPin] = useState(false);
 
   const [agencyBanner, setAgencyBanner] = useState("");
   const [agencyLogo, setAgencyLogo] = useState("");
@@ -38,52 +38,74 @@ export const OwnerSettingsPage: React.FC = () => {
   const logoInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    if (user?.id) {
-      const b = localStorage.getItem(`agency_banner_${user.id}`);
-      const l = localStorage.getItem(`agency_logo_${user.id}`);
-      if (b) setAgencyBanner(b);
-      if (l) setAgencyLogo(l);
-    }
-  }, [user?.id]);
+    fetchFullProfile();
+  }, []);
 
-  const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    if (user?.id) {
+      if (user.agency_profile?.banner_key) setAgencyBanner(user.agency_profile.banner_key);
+      if (user.agency_profile?.logo_key) setAgencyLogo(user.agency_profile.logo_key);
+      
+      setName(user.name || "");
+      setPhone(user.phone || "");
+      setAgencyName(user.agency_profile?.display_name || (user as any)?.agency_display_name || "");
+    }
+  }, [user]);
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 3 * 1024 * 1024) {
       toast.error("Banner must be under 3 MB.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
-      if (dataUrl && user?.id) {
-        localStorage.setItem(`agency_banner_${user.id}`, dataUrl);
-        setAgencyBanner(dataUrl);
-        toast.success("Banner updated!");
-      }
-    };
-    reader.readAsDataURL(file);
+    
+    // Optimistic UI update
+    const previewUrl = URL.createObjectURL(file);
+    setAgencyBanner(previewUrl);
+    
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    try {
+      const res = await api.post("/api/users/me/agency/banner", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setAgencyBanner(res.data.url);
+      await fetchFullProfile();
+      toast.success("Banner uploaded successfully!");
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Failed to upload banner.");
+    }
     e.target.value = "";
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 1 * 1024 * 1024) {
       toast.error("Logo must be under 1 MB.");
       return;
     }
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
-      if (dataUrl && user?.id) {
-        localStorage.setItem(`agency_logo_${user.id}`, dataUrl);
-        setAgencyLogo(dataUrl);
-        window.dispatchEvent(new Event("profile-updated"));
-        toast.success("Logo updated!");
-      }
-    };
-    reader.readAsDataURL(file);
+    
+    // Optimistic UI update
+    const previewUrl = URL.createObjectURL(file);
+    setAgencyLogo(previewUrl);
+    
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    try {
+      const res = await api.post("/api/users/me/agency/logo", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setAgencyLogo(res.data.url);
+      await fetchFullProfile();
+      window.dispatchEvent(new Event("profile-updated"));
+      toast.success("Logo uploaded successfully!");
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "Failed to upload logo.");
+    }
     e.target.value = "";
   };
 
@@ -96,6 +118,7 @@ export const OwnerSettingsPage: React.FC = () => {
         phone,
         agency_display_name: isAgency ? agencyName : undefined,
       });
+      await fetchFullProfile();
       toast.success("Profile updated!");
     } catch (err: any) {
       toast.error(err.response?.data?.detail || "Failed to update profile.");
@@ -104,34 +127,34 @@ export const OwnerSettingsPage: React.FC = () => {
     }
   };
 
-  const handleChangePassword = async (e: React.FormEvent) => {
+  const handleChangePin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!oldPassword || !newPassword) {
-      toast.error("Fill in current and new password.");
+      toast.error("Fill in current and new PIN.");
       return;
     }
     if (newPassword !== confirmPassword) {
-      toast.error("Passwords do not match.");
+      toast.error("PINs do not match.");
       return;
     }
-    if (newPassword.length < 6) {
-      toast.error("Password must be at least 6 characters.");
+    if (newPassword.length !== 4) {
+      toast.error("PIN must be exactly 4 digits.");
       return;
     }
     try {
-      setChangingPassword(true);
-      await api.post("/api/auth/change-password", {
-        old_password: oldPassword,
-        new_password: newPassword,
+      setChangingPin(true);
+      await api.put("/api/users/me/pin", {
+        old_pin: oldPassword,
+        new_pin: newPassword,
       });
-      toast.success("Password changed!");
+      toast.success("PIN changed successfully!");
       setOldPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Failed to change password.");
+      toast.error(err.response?.data?.detail || "Failed to change PIN.");
     } finally {
-      setChangingPassword(false);
+      setChangingPin(false);
     }
   };
 
@@ -312,41 +335,44 @@ export const OwnerSettingsPage: React.FC = () => {
           </form>
         </div>
 
-        {/* ── Security & Password ───────────────────────────────────────── */}
+        {/* ── Security & PIN ───────────────────────────────────────── */}
         <div className="bg-white border border-slate-200/80 rounded-xl shadow-2xs p-5 space-y-4 text-left">
           <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest my-0 pb-3 border-b border-slate-100">
-            Security & Password
+            Security & PIN
           </h2>
 
-          <form onSubmit={handleChangePassword} className="space-y-4">
+          <form onSubmit={handleChangePin} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-extrabold text-slate-700">Current Password</label>
+                <label className="text-xs font-extrabold text-slate-700">Current PIN</label>
                 <input
                   type="password"
+                  maxLength={4}
                   value={oldPassword}
-                  onChange={(e) => setOldPassword(e.target.value)}
-                  placeholder="••••••••"
+                  onChange={(e) => setOldPassword(e.target.value.replace(/\D/g, ""))}
+                  placeholder="••••"
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 font-medium focus:outline-none focus:ring-1 focus:ring-brand-green focus:border-brand-green transition-all"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-extrabold text-slate-700">New Password</label>
+                <label className="text-xs font-extrabold text-slate-700">New PIN</label>
                 <input
                   type="password"
+                  maxLength={4}
                   value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="••••••••"
+                  onChange={(e) => setNewPassword(e.target.value.replace(/\D/g, ""))}
+                  placeholder="••••"
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 font-medium focus:outline-none focus:ring-1 focus:ring-brand-green focus:border-brand-green transition-all"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-extrabold text-slate-700">Confirm Password</label>
+                <label className="text-xs font-extrabold text-slate-700">Confirm PIN</label>
                 <input
                   type="password"
+                  maxLength={4}
                   value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="••••••••"
+                  onChange={(e) => setConfirmPassword(e.target.value.replace(/\D/g, ""))}
+                  placeholder="••••"
                   className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs text-slate-900 font-medium focus:outline-none focus:ring-1 focus:ring-brand-green focus:border-brand-green transition-all"
                 />
               </div>
@@ -355,11 +381,11 @@ export const OwnerSettingsPage: React.FC = () => {
             <div className="flex justify-end pt-2">
               <button
                 type="submit"
-                disabled={changingPassword}
+                disabled={changingPin}
                 className="bg-slate-900 hover:bg-black text-white font-extrabold text-xs px-4 py-2 rounded-lg flex items-center gap-2 transition-all cursor-pointer disabled:opacity-50 shadow-2xs h-9"
               >
                 <Lock className="h-3.5 w-3.5" />
-                {changingPassword ? "Updating…" : "Update Password"}
+                {changingPin ? "Updating…" : "Update PIN"}
               </button>
             </div>
           </form>

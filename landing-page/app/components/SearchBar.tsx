@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, MapPin } from "lucide-react";
 import { getAppUrl } from "@/lib/utils";
 
@@ -30,10 +30,33 @@ export default function SearchBar() {
   const [activeTab, setActiveTab] = useState("buy");
   const [query, setQuery] = useState("");
   const [showSuggestions, setShowSuggestions] = useState(false);
-
-  const filteredLocations = LOCATIONS.filter(loc => 
-    loc.toLowerCase().includes(query.toLowerCase())
-  );
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  
+  useEffect(() => {
+    const fetchSuggestions = async () => {
+      if (query.trim().length < 2) {
+        setSuggestions([]);
+        return;
+      }
+      
+      try {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+        const res = await fetch(`${apiBase}/api/properties/autocomplete/locations?q=${encodeURIComponent(query)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSuggestions(data);
+        }
+      } catch (err) {
+        console.error("Error fetching locations:", err);
+      }
+    };
+    
+    const timeoutId = setTimeout(() => {
+      fetchSuggestions();
+    }, 250);
+    
+    return () => clearTimeout(timeoutId);
+  }, [query]);
 
   const handleSearch = (locationQuery: string) => {
     const baseUrl = getAppUrl();
@@ -102,12 +125,16 @@ export default function SearchBar() {
         </form>
 
         {/* Suggestions Dropdown */}
-        {showSuggestions && query.trim() !== "" && filteredLocations.length > 0 && (
+        {showSuggestions && query.trim() !== "" && suggestions.length > 0 && (
           <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-zinc-100 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
-            {filteredLocations.map((loc) => (
+            {suggestions.map((loc) => (
               <div
                 key={loc}
-                onClick={() => handleSearch(loc)}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  setQuery(loc);
+                  handleSearch(loc);
+                }}
                 className="px-5 py-3 hover:bg-zinc-50 cursor-pointer flex items-center gap-3 transition-colors text-sm font-semibold text-zinc-700"
               >
                 <MapPin className="w-4 h-4 text-zinc-400" />
