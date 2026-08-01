@@ -7,7 +7,9 @@ import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 import { getAppUrl } from "@/lib/utils";
 
-gsap.registerPlugin(ScrollTrigger);
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 const PRIMARY = "#23D283";
 
@@ -127,12 +129,13 @@ export default function EditorialSection() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
+      // Headline — only animate Y so opacity is always 1 (never invisible if trigger missed)
       gsap.fromTo(
         textRef.current,
-        { opacity: 0, y: 50 },
+        { y: 50 },
         {
-          opacity: 1, y: 0, duration: 1.2, ease: "power3.out",
-          scrollTrigger: { trigger: textRef.current, start: "top 82%" },
+          y: 0, duration: 1.2, ease: "power3.out",
+          scrollTrigger: { trigger: textRef.current, start: "top 95%", once: true },
         }
       );
 
@@ -141,7 +144,7 @@ export default function EditorialSection() {
         { opacity: 0, y: 40 },
         {
           opacity: 1, y: 0, duration: 0.8, stagger: 0.12, ease: "power2.out",
-          scrollTrigger: { trigger: statsRef.current, start: "top 85%" },
+          scrollTrigger: { trigger: statsRef.current, start: "top 95%", once: true },
         }
       );
 
