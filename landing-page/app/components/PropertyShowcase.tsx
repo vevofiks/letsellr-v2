@@ -205,6 +205,8 @@ export default function PropertyShowcase() {
           <a
             key={prop.id}
             href={`${getAppUrl()}/properties/${prop.id}`}
+            target="_blank"
+            rel="noopener noreferrer"
             className="group flex flex-col cursor-pointer text-left"
           >
             {/* Image Container with rounded corners & Top-left pill badge */}

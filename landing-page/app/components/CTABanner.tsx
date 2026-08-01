@@ -75,6 +75,8 @@ export default function CTABanner() {
 
           <a
             href={getAppUrl()}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex items-center gap-2 bg-[#23D283] hover:bg-[#11995E] text-white text-sm font-bold px-9 py-4 rounded-full transition-all duration-300 shadow-xl shadow-[#23D283]/30 hover:scale-105"
           >
             Get Started Now

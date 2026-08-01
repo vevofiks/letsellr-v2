@@ -2,18 +2,22 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { getAppUrl } from "@/lib/utils";
+
+// Smooth scroll helper — scrolls gradually so ScrollTrigger animations fire
+const smoothScrollTo = (id: string) => (e: React.MouseEvent) => {
+  e.preventDefault();
+  const el = document.getElementById(id);
+  if (el) {
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+};
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 30) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
+      setScrolled(window.scrollY > 30);
     };
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -28,8 +32,12 @@ export default function Navbar() {
             : "bg-transparent"
         }`}
       >
-        {/* Brand Logo */}
-        <a href="#" className="flex items-center gap-2.5 group">
+        {/* Brand Logo — scrolls back to top */}
+        <a
+          href="#"
+          onClick={smoothScrollTo("__next")}
+          className="flex items-center gap-2.5 group"
+        >
           <Image
             src="/images/logo.png"
             alt="Letsellr Logo"
@@ -46,24 +54,28 @@ export default function Navbar() {
         <nav className="hidden md:flex items-center gap-8">
           <a
             href="#properties"
+            onClick={smoothScrollTo("properties")}
             className="text-xs font-semibold text-zinc-700 hover:text-[#23D283] transition-colors"
           >
             Properties
           </a>
           <a
             href="#editorial"
+            onClick={smoothScrollTo("editorial")}
             className="text-xs font-semibold text-zinc-700 hover:text-[#23D283] transition-colors"
           >
             Our Philosophy
           </a>
           <a
             href="#testimonials"
+            onClick={smoothScrollTo("testimonials")}
             className="text-xs font-semibold text-zinc-700 hover:text-[#23D283] transition-colors"
           >
             Testimonials
           </a>
           <a
             href="#contact"
+            onClick={smoothScrollTo("contact")}
             className="text-xs font-semibold text-zinc-700 hover:text-[#23D283] transition-colors"
           >
             Contact
@@ -72,7 +84,9 @@ export default function Navbar() {
 
         {/* Right CTA Button */}
         <a
-          href={getAppUrl()}
+          href="https://app.letsellr.in/login"
+          target="_blank"
+          rel="noopener noreferrer"
           className="bg-[#23D283] hover:bg-[#11995E] text-white text-xs font-bold px-5 py-2.5 rounded-full transition-all shadow-md shadow-[#23D283]/20 hover:scale-105"
         >
           List Property
