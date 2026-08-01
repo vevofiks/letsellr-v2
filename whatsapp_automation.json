@@ -130,7 +130,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://letsellr-wa.letsellr.in/api/sessions/b9d38d38-cc09-4677-8b90-8fba759d4466/messages/send-text",
+        "url": "https://letsellr-wa.letsellr.in/api/sessions/a970e3a9-838d-4d7b-a423-648e2b7fc933/messages/send-text",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -367,7 +367,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://letsellr-wa.letsellr.in/api/sessions/b9d38d38-cc09-4677-8b90-8fba759d4466/messages/send-text",
+        "url": "https://letsellr-wa.letsellr.in/api/sessions/a970e3a9-838d-4d7b-a423-648e2b7fc933/messages/send-text",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -553,7 +553,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://letsellr-wa.letsellr.in/api/sessions/b9d38d38-cc09-4677-8b90-8fba759d4466/messages/send-text",
+        "url": "https://letsellr-wa.letsellr.in/api/sessions/a970e3a9-838d-4d7b-a423-648e2b7fc933/messages/send-text",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -584,7 +584,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://letsellr-wa.letsellr.in/api/sessions/b9d38d38-cc09-4677-8b90-8fba759d4466/messages/send-text",
+        "url": "https://letsellr-wa.letsellr.in/api/sessions/a970e3a9-838d-4d7b-a423-648e2b7fc933/messages/send-text",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -754,7 +754,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://letsellr-wa.letsellr.in/api/sessions/b9d38d38-cc09-4677-8b90-8fba759d4466/messages/send-text",
+        "url": "https://letsellr-wa.letsellr.in/api/sessions/a970e3a9-838d-4d7b-a423-648e2b7fc933/messages/send-text",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [

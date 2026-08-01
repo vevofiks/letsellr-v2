@@ -127,6 +127,8 @@ export default function FeaturedLocations() {
                   <a
                     key={loc.id}
                     href={`${getAppUrl()}/dashboard?city=${encodeURIComponent(loc.title)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="group relative flex-none w-[22vw] h-[26vw] sm:w-44 sm:h-52 md:w-64 md:h-64 rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden snap-start shadow-xs hover:shadow-xl transition-all duration-500 cursor-pointer border border-slate-200/80 bg-zinc-900"
                   >
                     {/* Background Image */}
