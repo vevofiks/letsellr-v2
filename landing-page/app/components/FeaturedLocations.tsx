@@ -115,7 +115,7 @@ export default function FeaturedLocations() {
             ref={scrollRef}
             className="w-full overflow-x-auto snap-x snap-mandatory pb-4 pt-1 scrollbar-none [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden scroll-smooth"
           >
-            <div className="flex gap-4 md:gap-5 min-w-max mx-auto justify-center px-4 sm:px-6">
+            <div className="flex gap-2 sm:gap-4 md:gap-5 min-w-max mx-auto justify-center px-2 sm:px-6">
               {locations.map((loc) => {
                 const cityKey = loc.title.toLowerCase();
                 const bgImage =
@@ -127,7 +127,7 @@ export default function FeaturedLocations() {
                   <a
                     key={loc.id}
                     href={`${getAppUrl()}/dashboard?city=${encodeURIComponent(loc.title)}`}
-                    className="group relative flex-none w-48 sm:w-56 md:w-64 h-56 md:h-64 rounded-3xl overflow-hidden snap-start shadow-xs hover:shadow-xl transition-all duration-500 cursor-pointer border border-slate-200/80 bg-zinc-900"
+                    className="group relative flex-none w-[22vw] h-[26vw] sm:w-44 sm:h-52 md:w-64 md:h-64 rounded-xl sm:rounded-2xl md:rounded-3xl overflow-hidden snap-start shadow-xs hover:shadow-xl transition-all duration-500 cursor-pointer border border-slate-200/80 bg-zinc-900"
                   >
                     {/* Background Image */}
                     <img
@@ -139,27 +139,20 @@ export default function FeaturedLocations() {
                     {/* Gradient Overlay */}
                     <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-black/10 group-hover:from-black/90 transition-colors duration-300" />
 
-                    {/* Top Badge (if important) */}
-                    {loc.is_important && (
-                      <div className="absolute top-4 left-4 z-10">
-                        <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-md text-white text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border border-white/30">
-                          Popular
-                        </span>
-                      </div>
-                    )}
 
-                    {/* Bottom Title & Details (Centered) */}
-                    <div className="absolute inset-x-0 bottom-0 p-5 z-10 flex flex-col items-center justify-end text-center">
-                      <div className="flex items-center justify-center gap-1.5 text-[#23D283] text-xs font-semibold mb-1">
+
+                    {/* Bottom Title & Details */}
+                    <div className="absolute inset-x-0 bottom-0 p-1.5 sm:p-4 md:p-5 z-10 flex flex-col items-center justify-end text-center">
+                      <div className="hidden sm:flex items-center justify-center gap-1.5 text-[#23D283] text-xs font-semibold mb-1">
                         <MapPin className="w-3.5 h-3.5 shrink-0" />
                         <span>Kerala, India</span>
                       </div>
 
-                      <h3 className="text-xl md:text-2xl font-black text-white tracking-tight uppercase leading-tight group-hover:text-[#23D283] transition-colors duration-300">
+                      <h3 className="text-[10px] sm:text-lg md:text-2xl font-black text-white tracking-tight uppercase leading-tight group-hover:text-[#23D283] transition-colors duration-300">
                         {loc.title}
                       </h3>
 
-                      <div className="flex items-center justify-center gap-1.5 mt-2 pt-2 border-t border-white/15 w-full opacity-80 group-hover:opacity-100 transition-opacity">
+                      <div className="hidden sm:flex items-center justify-center gap-1.5 mt-2 pt-2 border-t border-white/15 w-full opacity-80 group-hover:opacity-100 transition-opacity">
                         <span className="text-[11px] font-medium text-zinc-300">
                           Browse properties
                         </span>

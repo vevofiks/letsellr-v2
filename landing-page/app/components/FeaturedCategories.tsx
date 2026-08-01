@@ -40,9 +40,9 @@ const DEFAULT_CATEGORIES: CategoryItem[] = [
     id: "1",
     slug: "apartment",
     title: "APARTMENT",
-    subtitle: "Appartment where family...",
+    subtitle: "Apartment where family...",
     image: DEFAULT_IMAGES.apartment,
-    spanClass: "md:col-span-2",
+    spanClass: "col-span-1 md:col-span-2",
     hasButton: true,
   },
   {
@@ -51,7 +51,7 @@ const DEFAULT_CATEGORIES: CategoryItem[] = [
     title: "COMMERCIAL",
     subtitle: "commercial...",
     image: DEFAULT_IMAGES.commercial,
-    spanClass: "md:col-span-1",
+    spanClass: "col-span-1 md:col-span-1",
     hasButton: false,
   },
   {
@@ -60,7 +60,7 @@ const DEFAULT_CATEGORIES: CategoryItem[] = [
     title: "CO-WORKING SPACE",
     subtitle: "Explore Collection",
     image: DEFAULT_IMAGES.coworking,
-    spanClass: "md:col-span-1",
+    spanClass: "col-span-2 md:col-span-1",
     hasButton: false,
   },
   {
@@ -69,7 +69,7 @@ const DEFAULT_CATEGORIES: CategoryItem[] = [
     title: "HOSTEL",
     subtitle: "hostel...",
     image: DEFAULT_IMAGES.hostel,
-    spanClass: "md:col-span-1",
+    spanClass: "col-span-1 md:col-span-1",
     hasButton: false,
   },
   {
@@ -78,7 +78,7 @@ const DEFAULT_CATEGORIES: CategoryItem[] = [
     title: "LAND",
     subtitle: "land...",
     image: DEFAULT_IMAGES.land,
-    spanClass: "md:col-span-1",
+    spanClass: "col-span-1 md:col-span-1",
     hasButton: false,
   },
   {
@@ -87,7 +87,7 @@ const DEFAULT_CATEGORIES: CategoryItem[] = [
     title: "PG",
     subtitle: "Explore Collection",
     image: DEFAULT_IMAGES.pg,
-    spanClass: "md:col-span-2",
+    spanClass: "col-span-2 md:col-span-2",
     hasButton: false,
   },
 ];
@@ -106,8 +106,10 @@ export default function FeaturedCategories() {
           if (data && data.length > 0) {
             const formatted: CategoryItem[] = data.map((dbCat, index) => {
               const slugKey = dbCat.slug.toLowerCase();
-              const isWide = index === 0 || index % 5 === 0;
-              const spanClass = isWide ? "md:col-span-2" : "md:col-span-1";
+              const isDesktopWide = index === 0 || index % 5 === 0;
+              // Mobile bento: every 3rd item (index 2,5,8...) spans full width
+              const isMobileWide = index % 3 === 2;
+              const spanClass = `${isMobileWide ? "col-span-2" : "col-span-1"} ${isDesktopWide ? "md:col-span-2" : "md:col-span-1"}`;
 
               const categoryImage =
                 dbCat.image_url ||
@@ -121,7 +123,7 @@ export default function FeaturedCategories() {
                 subtitle: dbCat.description ? dbCat.description : "Explore Collection",
                 image: categoryImage,
                 spanClass,
-                hasButton: index === 0, // Only 1 long card has the button!
+                hasButton: index === 0,
               };
             });
             setCategories(formatted);
@@ -152,12 +154,12 @@ export default function FeaturedCategories() {
         </div>
 
         {/* Bento Grid */}
-        <div ref={containerRef} className="grid grid-cols-1 md:grid-cols-4 gap-3.5 md:gap-2">
+        <div ref={containerRef} className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-2">
           {categories.map((cat) => (
             <a
               key={cat.id}
               href={`${getAppUrl()}/dashboard?category=${cat.slug}`}
-              className={`group relative overflow-hidden rounded-3xl ${cat.spanClass} h-64 md:h-72 lg:h-80 flex flex-col justify-between p-6 md:p-8 cursor-pointer shadow-sm hover:shadow-2xl transition-all duration-500`}
+              className={`group relative overflow-hidden rounded-2xl md:rounded-3xl ${cat.spanClass} ${cat.spanClass.startsWith("col-span-2") ? "h-36" : "h-44"} md:h-72 lg:h-80 flex flex-col justify-between p-4 md:p-8 cursor-pointer shadow-sm hover:shadow-2xl transition-all duration-500`}
             >
               {/* Background Image */}
               <img
@@ -171,10 +173,10 @@ export default function FeaturedCategories() {
 
               {/* Top Text Content */}
               <div className="relative z-10">
-                <span className="text-xs font-semibold text-zinc-200/90 block mb-1 tracking-wide">
+                <span className="hidden sm:block text-xs font-semibold text-zinc-200/90 mb-1 tracking-wide">
                   {cat.subtitle}
                 </span>
-                <h3 className="text-2xl md:text-3xl font-black tracking-tight text-white uppercase leading-tight drop-shadow-sm">
+                <h3 className="text-sm sm:text-xl md:text-3xl font-black tracking-tight text-white uppercase leading-tight drop-shadow-sm">
                   {cat.title}
                 </h3>
               </div>

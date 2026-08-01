@@ -68,7 +68,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
         </div>
 
         {/* Layer 1 — Left: tag + description */}
-        <div className="h-badge pt-24 flex px-10 flex-col gap-1.5" style={{ opacity: 0 }}>
+        <div className="hero-left h-badge pt-24 flex px-10 flex-col gap-1.5" style={{ opacity: 0 }}>
           <span
             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase w-fit"
             style={{
@@ -147,20 +147,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
         className="md:hidden relative bg-[#FAFAF8] overflow-hidden"
         style={{ height: "100svh", minHeight: "580px" }}
       >
-        {/* LETSELLR text below navbar — villa overlaps from below */}
-        <div
-          className="hero-title absolute inset-x-0 pointer-events-none select-none flex justify-center"
-          style={{ top: "clamp(160px, 28vh, 280px)", zIndex: 1, opacity: 0 }}
-        >
-          <h1
-            className="font-extrabold uppercase tracking-tighter text-[#0F0F11] text-center leading-none"
-            style={{ fontSize: "19vw", letterSpacing: "-0.02em" }}
-          >
-            LETSELLR
-          </h1>
-        </div>
-
-        {/* Top Row: Description left */}
+        {/* Top Row: Description left — anchored at top */}
         <div className="absolute top-0 left-0 right-0 flex justify-between items-start px-5 pt-20 z-20">
           {/* Left: desc */}
           <div
@@ -179,10 +166,23 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
           </div>
         </div>
 
-        {/* Villa centerpiece — fits within screen, overlaps LETSELLR text */}
+        {/* LETSELLR text — fixed position below description, always above villa */}
+        <div
+          className="hero-title absolute inset-x-0 pointer-events-none select-none flex justify-center"
+          style={{ top: "175px", zIndex: 5, opacity: 0 }}
+        >
+          <h1
+            className="font-extrabold uppercase tracking-tighter text-[#0F0F11] text-center leading-none w-full px-2"
+            style={{ fontSize: "clamp(3rem, 19vw, 5.5rem)", letterSpacing: "-0.02em" }}
+          >
+            LETSELLR
+          </h1>
+        </div>
+
+        {/* Villa centerpiece — starts below the LETSELLR text, overlaps it partially */}
         <div
           className="hero-building absolute left-0 right-0 px-4"
-          style={{ top: "10%", bottom: "clamp(100px, 16vh, 140px)", zIndex: 10, opacity: 0 }}
+          style={{ top: "22%", bottom: "clamp(100px, 16vh, 140px)", zIndex: 10, opacity: 0 }}
         >
           <div className="relative w-full h-full">
             <Image
@@ -193,7 +193,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
               className="object-contain object-bottom"
               style={{
                 filter: "drop-shadow(0 12px 28px rgba(0,0,0,0.12))",
-                transform: "scale(1.22) translateY(0%)",
+                transform: "scale(1.15) translateY(0%)",
                 transformOrigin: "bottom center",
               }}
             />
