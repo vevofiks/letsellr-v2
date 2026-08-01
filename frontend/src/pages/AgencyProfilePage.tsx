@@ -6,7 +6,6 @@ import { AppNavbar } from "@/components/AppNavbar";
 import { 
   Building2, 
   MapPin, 
-  MessageSquare, 
   ShieldCheck, 
   Calendar,
   Layers,
@@ -253,7 +252,7 @@ export const AgencyProfilePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Right: Actions (WhatsApp & Share) */}
+            {/* Right: Actions (Share) */}
             <div className="flex items-center gap-2.5 w-full sm:w-auto shrink-0 pt-2 sm:pt-0">
               <button 
                 onClick={handleShareProfile}
@@ -261,17 +260,6 @@ export const AgencyProfilePage: React.FC = () => {
                 title="Share Profile"
               >
                 <Share2 className="h-4 w-4" />
-              </button>
-
-              <button 
-                onClick={() => {
-                  const phoneNum = "15551398764";
-                  const message = `Hi, I am interested in property listings from ${agency.display_name}.`;
-                  window.open(`https://wa.me/${phoneNum}?text=${encodeURIComponent(message)}`, "_blank");
-                }}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-5 py-2.5 bg-[#014645] hover:bg-[#015755] text-white font-bold text-xs rounded-md cursor-pointer shadow-xs transition-all"
-              >
-                <MessageSquare className="h-4 w-4" /> Chat on WhatsApp
               </button>
             </div>
           </div>

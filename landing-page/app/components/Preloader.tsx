@@ -54,7 +54,7 @@ export default function Preloader({ onComplete }: PreloaderProps) {
   return (
     <div
       ref={containerRef}
-      className="fixed inset-0 z-[100] flex flex-col justify-between p-8 md:p-16 bg-[#FAF9F6] text-[#0F0F11] select-none pointer-events-auto"
+      className="fixed inset-0 z-100 flex flex-col justify-between p-8 md:p-16 bg-[#FAF9F6] text-[#0F0F11] select-none pointer-events-auto"
     >
       {/* Empty Top Space */}
       <div />
