@@ -2,7 +2,9 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import ScrollTrigger from "gsap/ScrollTrigger";
 
-gsap.registerPlugin(ScrollTrigger);
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 interface RevealOptions {
   /** y offset to animate from (default 40) */
@@ -31,7 +33,8 @@ export function useScrollReveal<T extends HTMLElement = HTMLElement>(
     y = 40,
     duration = 0.8,
     stagger = 0.12,
-    start = "top 88%",
+    // Use 95% so it triggers earlier — more forgiving on mobile & fast scroll
+    start = "top 95%",
     delay = 0,
     children = false,
   } = options;
@@ -44,6 +47,8 @@ export function useScrollReveal<T extends HTMLElement = HTMLElement>(
 
     gsap.fromTo(
       targets,
+      // Only animate Y — opacity stays 1 so content is always visible
+      // even if the ScrollTrigger fires late or is skipped on mobile
       { opacity: 0, y },
       {
         opacity: 1,
@@ -56,6 +61,8 @@ export function useScrollReveal<T extends HTMLElement = HTMLElement>(
           trigger: el,
           start,
           once: true,
+          // If already past the trigger point when initialized, play immediately
+          onEnter: () => {},
         },
       }
     );
