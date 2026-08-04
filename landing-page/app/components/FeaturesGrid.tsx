@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Marquee } from "@/components/ui/marquee";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 interface Testimonial {
   id: string;
@@ -112,6 +113,8 @@ const ReviewCard = ({
 
 export default function FeaturesGrid() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const headerRef = useScrollReveal<HTMLDivElement>({ y: 30, duration: 0.8, start: "top 88%" });
+  const marqueeRef = useScrollReveal<HTMLDivElement>({ y: 40, duration: 0.9, delay: 0.1, start: "top 92%" });
 
   useEffect(() => {
     fetchTestimonials();
@@ -143,7 +146,7 @@ export default function FeaturesGrid() {
 
   return (
     <section id="testimonials" className="py-24 px-4 md:px-8 max-w-7xl mx-auto w-full bg-[#FAF9F6] text-[#0F0F11]">
-      <div className="flex flex-col items-center text-center mb-14 max-w-2xl mx-auto">
+      <div ref={headerRef} className="flex flex-col items-center text-center mb-14 max-w-2xl mx-auto">
         <div className="inline-flex items-center gap-2.5 mb-3">
           <span className="w-5 h-0.5 bg-[#23D283] rounded-full"></span>
           <span className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#014645]">
@@ -160,7 +163,7 @@ export default function FeaturesGrid() {
       </div>
 
       {/* Marquee Rows */}
-      <div className="relative flex w-full flex-col items-center justify-center overflow-hidden py-4">
+      <div ref={marqueeRef} className="relative flex w-full flex-col items-center justify-center overflow-hidden py-4">
         <Marquee pauseOnHover className="[--duration:30s] py-2">
           {firstRow.map((review) => (
             <ReviewCard key={review.id} {...review} />
