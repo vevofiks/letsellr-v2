@@ -51,6 +51,7 @@ export default function CTABanner() {
           src="/images/hero-villa.png"
           alt="Dream Property"
           fill
+          sizes="100vw"
           className="object-cover object-center brightness-[0.55] scale-110"
           priority
         />

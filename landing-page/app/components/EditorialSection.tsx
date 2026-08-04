@@ -144,7 +144,14 @@ export default function EditorialSection() {
         { opacity: 0, y: 40 },
         {
           opacity: 1, y: 0, duration: 0.8, stagger: 0.12, ease: "power2.out",
-          scrollTrigger: { trigger: statsRef.current, start: "top 95%", once: true, invalidateOnRefresh: true },
+          onComplete: () => gsap.set(".editorial-stat", { clearProps: "opacity,y" }),
+          scrollTrigger: {
+            trigger: statsRef.current,
+            start: "top 98%",
+            once: true,
+            invalidateOnRefresh: true,
+            onEnter: () => gsap.to(".editorial-stat", { opacity: 1, y: 0, duration: 0.01, overwrite: false }),
+          },
         }
       );
 
@@ -235,6 +242,7 @@ export default function EditorialSection() {
             src={currentSlide.src}
             alt={currentSlide.alt}
             fill
+            sizes="(max-width: 1024px) 100vw, 42vw"
             className="editorial-main-img object-cover object-center transition-all duration-700 ease-out group-hover:scale-[1.03]"
           />
           {/* Gradient overlay */}
@@ -272,7 +280,7 @@ export default function EditorialSection() {
                       : "border-white/40 opacity-70 hover:opacity-100"
                   }`}
                 >
-                  <Image src={slide.thumb} alt="" fill className="object-cover" />
+                  <Image src={slide.thumb} alt="" fill sizes="40px" className="object-cover" />
                 </button>
               ))}
             </div>

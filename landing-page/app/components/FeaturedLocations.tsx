@@ -105,7 +105,7 @@ export default function FeaturedLocations() {
                     style={{ backgroundImage: `url('${img}')` }}
                   />
                   {/* Bottom gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/10 to-transparent" />
                 </div>
                 {/* City name below */}
                 <p className="text-[9px] sm:text-[11px] font-extrabold text-[#0F0F11] uppercase tracking-widest text-center leading-tight group-hover:text-[#014645] transition-colors">

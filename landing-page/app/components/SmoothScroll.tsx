@@ -36,8 +36,15 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
       ScrollTrigger.refresh();
     }, 300);
 
+    // Second refresh pass — catches sections that rendered late (e.g. after
+    // async data fetches like EditorialSection's property cards).
+    const refreshTimer2 = setTimeout(() => {
+      ScrollTrigger.refresh();
+    }, 1500);
+
     return () => {
       clearTimeout(refreshTimer);
+      clearTimeout(refreshTimer2);
       lenis.destroy();
       gsap.ticker.remove(onRaf);
       ScrollTrigger.getAll().forEach((t) => t.kill());
