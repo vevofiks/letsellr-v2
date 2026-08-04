@@ -129,53 +129,60 @@ export default function EditorialSection() {
 
   useEffect(() => {
     const ctx = gsap.context(() => {
-      // Headline — only animate Y so opacity is always 1 (never invisible if trigger missed)
-      gsap.fromTo(
-        textRef.current,
-        { y: 50 },
-        {
-          y: 0, duration: 1.2, ease: "power3.out",
-          scrollTrigger: { trigger: textRef.current, start: "top 95%", once: true },
-        }
-      );
+      // Headline reveal
+      if (textRef.current) {
+        gsap.fromTo(
+          textRef.current,
+          { opacity: 0, y: 30 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 1.0,
+            ease: "power3.out",
+            scrollTrigger: { trigger: textRef.current, start: "top 92%", once: true },
+            onComplete: () => gsap.set(textRef.current, { clearProps: "opacity,y,transform" }),
+          }
+        );
+      }
 
-      gsap.fromTo(
-        ".editorial-stat",
-        { opacity: 0, y: 40 },
-        {
-          opacity: 1, y: 0, duration: 0.8, stagger: 0.12, ease: "power2.out",
-          onComplete: () => gsap.set(".editorial-stat", { clearProps: "opacity,y" }),
-          scrollTrigger: {
-            trigger: statsRef.current,
-            start: "top 98%",
-            once: true,
-            invalidateOnRefresh: true,
-            onEnter: () => gsap.to(".editorial-stat", { opacity: 1, y: 0, duration: 0.01, overwrite: false }),
-          },
-        }
-      );
+      // Stats section items reveal
+      if (statsRef.current) {
+        gsap.fromTo(
+          ".editorial-stat",
+          { opacity: 0, y: 35 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.8,
+            stagger: 0.1,
+            ease: "power2.out",
+            scrollTrigger: { trigger: statsRef.current, start: "top 92%", once: true },
+            onComplete: () => gsap.set(".editorial-stat", { clearProps: "opacity,y,transform" }),
+          }
+        );
+      }
 
-      // Parallax image shift on scroll
+      // Parallax image shift on scroll (smooth scrub)
       gsap.to(".editorial-main-img", {
-        yPercent: -12,
+        yPercent: -8,
         ease: "none",
         scrollTrigger: {
           trigger: containerRef.current,
           start: "top bottom",
           end: "bottom top",
-          scrub: 1,
+          scrub: 0.5,
         },
       });
 
       // Parallax card drift
       gsap.to(".editorial-card-drift", {
-        yPercent: -15,
+        yPercent: -10,
         ease: "none",
         scrollTrigger: {
           trigger: containerRef.current,
           start: "top bottom",
           end: "bottom top",
-          scrub: 1.2,
+          scrub: 0.5,
         },
       });
     }, containerRef);
