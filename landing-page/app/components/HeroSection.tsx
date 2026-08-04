@@ -116,6 +116,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
             src="/images/isolated-villa-wbg.png"
             alt="Letsellr Premium Villa"
             fill
+            sizes="(max-width: 768px) 100vw, 88vw"
             priority
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 88vw, 1050px"
             className="object-contain object-bottom animate-float"
@@ -190,6 +191,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
               src="/images/isolated-villa-wbg.png"
               alt="Letsellr Premium Villa"
               fill
+              sizes="100vw"
               priority
               sizes="100vw"
               className="object-contain object-bottom"

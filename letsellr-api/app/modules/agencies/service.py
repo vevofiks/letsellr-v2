@@ -39,11 +39,12 @@ class AgencyService:
     async def list_agencies(
         self,
         city: Optional[str] = None,
+        q: Optional[str] = None,
         page: int = 1,
     ) -> list[AgencyPublicResponse]:
         limit = 20
         offset = (page - 1) * limit
-        rows = await self.repo.list_agencies(city=city, limit=limit, offset=offset)
+        rows = await self.repo.list_agencies(city=city, q=q, limit=limit, offset=offset)
         return [_build_response(user, profile, count) for user, profile, count in rows]
 
     async def get_agency(self, agency_id: UUID) -> AgencyPublicResponse:
