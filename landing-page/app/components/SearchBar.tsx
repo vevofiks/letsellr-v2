@@ -61,6 +61,7 @@ export function SearchBarTrigger({ onClick }: { onClick: () => void }) {
 export function SearchBarModal({ open, onClose, activeTab }: { open: boolean; onClose: () => void; activeTab: IntentId }) {
   const [activeCategory, setActiveCategory] = useState<string>("");
   const [propertyTypes, setPropertyTypes] = useState<PropertyType[]>([]);
+  const [popularLocations, setPopularLocations] = useState<LocationSuggestion[]>([]);
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
@@ -68,12 +69,25 @@ export function SearchBarModal({ open, onClose, activeTab }: { open: boolean; on
   const inputRef = useRef<HTMLInputElement>(null);
   const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-  // Fetch property types once on mount
+  // Fetch property types and popular locations once on mount
   useEffect(() => {
     fetch(`${apiBase}/api/properties/config/types`)
       .then((res) => res.ok ? res.json() : [])
       .then((data) => {
         if (Array.isArray(data)) setPropertyTypes(data);
+      })
+      .catch(() => { });
+
+    fetch(`${apiBase}/api/properties/config/locations`)
+      .then((res) => res.ok ? res.json() : [])
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const locs = data.map((d: any) => ({
+            label: d.title.charAt(0).toUpperCase() + d.title.slice(1),
+            subtext: "Popular City"
+          }));
+          setPopularLocations(locs);
+        }
       })
       .catch(() => { });
   }, [apiBase]);
@@ -295,9 +309,37 @@ export function SearchBarModal({ open, onClose, activeTab }: { open: boolean; on
 
           {/* ── Suggestions List ── */}
           <div className="flex-1 overflow-y-auto overscroll-contain px-4 pb-6">
-            {showSuggestions && suggestions.length > 0 ? (
+            {query.trim().length < 2 && popularLocations.length > 0 ? (
               <div className="divide-y divide-zinc-50">
-                <p className="text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 mb-2 mt-1 px-1">
+                <p className="text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 mb-2 mt-2 px-1">
+                  Popular Locations
+                </p>
+                {popularLocations.map((loc, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onMouseDown={(e) => {
+                      e.preventDefault();
+                      handleSelectSuggestion(loc);
+                    }}
+                    className="w-full flex items-center gap-3 py-3 px-1 hover:bg-zinc-50 rounded-xl cursor-pointer transition-colors text-left group"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-zinc-100 group-hover:bg-[#23D283]/10 flex items-center justify-center shrink-0 transition-colors">
+                      <MapPin className="w-4 h-4 text-zinc-400 group-hover:text-[#23D283] transition-colors" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-zinc-800 truncate">{loc.label}</p>
+                      {loc.subtext && (
+                        <p className="text-[11px] text-zinc-400 font-medium truncate">{loc.subtext}</p>
+                      )}
+                    </div>
+                    <ChevronRight className="w-3.5 h-3.5 text-zinc-300 group-hover:text-[#23D283] shrink-0 transition-colors" />
+                  </button>
+                ))}
+              </div>
+            ) : showSuggestions && suggestions.length > 0 ? (
+              <div className="divide-y divide-zinc-50">
+                <p className="text-[10px] font-extrabold uppercase tracking-widest text-zinc-400 mb-2 mt-2 px-1">
                   Suggestions
                 </p>
                 {suggestions.map((loc, i) => (
