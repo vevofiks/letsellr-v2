@@ -45,32 +45,46 @@ export function useScrollReveal<T extends HTMLElement = HTMLElement>(
 
     const targets = children ? Array.from(el.children) : [el];
 
-    gsap.fromTo(
-      targets,
-      // Only animate Y — opacity stays 1 so content is always visible
-      // even if the ScrollTrigger fires late or is skipped on mobile
-      { opacity: 0, y },
-      {
-        opacity: 1,
-        y: 0,
-        duration,
-        delay,
-        stagger,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: el,
-          start,
-          once: true,
-          // If already past the trigger point when initialized, play immediately
-          onEnter: () => {},
-        },
-      }
-    );
+    // Set initial hidden state
+    gsap.set(targets, { opacity: 0, y });
+
+    const tween = gsap.to(targets, {
+      opacity: 1,
+      y: 0,
+      duration,
+      delay,
+      stagger,
+      ease: "power3.out",
+      paused: true,
+    });
+
+    const st = ScrollTrigger.create({
+      trigger: el,
+      start,
+      once: true,
+      invalidateOnRefresh: true,
+      onEnter: () => tween.play(),
+      // Safety net: if the element is already past the trigger point
+      // when ScrollTrigger initializes (e.g. page refresh mid-scroll),
+      // play the animation immediately so it doesn't stay invisible.
+      onEnterBack: () => tween.play(),
+    });
+
+    // If the element is already visible in the viewport on mount, play immediately
+    const rect = el.getBoundingClientRect();
+    if (rect.top < window.innerHeight && rect.bottom > 0) {
+      // Small delay to let ScrollTrigger register itself first
+      const t = setTimeout(() => tween.play(), 50);
+      return () => {
+        clearTimeout(t);
+        st.kill();
+        tween.kill();
+      };
+    }
 
     return () => {
-      ScrollTrigger.getAll().forEach((t) => {
-        if (t.trigger === el) t.kill();
-      });
+      st.kill();
+      tween.kill();
     };
   }, []);
 
