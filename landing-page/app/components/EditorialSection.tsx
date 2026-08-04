@@ -249,7 +249,7 @@ export default function EditorialSection() {
             src={currentSlide.src}
             alt={currentSlide.alt}
             fill
-            sizes="(max-width: 1024px) 100vw, 42vw"
+            sizes="(max-width: 1024px) 100vw, 50vw"
             className="editorial-main-img object-cover object-center transition-all duration-700 ease-out group-hover:scale-[1.03]"
           />
           {/* Gradient overlay */}
