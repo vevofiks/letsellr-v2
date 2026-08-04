@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { getAppUrl } from "@/lib/utils";
+import { useScrollReveal } from "@/hooks/useScrollReveal";
 
 interface LocationData {
   id: string;
@@ -46,6 +47,7 @@ function getImage(loc: LocationData, index: number): string {
 
 export default function FeaturedLocations() {
   const [locations, setLocations] = useState<LocationData[]>([]);
+  const sectionRef = useScrollReveal<HTMLElement>({ y: 30, duration: 0.8, start: "top 88%" });
 
   useEffect(() => {
     const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -64,7 +66,7 @@ export default function FeaturedLocations() {
   const speed = Math.max(18, locations.length * 3.5);
 
   return (
-    <section className="w-full py-8 md:py-16 bg-[#FAF9F6] overflow-hidden">
+    <section ref={sectionRef} className="w-full py-8 md:py-16 bg-[#FAF9F6] overflow-hidden">
       <style>{`
         @keyframes loc-marquee {
           0%   { transform: translateX(0); }
@@ -78,20 +80,6 @@ export default function FeaturedLocations() {
           animation-play-state: paused;
         }
       `}</style>
-
-      {/* Header */}
-      <div className="px-4 sm:px-6 md:px-12 lg:px-20 mb-5 md:mb-10 flex flex-col items-center text-center">
-        <div className="inline-flex items-center gap-2 mb-1.5">
-          <span className="block w-4 h-px bg-[#23D283] rounded-full" />
-          <span className="text-[10px] md:text-xs font-extrabold uppercase tracking-[0.22em] text-[#014645]">
-            Popular Destinations
-          </span>
-          <span className="block w-4 h-px bg-[#23D283] rounded-full" />
-        </div>
-        <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#0F0F11]">
-          Explore by Location
-        </h2>
-      </div>
 
       {/* Infinite Marquee Strip */}
       <div className="overflow-hidden">
@@ -117,8 +105,7 @@ export default function FeaturedLocations() {
                     style={{ backgroundImage: `url('${img}')` }}
                   />
                   {/* Bottom gradient */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
-
+                  <div className="absolute inset-0 bg-linear-to-t from-black/55 via-black/10 to-transparent" />
                 </div>
                 {/* City name below */}
                 <p className="text-[9px] sm:text-[11px] font-extrabold text-[#0F0F11] uppercase tracking-widest text-center leading-tight group-hover:text-[#014645] transition-colors">
