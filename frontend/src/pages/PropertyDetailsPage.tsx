@@ -405,7 +405,7 @@ export const PropertyDetailsPage: React.FC = () => {
       const categoryLower = (property.category || property.type || "").toLowerCase();
       const isPgOrHostel = categoryLower.includes("pg") || categoryLower.includes("hostel");
 
-      const botNumber = import.meta.env.VITE_WHATSAPP_BOT_NUMBER || "918136990018";
+      const botNumber = import.meta.env.VITE_WHATSAPP_BOT_NUMBER || "919895415718";
       const salesNumber = import.meta.env.VITE_WHATSAPP_SALES_NUMBER || "918137090018";
 
       const targetNumber = isPgOrHostel ? botNumber : salesNumber;
