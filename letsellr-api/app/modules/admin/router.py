@@ -30,6 +30,7 @@ from app.modules.reviews.models import Review
 
 router = APIRouter()
 
+
 def require_admin(user: User):
     if user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin privileges required")
@@ -39,12 +40,16 @@ def require_admin(user: User):
 async def list_users(current_user: CurrentUser, db: DbSession):
     require_admin(current_user)
     result = await db.execute(
-        select(User).options(selectinload(User.agency_profile)).order_by(User.created_at.desc())
+        select(User)
+        .options(selectinload(User.agency_profile))
+        .order_by(User.created_at.desc())
     )
     return result.scalars().all()
 
 
-@router.patch("/users/{user_id}/status", response_model=UserAdminResponse, tags=["Admin - Users"])
+@router.patch(
+    "/users/{user_id}/status", response_model=UserAdminResponse, tags=["Admin - Users"]
+)
 async def update_user_status(
     user_id: uuid.UUID,
     payload: UpdateUserStatusRequest,
@@ -62,7 +67,7 @@ async def update_user_status(
         res = await db.execute(
             select(VerificationRequest).where(
                 VerificationRequest.user_id == user.id,
-                VerificationRequest.status == "pending"
+                VerificationRequest.status == "pending",
             )
         )
         for v_req in res.scalars().all():
@@ -78,7 +83,11 @@ async def update_user_status(
     return user
 
 
-@router.get("/verification-requests", response_model=list[VerificationRequestResponse], tags=["Admin - Verifications"])
+@router.get(
+    "/verification-requests",
+    response_model=list[VerificationRequestResponse],
+    tags=["Admin - Verifications"],
+)
 async def list_verification_requests(current_user: CurrentUser, db: DbSession):
     require_admin(current_user)
     result = await db.execute(
@@ -87,7 +96,9 @@ async def list_verification_requests(current_user: CurrentUser, db: DbSession):
     return result.scalars().all()
 
 
-@router.post("/verification-requests/{request_id}/approve", tags=["Admin - Verifications"])
+@router.post(
+    "/verification-requests/{request_id}/approve", tags=["Admin - Verifications"]
+)
 async def approve_verification_request(
     request_id: uuid.UUID,
     payload: VerificationActionRequest,
@@ -114,7 +125,9 @@ async def approve_verification_request(
     return {"message": "Request approved"}
 
 
-@router.post("/verification-requests/{request_id}/reject", tags=["Admin - Verifications"])
+@router.post(
+    "/verification-requests/{request_id}/reject", tags=["Admin - Verifications"]
+)
 async def reject_verification_request(
     request_id: uuid.UUID,
     payload: VerificationActionRequest,
@@ -140,24 +153,41 @@ async def reject_verification_request(
     return {"message": "Request rejected"}
 
 
-@router.get("/dashboard-stats", response_model=DashboardStatsResponse, tags=["Admin - Dashboard"])
+@router.get(
+    "/dashboard-stats",
+    response_model=DashboardStatsResponse,
+    tags=["Admin - Dashboard"],
+)
 async def get_dashboard_stats(current_user: CurrentUser, db: DbSession):
     require_admin(current_user)
 
-    pending_properties = await db.scalar(select(func.count(Property.id)).where(Property.status == "pending_review"))
+    pending_properties = await db.scalar(
+        select(func.count(Property.id)).where(Property.status == "pending_review")
+    )
     pending_kyc = await db.scalar(
         select(func.count(User.id)).where(
-            (User.verification_status.in_(["pending", "review_request"])) | (User.status == "pending")
+            (User.verification_status.in_(["pending", "review_request"]))
+            | (User.status == "pending")
         )
     )
     total_users = await db.scalar(select(func.count(User.id)))
     total_properties = await db.scalar(select(func.count(Property.id)))
-    active_properties = await db.scalar(select(func.count(Property.id)).where(Property.status == "live"))
-    
-    seekers_count = await db.scalar(select(func.count(User.id)).where(User.role == "user"))
-    agencies_count = await db.scalar(select(func.count(User.id)).where(User.role == "agency"))
-    owners_count = await db.scalar(select(func.count(User.id)).where(User.role == "owner"))
-    admins_count = await db.scalar(select(func.count(User.id)).where(User.role == "admin"))
+    active_properties = await db.scalar(
+        select(func.count(Property.id)).where(Property.status == "live")
+    )
+
+    seekers_count = await db.scalar(
+        select(func.count(User.id)).where(User.role == "user")
+    )
+    agencies_count = await db.scalar(
+        select(func.count(User.id)).where(User.role == "agency")
+    )
+    owners_count = await db.scalar(
+        select(func.count(User.id)).where(User.role == "owner")
+    )
+    admins_count = await db.scalar(
+        select(func.count(User.id)).where(User.role == "admin")
+    )
 
     # Assuming no disputes model exists yet, defaulting to 0
     open_disputes = 0
@@ -176,28 +206,50 @@ async def get_dashboard_stats(current_user: CurrentUser, db: DbSession):
     )
 
 
-@router.get("/properties/pending", response_model=list[PropertyResponse], tags=["Admin - Properties"])
+@router.get(
+    "/properties/pending",
+    response_model=list[PropertyResponse],
+    tags=["Admin - Properties"],
+)
 async def list_pending_properties(current_user: CurrentUser, db: DbSession):
     require_admin(current_user)
     result = await db.execute(
-        select(Property).options(selectinload(Property.owner)).where(Property.status == "pending_review").order_by(Property.created_at.asc())
+        select(Property)
+        .options(selectinload(Property.owner))
+        .where(Property.status == "pending_review")
+        .order_by(Property.created_at.asc())
     )
     return result.scalars().all()
 
-@router.get("/properties/live", response_model=list[PropertyResponse], tags=["Admin - Properties"])
+
+@router.get(
+    "/properties/live",
+    response_model=list[PropertyResponse],
+    tags=["Admin - Properties"],
+)
 async def list_live_properties(current_user: CurrentUser, db: DbSession):
     require_admin(current_user)
     result = await db.execute(
-        select(Property).options(selectinload(Property.owner)).where(Property.status == "live").order_by(Property.created_at.desc())
+        select(Property)
+        .options(selectinload(Property.owner))
+        .where(Property.status == "live")
+        .order_by(Property.created_at.desc())
     )
     return result.scalars().all()
 
 
-@router.get("/properties/rejected", response_model=list[PropertyResponse], tags=["Admin - Properties"])
+@router.get(
+    "/properties/rejected",
+    response_model=list[PropertyResponse],
+    tags=["Admin - Properties"],
+)
 async def list_rejected_properties(current_user: CurrentUser, db: DbSession):
     require_admin(current_user)
     result = await db.execute(
-        select(Property).options(selectinload(Property.owner)).where(Property.status == "rejected").order_by(Property.created_at.desc())
+        select(Property)
+        .options(selectinload(Property.owner))
+        .where(Property.status == "rejected")
+        .order_by(Property.created_at.desc())
     )
     return result.scalars().all()
 
@@ -207,7 +259,7 @@ async def list_property_reports(current_user: CurrentUser, db: DbSession):
     require_admin(current_user)
     from app.modules.properties.models import PropertyReport
     from sqlalchemy.orm import selectinload
-    
+
     result = await db.execute(
         select(PropertyReport)
         .options(selectinload(PropertyReport.property))
@@ -217,21 +269,22 @@ async def list_property_reports(current_user: CurrentUser, db: DbSession):
 
 
 @router.patch("/reports/{report_id}/status", tags=["Admin - Reports"])
-async def update_report_status(report_id: uuid.UUID, status: str, current_user: CurrentUser, db: DbSession):
+async def update_report_status(
+    report_id: uuid.UUID, status: str, current_user: CurrentUser, db: DbSession
+):
     require_admin(current_user)
     from app.modules.properties.models import PropertyReport
-    
+
     report = await db.get(PropertyReport, report_id)
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
-        
+
     if status not in ["pending", "resolved", "dismissed"]:
         raise HTTPException(status_code=400, detail="Invalid status")
-        
+
     report.status = status
     await db.commit()
     return {"message": "Report status updated"}
-
 
 
 @router.post("/properties/{property_id}/approve", tags=["Admin - Properties"])
@@ -276,7 +329,11 @@ async def reject_property(
     return {"message": "Property rejected successfully"}
 
 
-@router.post("/properties/{property_id}/toggle-feature", response_model=PropertyResponse, tags=["Admin - Properties"])
+@router.post(
+    "/properties/{property_id}/toggle-feature",
+    response_model=PropertyResponse,
+    tags=["Admin - Properties"],
+)
 async def toggle_feature_property(
     property_id: uuid.UUID,
     current_user: CurrentUser,
@@ -287,7 +344,9 @@ async def toggle_feature_property(
     from sqlalchemy.orm import selectinload
 
     result = await db.execute(
-        select(Property).options(selectinload(Property.owner)).where(Property.id == property_id)
+        select(Property)
+        .options(selectinload(Property.owner))
+        .where(Property.id == property_id)
     )
     property_obj = result.scalars().first()
     if not property_obj:
@@ -297,30 +356,46 @@ async def toggle_feature_property(
     await db.commit()
 
     result_updated = await db.execute(
-        select(Property).options(selectinload(Property.owner)).where(Property.id == property_id)
+        select(Property)
+        .options(selectinload(Property.owner))
+        .where(Property.id == property_id)
     )
     return result_updated.scalars().first()
 
 
-@router.get("/property-types", response_model=list[PropertyTypeResponse], tags=["Admin - Property Types"])
+@router.get(
+    "/property-types",
+    response_model=list[PropertyTypeResponse],
+    tags=["Admin - Property Types"],
+)
 async def list_property_types(current_user: CurrentUser, db: DbSession):
     require_admin(current_user)
-    result = await db.execute(select(PropertyType).order_by(PropertyType.created_at.asc()))
+    result = await db.execute(
+        select(PropertyType).order_by(PropertyType.created_at.asc())
+    )
     return result.scalars().all()
 
 
-@router.post("/property-types", response_model=PropertyTypeResponse, tags=["Admin - Property Types"])
+@router.post(
+    "/property-types",
+    response_model=PropertyTypeResponse,
+    tags=["Admin - Property Types"],
+)
 async def create_property_type(
     payload: PropertyTypeCreate,
     current_user: CurrentUser,
     db: DbSession,
 ):
     require_admin(current_user)
-    
+
     # Check if slug exists
-    existing = await db.execute(select(PropertyType).where(PropertyType.slug == payload.slug))
+    existing = await db.execute(
+        select(PropertyType).where(PropertyType.slug == payload.slug)
+    )
     if existing.scalars().first():
-        raise HTTPException(status_code=400, detail="Property type with this slug already exists")
+        raise HTTPException(
+            status_code=400, detail="Property type with this slug already exists"
+        )
 
     new_type = PropertyType(**payload.model_dump())
     db.add(new_type)
@@ -329,7 +404,11 @@ async def create_property_type(
     return new_type
 
 
-@router.patch("/property-types/{type_id}", response_model=PropertyTypeResponse, tags=["Admin - Property Types"])
+@router.patch(
+    "/property-types/{type_id}",
+    response_model=PropertyTypeResponse,
+    tags=["Admin - Property Types"],
+)
 async def update_property_type(
     type_id: uuid.UUID,
     payload: PropertyTypeUpdate,
@@ -343,13 +422,17 @@ async def update_property_type(
 
     update_data = payload.model_dump(exclude_unset=True)
     if "slug" in update_data and update_data["slug"] != property_type.slug:
-        existing = await db.execute(select(PropertyType).where(PropertyType.slug == update_data["slug"]))
+        existing = await db.execute(
+            select(PropertyType).where(PropertyType.slug == update_data["slug"])
+        )
         if existing.scalars().first():
-            raise HTTPException(status_code=400, detail="Property type with this slug already exists")
+            raise HTTPException(
+                status_code=400, detail="Property type with this slug already exists"
+            )
 
     for key, value in update_data.items():
         setattr(property_type, key, value)
-    
+
     await db.commit()
     await db.refresh(property_type)
     return property_type
@@ -371,12 +454,16 @@ async def delete_property_type(
     return {"message": "Property type deleted successfully"}
 
 
-@router.post("/property-types/{type_id}/image", response_model=PropertyTypeResponse, tags=["Admin - Property Types"])
+@router.post(
+    "/property-types/{type_id}/image",
+    response_model=PropertyTypeResponse,
+    tags=["Admin - Property Types"],
+)
 async def upload_property_type_image(
     type_id: uuid.UUID,
     current_user: CurrentUser,
     db: DbSession,
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
 ):
     require_admin(current_user)
     property_type = await db.get(PropertyType, type_id)
@@ -384,6 +471,7 @@ async def upload_property_type_image(
         raise HTTPException(status_code=404, detail="Property type not found")
 
     from app.modules.media.service import MediaService
+
     media_service = MediaService()
     public_url, key = await media_service.upload_file(file, folder="category")
 
@@ -396,15 +484,21 @@ async def upload_property_type_image(
     return property_type
 
 
-@router.get("/locations", response_model=list[LocationDataResponse], tags=["Admin - Locations"])
+@router.get(
+    "/locations", response_model=list[LocationDataResponse], tags=["Admin - Locations"]
+)
 async def list_locations(current_user: CurrentUser, db: DbSession):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin required")
-    result = await db.execute(select(LocationData).order_by(LocationData.created_at.desc()))
+    result = await db.execute(
+        select(LocationData).order_by(LocationData.created_at.desc())
+    )
     return result.scalars().all()
 
 
-@router.post("/locations", response_model=LocationDataResponse, tags=["Admin - Locations"])
+@router.post(
+    "/locations", response_model=LocationDataResponse, tags=["Admin - Locations"]
+)
 async def create_location(
     payload: LocationDataCreate,
     current_user: CurrentUser,
@@ -419,7 +513,11 @@ async def create_location(
     return new_location
 
 
-@router.patch("/locations/{location_id}", response_model=LocationDataResponse, tags=["Admin - Locations"])
+@router.patch(
+    "/locations/{location_id}",
+    response_model=LocationDataResponse,
+    tags=["Admin - Locations"],
+)
 async def update_location(
     location_id: uuid.UUID,
     payload: LocationDataUpdate,
@@ -435,7 +533,7 @@ async def update_location(
     update_data = payload.model_dump(exclude_unset=True)
     for key, value in update_data.items():
         setattr(location, key, value)
-    
+
     await db.commit()
     await db.refresh(location)
     return location
@@ -458,27 +556,32 @@ async def delete_location(
     return {"message": "Location deleted successfully"}
 
 
-@router.post("/locations/{location_id}/image", response_model=LocationDataResponse, tags=["Admin - Locations"])
+@router.post(
+    "/locations/{location_id}/image",
+    response_model=LocationDataResponse,
+    tags=["Admin - Locations"],
+)
 async def upload_location_image(
     location_id: uuid.UUID,
     current_user: CurrentUser,
     db: DbSession,
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
 ):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Admin required")
     location = await db.get(LocationData, location_id)
     if not location:
         raise HTTPException(status_code=404, detail="Location not found")
-        
+
     from app.modules.media.service import MediaService
+
     media_service = MediaService()
     public_url, key = await media_service.upload_file(file, folder="location")
-    
+
     # Optionally delete old image if exists
     if location.image_url:
         await media_service.delete_file_by_url(location.image_url)
-        
+
     location.image_url = public_url
     await db.commit()
     await db.refresh(location)
@@ -490,7 +593,10 @@ async def upload_location_image(
 from app.modules.users.models import User, LimitOverride
 from app.modules.admin.schemas import UserLimitResponse, UserLimitUpdate
 
-@router.get("/users/{user_id}/limit", response_model=UserLimitResponse, tags=["Admin - Users"])
+
+@router.get(
+    "/users/{user_id}/limit", response_model=UserLimitResponse, tags=["Admin - Users"]
+)
 async def get_user_limit(
     user_id: uuid.UUID,
     current_user: CurrentUser,
@@ -500,7 +606,7 @@ async def get_user_limit(
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-        
+
     return {
         "user_id": user.id,
         "name": user.name,
@@ -508,10 +614,13 @@ async def get_user_limit(
         "msg_limit": user.msg_limit,
         "msg_usage": user.msg_usage,
         "remaining": user.msg_limit - user.msg_usage,
-        "limit_reached": user.msg_usage >= user.msg_limit
+        "limit_reached": user.msg_usage >= user.msg_limit,
     }
 
-@router.patch("/users/{user_id}/limit", response_model=UserLimitResponse, tags=["Admin - Users"])
+
+@router.patch(
+    "/users/{user_id}/limit", response_model=UserLimitResponse, tags=["Admin - Users"]
+)
 async def update_user_limit(
     user_id: uuid.UUID,
     payload: UserLimitUpdate,
@@ -522,22 +631,22 @@ async def update_user_limit(
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-        
+
     if not payload.reset_usage and payload.msg_limit < user.msg_usage:
         raise HTTPException(
-            status_code=400, 
-            detail="msg_limit cannot be less than current usage unless reset_usage is true"
+            status_code=400,
+            detail="msg_limit cannot be less than current usage unless reset_usage is true",
         )
-        
+
     old_limit = user.msg_limit
     old_usage = user.msg_usage
-    
+
     new_limit = payload.msg_limit
     new_usage = 0 if payload.reset_usage else old_usage
-    
+
     user.msg_limit = new_limit
     user.msg_usage = new_usage
-    
+
     override = LimitOverride(
         user_id=user.id,
         old_limit=old_limit,
@@ -547,12 +656,12 @@ async def update_user_limit(
         reset_usage=payload.reset_usage,
         note=payload.note,
         payment_ref=payload.payment_ref,
-        done_by=current_user.id
+        done_by=current_user.id,
     )
     db.add(override)
     await db.commit()
     await db.refresh(user)
-    
+
     return {
         "user_id": user.id,
         "name": user.name,
@@ -560,7 +669,7 @@ async def update_user_limit(
         "msg_limit": user.msg_limit,
         "msg_usage": user.msg_usage,
         "remaining": user.msg_limit - user.msg_usage,
-        "limit_reached": user.msg_usage >= user.msg_limit
+        "limit_reached": user.msg_usage >= user.msg_limit,
     }
 
 
@@ -576,6 +685,3 @@ async def delete_property_review_admin(
         raise HTTPException(status_code=404, detail="Review not found")
     await db.delete(review)
     await db.commit()
-
-
-

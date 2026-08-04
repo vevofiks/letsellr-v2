@@ -91,7 +91,9 @@ def _normalize_phone(phone: str) -> str:
 
 async def _get_active_session_id() -> str:
     """Fetch active session UUID from OpenWA gateway if name is configured."""
-    session_target = getattr(settings, "OPENWA_SESSION_ID", "production") or "production"
+    session_target = (
+        getattr(settings, "OPENWA_SESSION_ID", "production") or "production"
+    )
     if "-" in session_target and len(session_target) > 30:
         return session_target
 
@@ -103,34 +105,51 @@ async def _get_active_session_id() -> str:
             if resp.status_code == 200:
                 sessions = resp.json()
                 for s in sessions:
-                    if s.get("name") == session_target or s.get("status") in ("ready", "CONNECTED", "connected"):
+                    if s.get("name") == session_target or s.get("status") in (
+                        "ready",
+                        "CONNECTED",
+                        "connected",
+                    ):
                         return s.get("id", session_target)
                 if sessions:
                     return sessions[0].get("id", session_target)
     except Exception as e:
         logger.warning("Failed to auto-resolve OpenWA session ID: %s", e)
 
-    return session_target   
+    return session_target
 
 
 async def _send_whatsapp_otp(phone: str, otp: str, purpose: str) -> None:
     """
     Send OTP via self-hosted OpenWA Gateway with line-by-line detailed execution logging.
     """
-    logger.info("=== [OTP STEP 1] Initiating WhatsApp OTP dispatch for phone='%s', purpose='%s' ===", phone, purpose)
+    logger.info(
+        "=== [OTP STEP 1] Initiating WhatsApp OTP dispatch for phone='%s', purpose='%s' ===",
+        phone,
+        purpose,
+    )
 
     if not settings.OPENWA_GATEWAY_URL:
-        logger.warning("[OTP STEP 1.1] OPENWA_GATEWAY_URL is not configured. Falling back to DEV MODE.")
+        logger.warning(
+            "[OTP STEP 1.1] OPENWA_GATEWAY_URL is not configured. Falling back to DEV MODE."
+        )
         logger.warning("[DEV MODE] WhatsApp OTP for %s (%s): %s", phone, purpose, otp)
         return
 
     logger.info("[OTP STEP 2] Cleaning raw phone number string '%s'...", phone)
     clean_digits = "".join(c for c in phone if c.isdigit())
-    logger.info("[OTP STEP 2.1] Extracted numeric digits: '%s' (length=%d)", clean_digits, len(clean_digits))
+    logger.info(
+        "[OTP STEP 2.1] Extracted numeric digits: '%s' (length=%d)",
+        clean_digits,
+        len(clean_digits),
+    )
 
     if len(clean_digits) == 10:
         clean_digits = "91" + clean_digits
-        logger.info("[OTP STEP 2.2] 10-digit number detected. Prepended country code '91': '%s'", clean_digits)
+        logger.info(
+            "[OTP STEP 2.2] 10-digit number detected. Prepended country code '91': '%s'",
+            clean_digits,
+        )
 
     chat_id = f"{clean_digits}@c.us" if "@" not in phone else phone
     logger.info("[OTP STEP 2.3] Constructed WhatsApp Chat JID chatId='%s'", chat_id)
@@ -140,7 +159,9 @@ async def _send_whatsapp_otp(phone: str, otp: str, purpose: str) -> None:
         f"This code is valid for {settings.OTP_EXPIRE_MINUTES} minutes. "
         f"Do not share it with anyone."
     )
-    logger.info("[OTP STEP 3] Prepared OTP message body: '%s'", message.replace('\n', ' '))
+    logger.info(
+        "[OTP STEP 3] Prepared OTP message body: '%s'", message.replace("\n", " ")
+    )
 
     logger.info("[OTP STEP 4] Resolving active OpenWA Session ID...")
     session_id = await _get_active_session_id()
@@ -157,20 +178,35 @@ async def _send_whatsapp_otp(phone: str, otp: str, purpose: str) -> None:
         "chatId": chat_id,
         "text": message,
     }
-    logger.info("[OTP STEP 6] Payload prepared: chatId='%s', text_len=%d", chat_id, len(message))
+    logger.info(
+        "[OTP STEP 6] Payload prepared: chatId='%s', text_len=%d", chat_id, len(message)
+    )
     logger.info("[OTP STEP 7] Dispatching HTTP POST request to OpenWA Gateway...")
 
     try:
         async with httpx.AsyncClient(timeout=10) as client:
             resp = await client.post(url, headers=headers, json=payload)
-            logger.info("[OTP STEP 8] HTTP Response Received! StatusCode=%s", resp.status_code)
+            logger.info(
+                "[OTP STEP 8] HTTP Response Received! StatusCode=%s", resp.status_code
+            )
             logger.info("[OTP STEP 8.1] Raw Response Body: %s", resp.text)
 
             resp.raise_for_status()
-            logger.info("=== [OTP SUCCESS] WhatsApp OTP successfully dispatched to %s (chatId=%s, session_id=%s) ===", phone, chat_id, session_id)
+            logger.info(
+                "=== [OTP SUCCESS] WhatsApp OTP successfully dispatched to %s (chatId=%s, session_id=%s) ===",
+                phone,
+                chat_id,
+                session_id,
+            )
     except httpx.HTTPStatusError as e:
-        logger.error("[OTP ERROR] OpenWA returned HTTP Status Error %s: %s", e.response.status_code, e.response.text)
-        logger.warning("[FALLBACK DEV MODE] WhatsApp OTP for %s (%s): %s", phone, purpose, otp)
+        logger.error(
+            "[OTP ERROR] OpenWA returned HTTP Status Error %s: %s",
+            e.response.status_code,
+            e.response.text,
+        )
+        logger.warning(
+            "[FALLBACK DEV MODE] WhatsApp OTP for %s (%s): %s", phone, purpose, otp
+        )
     except Exception as e:
         logger.error(f"WhatsApp OTP failed to send to {phone}: {e}")
 
@@ -180,20 +216,22 @@ async def _trigger_crm_webhook(user: User):
     headers = {
         "Authorization": "Bearer 4PvdLEkkCm4EhNITsiksFY7A2EKpRhhs",
         "X-Secret-Key": "4PvdLEkkCm4EhNITsiksFY7A2EKpRhhs",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
     payload = {
         "customer_name": user.name or "New User",
         "mobile_1": user.phone,
-        "preferred_locations": [user.location_city] if user.location_city else []
+        "preferred_locations": [user.location_city] if user.location_city else [],
     }
     if user.email:
         payload["email"] = user.email
-        
+
     try:
         async with httpx.AsyncClient() as client:
             resp = await client.post(url, json=payload, headers=headers, timeout=5.0)
-            logger.info("CRM Webhook fired for %s, status: %s", user.phone, resp.status_code)
+            logger.info(
+                "CRM Webhook fired for %s, status: %s", user.phone, resp.status_code
+            )
     except Exception as e:
         logger.error("Failed to fire CRM Webhook for %s: %s", user.phone, e)
 
@@ -227,12 +265,12 @@ class AuthService:
 
     async def _verify_otp(self, phone: str, otp: str, purpose: str) -> OTPRecord:
         """Verify OTP for a phone+purpose. Returns the record on success."""
-        
+
         # --- TEST BACKDOOR FOR PRODUCTION TESTING ---
         if otp == "000000" and phone in ("+910000000001", "+910000000002"):
             logger.info("Test account login bypass using master PIN: %s", phone)
             return OTPRecord(phone=phone, purpose=purpose)
-            
+
         result = await self.db.execute(
             select(OTPRecord).where(
                 OTPRecord.phone == phone,
@@ -248,7 +286,11 @@ class AuthService:
                 detail="No verification OTP found. Please request a new code.",
             )
 
-        exp = record.expires_at if record.expires_at.tzinfo else record.expires_at.replace(tzinfo=UTC)
+        exp = (
+            record.expires_at
+            if record.expires_at.tzinfo
+            else record.expires_at.replace(tzinfo=UTC)
+        )
         if exp < datetime.now(UTC):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -262,9 +304,7 @@ class AuthService:
             )
 
         record.used = True
-        await self.db.execute(
-            delete(OTPRecord).where(OTPRecord.id == record.id)
-        )
+        await self.db.execute(delete(OTPRecord).where(OTPRecord.id == record.id))
         return record
 
     def _issue_tokens(self, user: User) -> TokenResponse:
@@ -302,7 +342,11 @@ class AuthService:
 
         await _send_whatsapp_otp(phone, otp, "registration")
 
-        logger.info("Registration OTP sent to %s (role=%s)", phone, getattr(payload, "role", "user"))
+        logger.info(
+            "Registration OTP sent to %s (role=%s)",
+            phone,
+            getattr(payload, "role", "user"),
+        )
         return RegisterResponse(phone=phone)
 
     async def register_user(self, payload: UserRegisterRequest) -> RegisterResponse:
@@ -325,7 +369,9 @@ class AuthService:
         logger.info("Seeker registration OTP sent to %s", phone)
         return RegisterResponse(phone=phone)
 
-    async def verify_registration(self, payload: VerifyRegistrationRequest) -> TokenResponse:
+    async def verify_registration(
+        self, payload: VerifyRegistrationRequest
+    ) -> TokenResponse:
         phone = _normalize_phone(payload.phone)
 
         # 1. Fetch OTP record to get saved registration payload
@@ -352,16 +398,24 @@ class AuthService:
         reg_type = reg_data.get("_registration_type", "user")
 
         # Build user
-        if reg_type == "user" or ("preference_type" in reg_data and "location" in reg_data):
+        if reg_type == "user" or (
+            "preference_type" in reg_data and "location" in reg_data
+        ):
             user = User(
                 role="user",
                 name=reg_data.get("name"),
-                email=reg_data["email"].strip() if reg_data.get("email") and reg_data["email"].strip() else None,
+                email=(
+                    reg_data["email"].strip()
+                    if reg_data.get("email") and reg_data["email"].strip()
+                    else None
+                ),
                 phone=phone,
                 auth_provider_uid=hash_password(reg_data["pin"]),
                 email_verified=False,
                 preference_type=reg_data.get("preference_type", "buy"),
-                location_city=reg_data.get("location", reg_data.get("location_city", "")),
+                location_city=reg_data.get(
+                    "location", reg_data.get("location_city", "")
+                ),
                 location_area="N/A",
                 verification_status="unverified",
                 status="active",
@@ -371,20 +425,27 @@ class AuthService:
             user = User(
                 role=role,
                 name=reg_data.get("name"),
-                email=reg_data["email"].strip() if reg_data.get("email") and reg_data["email"].strip() else None,
+                email=(
+                    reg_data["email"].strip()
+                    if reg_data.get("email") and reg_data["email"].strip()
+                    else None
+                ),
                 phone=phone,
                 auth_provider_uid=hash_password(reg_data["pin"]),
                 email_verified=False,
                 preference_type=reg_data.get("preference_type", "buy"),
                 location_city=reg_data.get("location_city", ""),
                 location_area=reg_data.get("location_area", "N/A"),
-                verification_status="pending" if role in ("agency", "owner") else "unverified",
+                verification_status=(
+                    "pending" if role in ("agency", "owner") else "unverified"
+                ),
                 status="pending" if role in ("agency", "owner") else "active",
             )
 
             if role == "agency":
                 user.agency_profile = AgencyProfile(
-                    display_name=reg_data.get("agency_display_name") or reg_data.get("name"),
+                    display_name=reg_data.get("agency_display_name")
+                    or reg_data.get("name"),
                     about=reg_data.get("agency_about") or "",
                     areas_served=reg_data.get("agency_areas_served", []),
                 )
@@ -393,6 +454,7 @@ class AuthService:
 
         if user.role == "agency":
             from app.modules.admin.models import VerificationRequest
+
             req = VerificationRequest(
                 user_id=created.id,
                 status="pending",
@@ -426,19 +488,26 @@ class AuthService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Your account has been suspended. Please contact support.",
             )
-        if (user.status == "pending" or user.verification_status in ("review_request", "pending", "unverified")) and user.role in ("owner", "agency"):
+        if (
+            user.status == "pending"
+            or user.verification_status in ("review_request", "pending", "unverified")
+        ) and user.role in ("owner", "agency"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Your account is currently under review by admin. You will be able to sign in once verified and approved.",
             )
 
-        if not user.auth_provider_uid or not verify_password(payload.pin, user.auth_provider_uid):
+        if not user.auth_provider_uid or not verify_password(
+            payload.pin, user.auth_provider_uid
+        ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid phone number or 4-digit security PIN.",
             )
 
-        logger.info("User logged in via 4-digit PIN: phone=%s role=%s", phone, user.role)
+        logger.info(
+            "User logged in via 4-digit PIN: phone=%s role=%s", phone, user.role
+        )
         return self._issue_tokens(user)
 
     async def admin_login(self, payload: AdminLoginRequest) -> TokenResponse:
@@ -467,7 +536,9 @@ class AuthService:
                 detail="Your account has been suspended. Please contact support.",
             )
 
-        if not user.auth_provider_uid or not verify_password(payload.password, user.auth_provider_uid):
+        if not user.auth_provider_uid or not verify_password(
+            payload.password, user.auth_provider_uid
+        ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid email or password. Access denied.",
@@ -492,7 +563,10 @@ class AuthService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Your account has been suspended. Contact support.",
             )
-        if (user.status == "pending" or user.verification_status in ("review_request", "pending", "unverified")) and user.role in ("owner", "agency"):
+        if (
+            user.status == "pending"
+            or user.verification_status in ("review_request", "pending", "unverified")
+        ) and user.role in ("owner", "agency"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Your account is currently under review by admin. You will be able to sign in once verified and approved.",

@@ -61,15 +61,15 @@ class Settings(BaseSettings):
     # ── SMTP (Email / OTP) ────────────────────────────────────────────────────
     SMTP_HOST: str = "smtp.gmail.com"
     SMTP_PORT: int = 587
-    SMTP_USERNAME: str = ""        # your sender email address
-    SMTP_PASSWORD: str = ""        # app-specific password
+    SMTP_USERNAME: str = ""  # your sender email address
+    SMTP_PASSWORD: str = ""  # app-specific password
     SMTP_FROM_NAME: str = "Letsellr"
-    SMTP_FROM_EMAIL: str = ""      # same as SMTP_USERNAME usually
+    SMTP_FROM_EMAIL: str = ""  # same as SMTP_USERNAME usually
     SMTP_USE_TLS: bool = True
 
     # ── OTP ──────────────────────────────────────────────────────────────────
-    OTP_EXPIRE_MINUTES: int = 10   # OTP validity window
-    OTP_LENGTH: int = 6            # digit count
+    OTP_EXPIRE_MINUTES: int = 10  # OTP validity window
+    OTP_LENGTH: int = 6  # digit count
 
     # ── WhatsApp ──────────────────────────────────────────────────────────────
     WHATSAPP_PLATFORM_NUMBER: str = ""
@@ -84,7 +84,6 @@ class Settings(BaseSettings):
 
     # ── Server-to-Server Auth (n8n) ───────────────────────────────────────────
     N8N_API_KEY: str = ""
-
 
     # ── Map / Places API ──────────────────────────────────────────────────────
     PLACES_API_KEY: str = ""

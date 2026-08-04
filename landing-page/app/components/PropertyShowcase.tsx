@@ -182,18 +182,18 @@ export default function PropertyShowcase() {
       : propertyList.filter((p) => p.category.toLowerCase() === activeTab.toLowerCase());
 
   return (
-    <section id="properties" className="pt-8 pb-20 md:py-20 px-6 md:px-12 lg:px-20 w-full bg-[#FAF9F6] text-[#0F0F11]">
+    <section id="properties" className="pt-4 pb-8 md:py-20 px-4 sm:px-6 md:px-12 lg:px-20 w-full bg-[#FAF9F6] text-[#0F0F11]">
       {/* Section Header */}
-      <div ref={headerRef} className="flex flex-col items-center justify-center text-center mb-12 gap-6">
+      <div ref={headerRef} className="flex flex-col items-center justify-center text-center mb-6 md:mb-12 gap-4">
         <div className="flex flex-col items-center justify-center text-center">
-          <div className="inline-flex items-center gap-2.5 mb-3">
-            <span className="w-5 h-0.5 bg-[#23D283] rounded-full"></span>
-            <span className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#014645]">
+          <div className="inline-flex items-center gap-2 mb-1.5 md:mb-3">
+            <span className="w-4 md:w-5 h-0.5 bg-[#23D283] rounded-full"></span>
+            <span className="text-[10px] md:text-xs font-extrabold uppercase tracking-[0.22em] text-[#014645]">
               Featured Inventory
             </span>
-            <span className="w-5 h-0.5 bg-[#23D283] rounded-full"></span>
+            <span className="w-4 md:w-5 h-0.5 bg-[#23D283] rounded-full"></span>
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#0F0F11] text-center">
+          <h2 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-[#0F0F11] text-center">
             Spaces Where Your Story Begins
           </h2>
         </div>

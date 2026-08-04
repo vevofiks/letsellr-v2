@@ -4,10 +4,11 @@ from app.depends.auth import get_current_user
 from app.main import app
 from app.modules.properties.models import Property
 
+
 @pytest.mark.asyncio
 async def test_create_property_owner_success(client, test_owner):
     app.dependency_overrides[get_current_user] = lambda: test_owner
-    
+
     property_data = {
         "category": "pg",
         "intent": "rent",
@@ -31,12 +32,12 @@ async def test_create_property_owner_success(client, test_owner):
             "pincode": "682020",
             "state": "Kerala",
             "latitude": 9.967,
-            "longitude": 76.299
+            "longitude": 76.299,
         },
         "owner_phone": "+919876543210",
-        "owner_whatsapp": "+919876543210"
+        "owner_whatsapp": "+919876543210",
     }
-    
+
     response = await client.post("/api/properties", json=property_data)
     assert response.status_code == 201
     res_data = response.json()
@@ -49,10 +50,11 @@ async def test_create_property_owner_success(client, test_owner):
     assert "ref" in res_data
     assert res_data["stats"] == {"views": 0, "enquiries": 0, "saves": 0}
 
+
 @pytest.mark.asyncio
 async def test_create_property_pg_whatsapp_bot(client, test_owner):
     app.dependency_overrides[get_current_user] = lambda: test_owner
-    
+
     property_data = {
         "category": "pg",
         "intent": "rent",
@@ -64,21 +66,22 @@ async def test_create_property_pg_whatsapp_bot(client, test_owner):
             "area": "Kadavanthra",
             "city": "Kochi",
             "pincode": "682020",
-            "state": "Kerala"
+            "state": "Kerala",
         },
-        "owner_phone": "+919876543210"
+        "owner_phone": "+919876543210",
     }
-    
+
     response = await client.post("/api/properties", json=property_data)
     assert response.status_code == 201
     res_data = response.json()
     assert res_data["category"] == "pg"
     assert res_data["enquiry_type"] == "whatsapp_bot"
 
+
 @pytest.mark.asyncio
 async def test_create_property_agency_forbidden_category(client, test_agency):
     app.dependency_overrides[get_current_user] = lambda: test_agency
-    
+
     # Agencies are not allowed to list PGs
     property_data = {
         "category": "pg",
@@ -91,19 +94,20 @@ async def test_create_property_agency_forbidden_category(client, test_agency):
             "area": "Kadavanthra",
             "city": "Kochi",
             "pincode": "682020",
-            "state": "Kerala"
+            "state": "Kerala",
         },
-        "owner_phone": "+919876543210"
+        "owner_phone": "+919876543210",
     }
-    
+
     response = await client.post("/api/properties", json=property_data)
     assert response.status_code == 403
     assert "Agencies cannot list in category: pg" in response.json()["detail"]
 
+
 @pytest.mark.asyncio
 async def test_create_property_agency_allowed_category(client, test_agency):
     app.dependency_overrides[get_current_user] = lambda: test_agency
-    
+
     property_data = {
         "category": "commercial",
         "intent": "lease",
@@ -115,15 +119,16 @@ async def test_create_property_agency_allowed_category(client, test_agency):
             "area": "Kakkanad",
             "city": "Kochi",
             "pincode": "682030",
-            "state": "Kerala"
+            "state": "Kerala",
         },
-        "owner_phone": "+919876543212"
+        "owner_phone": "+919876543212",
     }
-    
+
     response = await client.post("/api/properties", json=property_data)
     assert response.status_code == 201
     assert response.json()["category"] == "commercial"
     assert response.json()["owner_role"] == "agency"
+
 
 @pytest.mark.asyncio
 async def test_get_property_by_id(client, db, test_owner):
@@ -142,17 +147,18 @@ async def test_get_property_by_id(client, db, test_owner):
         location_city="Kochi",
         location_pincode="682020",
         location_state="Kerala",
-        owner_phone="+919876543210"
+        owner_phone="+919876543210",
     )
     db.add(prop)
     await db.flush()
-    
+
     response = await client.get(f"/api/properties/{prop.id}")
     assert response.status_code == 200
     res_data = response.json()
     assert res_data["id"] == str(prop.id)
     assert res_data["title"] == "Test Get Property"
     assert res_data["category"] == "villa_house"
+
 
 @pytest.mark.asyncio
 async def test_get_property_by_ref_n8n_api_key(client, db, test_owner):
@@ -170,7 +176,7 @@ async def test_get_property_by_ref_n8n_api_key(client, db, test_owner):
         location_city="Kochi",
         location_pincode="682020",
         location_state="Kerala",
-        owner_phone="+919876543210"
+        owner_phone="+919876543210",
     )
     db.add(prop)
     await db.flush()
@@ -182,6 +188,7 @@ async def test_get_property_by_ref_n8n_api_key(client, db, test_owner):
     res_data = response.json()
     assert res_data["ref"] == "PG1042"
     assert res_data["title"] == "N8N Property Ref Test"
+
 
 @pytest.mark.asyncio
 async def test_get_property_not_found(client, test_owner):
@@ -209,7 +216,7 @@ async def test_list_public_properties(client, db, test_owner):
         location_pincode="682020",
         location_state="Kerala",
         owner_phone="+919876543210",
-        status="live"
+        status="live",
     )
     prop_pending = Property(
         owner_id=test_owner.id,
@@ -225,11 +232,11 @@ async def test_list_public_properties(client, db, test_owner):
         location_pincode="682020",
         location_state="Kerala",
         owner_phone="+919876543210",
-        status="pending_review"
+        status="pending_review",
     )
     db.add_all([prop_live, prop_pending])
     await db.flush()
-    
+
     # Query all public properties
     response = await client.get("/api/properties")
     assert response.status_code == 200
@@ -240,23 +247,26 @@ async def test_list_public_properties(client, db, test_owner):
     assert len(properties) >= 1
     assert any(p["ref"] == "PROP-LIVE1" for p in properties)
     assert not any(p["ref"] == "PROP-PENDING1" for p in properties)
-    
+
     # Query with filters
-    response = await client.get("/api/properties?category=villa_house&intent=buy&city=kochi")
+    response = await client.get(
+        "/api/properties?category=villa_house&intent=buy&city=kochi"
+    )
     assert response.status_code == 200
     filtered = response.json()["results"]
     assert len(filtered) >= 1
     assert filtered[0]["ref"] == "PROP-LIVE1"
-    
+
     # Query with no match filter
     response = await client.get("/api/properties?city=NonExistentCity")
     assert response.status_code == 200
     assert len(response.json()["results"]) == 0
 
+
 @pytest.mark.asyncio
 async def test_update_property_owner_success(client, db, test_owner):
     app.dependency_overrides[get_current_user] = lambda: test_owner
-    
+
     prop = Property(
         owner_id=test_owner.id,
         owner_role="owner",
@@ -270,11 +280,11 @@ async def test_update_property_owner_success(client, db, test_owner):
         location_city="Kochi",
         location_pincode="682020",
         location_state="Kerala",
-        owner_phone="+919876543210"
+        owner_phone="+919876543210",
     )
     db.add(prop)
     await db.flush()
-    
+
     update_data = {
         "title": "New Updated Title",
         "price": 22000,
@@ -283,10 +293,10 @@ async def test_update_property_owner_success(client, db, test_owner):
             "area": "Vyttila",
             "city": "Kochi",
             "pincode": "682019",
-            "state": "Kerala"
-        }
+            "state": "Kerala",
+        },
     }
-    
+
     response = await client.patch(f"/api/properties/{prop.id}", json=update_data)
     assert response.status_code == 200
     res_data = response.json()
@@ -295,11 +305,12 @@ async def test_update_property_owner_success(client, db, test_owner):
     assert res_data["location_area"] == "Vyttila"
     assert res_data["location_address"] == "Updated Address"
 
+
 @pytest.mark.asyncio
 async def test_update_property_unauthorized(client, db, test_owner, test_other_owner):
     # Authenticate as test_other_owner, try to update test_owner's property
     app.dependency_overrides[get_current_user] = lambda: test_other_owner
-    
+
     prop = Property(
         owner_id=test_owner.id,
         owner_role="owner",
@@ -313,21 +324,22 @@ async def test_update_property_unauthorized(client, db, test_owner, test_other_o
         location_city="Kochi",
         location_pincode="682020",
         location_state="Kerala",
-        owner_phone="+919876543210"
+        owner_phone="+919876543210",
     )
     db.add(prop)
     await db.flush()
-    
+
     update_data = {"title": "Malicious Update"}
     response = await client.patch(f"/api/properties/{prop.id}", json=update_data)
     assert response.status_code == 403
     assert "Not authorized to edit this property" in response.json()["detail"]
 
+
 @pytest.mark.asyncio
 async def test_update_property_admin_success(client, db, test_owner, test_admin):
     # Authenticate as admin, update owner's property
     app.dependency_overrides[get_current_user] = lambda: test_admin
-    
+
     prop = Property(
         owner_id=test_owner.id,
         owner_role="owner",
@@ -341,20 +353,21 @@ async def test_update_property_admin_success(client, db, test_owner, test_admin)
         location_city="Kochi",
         location_pincode="682020",
         location_state="Kerala",
-        owner_phone="+919876543210"
+        owner_phone="+919876543210",
     )
     db.add(prop)
     await db.flush()
-    
+
     update_data = {"title": "Admin Corrected Title"}
     response = await client.patch(f"/api/properties/{prop.id}", json=update_data)
     assert response.status_code == 200
     assert response.json()["title"] == "Admin Corrected Title"
 
+
 @pytest.mark.asyncio
 async def test_delete_property_owner_success(client, db, test_owner):
     app.dependency_overrides[get_current_user] = lambda: test_owner
-    
+
     prop = Property(
         owner_id=test_owner.id,
         owner_role="owner",
@@ -368,23 +381,24 @@ async def test_delete_property_owner_success(client, db, test_owner):
         location_city="Kochi",
         location_pincode="682020",
         location_state="Kerala",
-        owner_phone="+919876543210"
+        owner_phone="+919876543210",
     )
     db.add(prop)
     await db.flush()
-    
+
     response = await client.delete(f"/api/properties/{prop.id}")
     assert response.status_code == 204
-    
+
     # Confirm it is deleted
     get_res = await client.get(f"/api/properties/{prop.id}")
     assert get_res.status_code == 404
+
 
 @pytest.mark.asyncio
 async def test_delete_property_unauthorized(client, db, test_owner, test_other_owner):
     # Authenticate as test_other_owner, try to delete test_owner's property
     app.dependency_overrides[get_current_user] = lambda: test_other_owner
-    
+
     prop = Property(
         owner_id=test_owner.id,
         owner_role="owner",
@@ -398,14 +412,15 @@ async def test_delete_property_unauthorized(client, db, test_owner, test_other_o
         location_city="Kochi",
         location_pincode="682020",
         location_state="Kerala",
-        owner_phone="+919876543210"
+        owner_phone="+919876543210",
     )
     db.add(prop)
     await db.flush()
-    
+
     response = await client.delete(f"/api/properties/{prop.id}")
     assert response.status_code == 403
     assert "Not authorized to delete this property" in response.json()["detail"]
+
 
 @pytest.mark.asyncio
 async def test_get_enquiry_link_success(client, db, test_owner):
@@ -424,11 +439,11 @@ async def test_get_enquiry_link_success(client, db, test_owner):
         location_city="Kochi",
         location_pincode="682020",
         location_state="Kerala",
-        owner_phone="+919876543210"
+        owner_phone="+919876543210",
     )
     db.add(prop)
     await db.flush()
-    
+
     response = await client.get(f"/api/properties/ref/{prop.ref}/enquiry-link")
     assert response.status_code == 200
     link_data = response.json()
@@ -436,6 +451,7 @@ async def test_get_enquiry_link_success(client, db, test_owner):
     assert "wa.me/918136990018" in link_data["link"]
     assert "PROP-ENQ-PG" in link_data["link"]
     assert link_data["is_pg_or_hostel"] is True
+
 
 @pytest.mark.asyncio
 async def test_get_enquiry_link_invalid_category(client, db, test_owner):
@@ -454,11 +470,11 @@ async def test_get_enquiry_link_invalid_category(client, db, test_owner):
         location_city="Kochi",
         location_pincode="682020",
         location_state="Kerala",
-        owner_phone="+919876543210"
+        owner_phone="+919876543210",
     )
     db.add(prop)
     await db.flush()
-    
+
     response = await client.get(f"/api/properties/ref/{prop.ref}/enquiry-link")
     assert response.status_code == 200
     link_data = response.json()
@@ -470,7 +486,7 @@ async def test_get_enquiry_link_invalid_category(client, db, test_owner):
 @pytest.mark.asyncio
 async def test_get_owner_properties(client, db, test_owner, test_other_owner):
     app.dependency_overrides[get_current_user] = lambda: test_owner
-    
+
     p1 = Property(
         owner_id=test_owner.id,
         owner_role="owner",
@@ -484,7 +500,7 @@ async def test_get_owner_properties(client, db, test_owner, test_other_owner):
         location_city="Kochi",
         location_pincode="682020",
         location_state="Kerala",
-        owner_phone="+919876543210"
+        owner_phone="+919876543210",
     )
     p2 = Property(
         owner_id=test_other_owner.id,
@@ -499,11 +515,11 @@ async def test_get_owner_properties(client, db, test_owner, test_other_owner):
         location_city="Kochi",
         location_pincode="682019",
         location_state="Kerala",
-        owner_phone="+919876543211"
+        owner_phone="+919876543211",
     )
     db.add_all([p1, p2])
     await db.flush()
-    
+
     response = await client.get("/api/properties/owner/me")
     assert response.status_code == 200
     results = response.json()
@@ -531,7 +547,7 @@ async def test_list_properties_nearby_success(client, db, test_owner):
         owner_phone="+919876543210",
         latitude=9.960,
         longitude=76.310,
-        status="live"
+        status="live",
     )
     # 2. Medium distance property (approx 5.5km away)
     prop_medium = Property(
@@ -550,7 +566,7 @@ async def test_list_properties_nearby_success(client, db, test_owner):
         owner_phone="+919876543210",
         latitude=10.010,
         longitude=76.320,
-        status="live"
+        status="live",
     )
     db.add_all([prop_close, prop_medium])
     await db.flush()
@@ -584,7 +600,7 @@ async def test_list_properties_nearby_outside_radius(client, db, test_owner):
         owner_phone="+919876543210",
         latitude=10.100,
         longitude=76.350,
-        status="live"
+        status="live",
     )
     db.add(prop_far)
     await db.flush()
@@ -630,8 +646,9 @@ async def test_list_properties_pagination(client, db, test_owner):
             location_pincode="682020",
             location_state="Kerala",
             owner_phone="+919876543210",
-            status="live"
-        ) for i in range(3)
+            status="live",
+        )
+        for i in range(3)
     ]
     db.add_all(p_list)
     await db.flush()
@@ -647,4 +664,3 @@ async def test_list_properties_pagination(client, db, test_owner):
     assert response2.status_code == 200
     results2 = response2.json()["results"]
     assert len(results2) >= 1
-

@@ -6,42 +6,42 @@
         "path": "whatsapp",
         "options": {}
       },
-      "id": "7d476d79-fe96-4430-a7d9-ecbac25aa288",
-      "name": "WhatsApp Trigger1",
+      "id": "9305edee-6616-42ba-ab9d-93cc52f57cca",
+      "name": "WhatsApp Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        -5888,
-        -288
+        -3808,
+        -112
       ],
       "webhookId": "2d410fe3-c267-4719-833c-e6175d562ab0"
     },
     {
       "parameters": {
-        "jsCode": "// Extract phone number, message text, and property code from OpenWA webhook payload\nconst entry = $input.first().json;\n\n// OpenWA sends body.data for message.received events\nconst dataObj = entry.body?.data || entry.data || entry.payload || entry.message || entry;\n\n// Extract raw sender and text safely\nlet rawFrom = dataObj.from || dataObj.sender?.id || dataObj.chatId || entry.from || '';\nlet rawText = dataObj.body || dataObj.text || dataObj.content || (typeof dataObj.message === 'string' ? dataObj.message : '') || '';\n\n// Safely ensure text is a string\nlet text = typeof rawText === 'string' ? rawText : String(rawText || '');\n\n// Clean phone number\nlet phone = rawFrom.replace(/@.*$/, '').replace(/[^0-9]/g, '');\n\nlet propertyCode = null;\n\nconst refMatch = text.match(/(?:Ref|Reference|Code):?\\s*([A-Z0-9-]+)\\b/i);\nif (refMatch) {\n  propertyCode = refMatch[1].toUpperCase().replace(/[^A-Z0-9-]/g, '');\n} else {\n  const codeMatch = text.match(/\\b(PROP-[A-Z0-9-]+|[A-Z]{2,4}\\d{3,6})\\b/i);\n  if (codeMatch) {\n    propertyCode = codeMatch[1].toUpperCase();\n  }\n}\n\nreturn [{\n  json: {\n    phone_number: phone,\n    raw_chat_id: rawFrom.includes('@') ? rawFrom : `${phone}@c.us`,\n    message_text: text,\n    property_code: propertyCode,\n    session_id: `${phone}_${propertyCode || 'unknown'}`\n  }\n}];"
+        "jsCode": "// Extract phone number, message text, and property code from OpenWA webhook payload\nconst entry = $input.first().json;\n\n// OpenWA sends body.data for message.received events\nconst dataObj = entry.body?.data || entry.data || entry.payload || entry.message || entry;\n\n// Extract raw sender and text safely\nlet rawFrom = dataObj.from || dataObj.sender?.id || dataObj.chatId || entry.from || '';\nlet rawText = dataObj.body || dataObj.text || dataObj.content || (typeof dataObj.message === 'string' ? dataObj.message : '') || '';\n\n// Safely ensure text is a string\nlet text = typeof rawText === 'string' ? rawText : String(rawText || '');\n\n// Extract actual user phone number (resolving @lid JIDs to real @c.us phone numbers)\nlet phone = '';\n\nif (dataObj.sender?.phone) {\n  phone = String(dataObj.sender.phone).replace(/[^0-9]/g, '');\n}\n\nif (!phone || phone.length > 13) {\n  const jidCandidates = [\n    dataObj.author,\n    dataObj.sender?.id,\n    dataObj.chat?.contact?.id,\n    dataObj.from,\n    dataObj.chatId,\n    entry.from\n  ];\n  \n  for (const candidate of jidCandidates) {\n    if (typeof candidate === 'string' && candidate.includes('@c.us')) {\n      const extracted = candidate.replace(/@.*$/, '').replace(/[^0-9]/g, '');\n      if (extracted && extracted.length <= 13) {\n        phone = extracted;\n        break;\n      }\n    }\n  }\n}\n\nif (!phone) {\n  phone = rawFrom.replace(/@.*$/, '').replace(/[^0-9]/g, '');\n}\n\nlet propertyCode = null;\n\nconst refMatch = text.match(/(?:Ref|Reference|Code):?\\s*([A-Z0-9-]+)\\b/i);\nif (refMatch) {\n  propertyCode = refMatch[1].toUpperCase().replace(/[^A-Z0-9-]/g, '');\n} else {\n  const codeMatch = text.match(/\\b(PROP-[A-Z0-9-]+|[A-Z]{2,4}\\d{3,6})\\b/i);\n  if (codeMatch) {\n    propertyCode = codeMatch[1].toUpperCase();\n  }\n}\n\nreturn [{\n  json: {\n    phone_number: phone,\n    raw_chat_id: rawFrom.includes('@') ? rawFrom : `${phone}@c.us`,\n    message_text: text,\n    property_code: propertyCode,\n    session_id: `${phone}_${propertyCode || 'unknown'}`\n  }\n}];"
       },
-      "id": "adac9343-4645-4770-9f45-7439130c2f44",
-      "name": "Extract Property Code1",
+      "id": "540e0a49-d536-4c08-bc27-9b879bf3d6fa",
+      "name": "Extract Property Code",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5664,
-        -288
+        -3584,
+        -112
       ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT property_code, session_id FROM chat_sessions WHERE phone_number = '{{ $('Extract Property Code1').first().json.phone_number }}' AND status = 'open' ORDER BY updated_at DESC LIMIT 1;",
+        "query": "SELECT property_code, session_id FROM chat_sessions WHERE (phone_number = '{{ $('Extract Property Code').first().json.phone_number }}' OR session_id LIKE '%{{ $('Extract Property Code').first().json.phone_number }}%') ORDER BY (CASE WHEN status = 'open' THEN 1 ELSE 2 END), updated_at DESC LIMIT 1;",
         "options": {}
       },
-      "id": "7c278a69-8492-44d8-b2e8-5388c2695704",
-      "name": "Lookup Active Session1",
+      "id": "5321a2ad-eae7-4a56-800d-dc3d2f410ba0",
+      "name": "Lookup Active Session",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -5440,
-        -288
+        -3360,
+        -112
       ],
       "alwaysOutputData": true,
       "credentials": {
@@ -53,15 +53,15 @@
     },
     {
       "parameters": {
-        "jsCode": "// Recover property code from active session if message text did not contain one\nconst extracted = $('Extract Property Code1').first().json;\nconst activeSession = $input.first().json;\n\nlet finalPropertyCode = extracted.property_code;\nlet finalSessionId = extracted.session_id;\nlet isNewEnquiry = false;\n\nconst activeCode = (activeSession?.property_code || '').trim().toUpperCase();\nconst newCode = (extracted?.property_code || '').trim().toUpperCase();\n\nif (newCode && (!activeCode || activeCode !== newCode)) {\n  isNewEnquiry = true;\n  finalPropertyCode = newCode;\n} else if (!finalPropertyCode && activeCode) {\n  finalPropertyCode = activeSession.property_code;\n  finalSessionId = activeSession.session_id;\n  isNewEnquiry = false;\n}\n\nreturn [{\n  json: {\n    phone_number: extracted.phone_number,\n    message_text: extracted.message_text,\n    property_code: finalPropertyCode,\n    session_id: finalSessionId,\n    is_new_enquiry: isNewEnquiry\n  }\n}];"
+        "jsCode": "// Recover property code from active session if message text did not contain one\nconst extracted = $('Extract Property Code').first().json;\nconst activeSession = $input.first().json;\n\nlet finalPropertyCode = extracted.property_code;\nlet finalSessionId = extracted.session_id;\nlet isNewEnquiry = false;\n\nconst activeCode = (activeSession?.property_code || '').trim().toUpperCase();\nconst newCode = (extracted?.property_code || '').trim().toUpperCase();\n\nif (newCode && (!activeCode || activeCode !== newCode)) {\n  isNewEnquiry = true;\n  finalPropertyCode = newCode;\n} else if (!finalPropertyCode && activeCode) {\n  finalPropertyCode = activeCode;\n  finalSessionId = activeSession.session_id || `${extracted.phone_number}_${activeCode}`;\n  isNewEnquiry = false;\n}\n\nreturn [{\n  json: {\n    phone_number: extracted.phone_number,\n    message_text: extracted.message_text,\n    property_code: finalPropertyCode || null,\n    session_id: finalSessionId,\n    is_new_enquiry: isNewEnquiry\n  }\n}];"
       },
-      "id": "afec484c-cd0c-42b9-b0dd-378d2703d267",
-      "name": "Resolve Property Code1",
+      "id": "511cb139-5015-4741-bfa1-d836ec2f4511",
+      "name": "Resolve Property Code",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5216,
-        -288
+        -3136,
+        -112
       ]
     },
     {
@@ -84,13 +84,13 @@
           "timeout": 8000
         }
       },
-      "id": "6a56ca9b-b64b-4a9b-b55b-d83b297c7542",
+      "id": "d4526286-e8b9-4fa2-9ddb-6640e6e18ac5",
       "name": "Fetch User Profile",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -4992,
-        -288
+        -2912,
+        -112
       ],
       "alwaysOutputData": true
     },
@@ -106,7 +106,7 @@
           "conditions": [
             {
               "id": "cond-limit-exceeded",
-              "leftValue": "={{ $('Resolve Property Code1').first().json.is_new_enquiry === true && ($('Fetch User Profile').first().json.msg_usage || 0) >= ($('Fetch User Profile').first().json.msg_limit || 3) }}",
+              "leftValue": "={{ $('Resolve Property Code').first().json.is_new_enquiry === true && ($('Fetch User Profile').first().json.msg_usage || 0) >= ($('Fetch User Profile').first().json.msg_limit || 3) }}",
               "rightValue": true,
               "operator": {
                 "type": "boolean",
@@ -118,25 +118,25 @@
         },
         "options": {}
       },
-      "id": "9ce44eca-13ae-46d6-a711-58dab99cb96d",
+      "id": "041ef513-0f1f-4e8f-9126-474514c1051d",
       "name": "Check Limit Reached",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        -4768,
-        -288
+        -2688,
+        -112
       ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://letsellr-wa.letsellr.in/api/sessions/a970e3a9-838d-4d7b-a423-648e2b7fc933/messages/send-text",
+        "url": "https://letsellr-wa.letsellr.in/api/sessions/e92af797-f78c-4ae5-ad10-eac6d2e10274/messages/send-text",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-API-Key",
-              "value": "owa_k1_6ef1aca9ea0ce64ffb42a6383005ff2d74b4c4ae82ef52092a9e8c8478b61b41"
+              "value": "owa_k1_b9e0d0c24b491af4c0a8c68d0af3b61b2aea76af6321df8ba4419c46eb8e6e7d"
             },
             {
               "name": "Content-Type",
@@ -146,16 +146,16 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"chatId\": \"{{ $('Extract Property Code1').first().json.raw_chat_id }}\",\n  \"text\": \"Sorry! You have reached your limit of property enquiries. Please contact our team to upgrade your account to inquire about more properties.\"\n}",
+        "jsonBody": "={{ JSON.stringify({ chatId: $('Extract Property Code').first().json.raw_chat_id, text: \"Sorry! You have reached your limit of property enquiries. Please contact our team to upgrade your account to inquire about more properties.\" }) }}",
         "options": {}
       },
-      "id": "00742dc5-b9d2-451f-8701-dc64e10a99de",
+      "id": "dbf65f73-5c87-4d95-a1d3-be41863baf6c",
       "name": "Send Limit Exceeded Message",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -4544,
-        -192
+        -2464,
+        -16
       ]
     },
     {
@@ -170,7 +170,7 @@
           "conditions": [
             {
               "id": "cond-is-new-enquiry",
-              "leftValue": "={{ $('Resolve Property Code1').first().json.is_new_enquiry }}",
+              "leftValue": "={{ $('Resolve Property Code').first().json.is_new_enquiry }}",
               "rightValue": true,
               "operator": {
                 "type": "boolean",
@@ -182,19 +182,19 @@
         },
         "options": {}
       },
-      "id": "ce24a827-0b2f-41e4-bcf7-99c96436e789",
+      "id": "f9c91e5b-5cfa-41fe-b688-7f0ada1636e2",
       "name": "Is New Enquiry?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        -4320,
-        -480
+        -2176,
+        -352
       ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.letsellr.in/api/auth/usage/increment?phone={{ $('Resolve Property Code1').first().json.phone_number }}",
+        "url": "=https://api.letsellr.in/api/auth/usage/increment?phone={{ $('Resolve Property Code').first().json.phone_number }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -212,13 +212,13 @@
           "timeout": 8000
         }
       },
-      "id": "fe65c725-c864-43f5-a521-2838a75775da",
+      "id": "0c0b733b-c5f9-4306-8632-0fdaa2b65ce2",
       "name": "Increment User Usage",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -4096,
-        -400
+        -1888,
+        -272
       ],
       "alwaysOutputData": true
     },
@@ -234,11 +234,29 @@
           "conditions": [
             {
               "id": "cond-has-code",
-              "leftValue": "={{ $('Resolve Property Code1').first().json.property_code }}",
+              "leftValue": "={{ $('Resolve Property Code').first().json.property_code }}",
               "rightValue": "",
               "operator": {
                 "type": "string",
                 "operation": "notEmpty"
+              }
+            },
+            {
+              "id": "cond-is-registered",
+              "leftValue": "={{ $('Fetch User Profile').first().json.id }}",
+              "rightValue": "00000000-0000-0000-0000-000000000000",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "cond-status-registered",
+              "leftValue": "={{ $('Fetch User Profile').first().json.verification_status }}",
+              "rightValue": "none",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
               }
             }
           ],
@@ -246,13 +264,13 @@
         },
         "options": {}
       },
-      "id": "83f40f17-3b97-453c-8cab-0496a57bdf8b",
-      "name": "Has Property Code?1",
+      "id": "d1a74bcf-89dc-4520-8b16-fe615affffbf",
+      "name": "Has Property Code?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        -4544,
-        -384
+        -2464,
+        -208
       ]
     },
     {
@@ -281,28 +299,28 @@
           "timeout": 8000
         }
       },
-      "id": "d2aa196a-accc-435b-9018-a008a83e6edd",
-      "name": "Fetch Property Details1",
+      "id": "4d9c6734-ad8c-49f6-9051-f40815fee675",
+      "name": "Fetch Property Details",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -3872,
-        -480
+        -1664,
+        -352
       ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO chat_sessions (phone_number, property_code, session_id, status)\nVALUES ('{{ $('Resolve Property Code1').first().json.phone_number }}', '{{ $('Resolve Property Code1').first().json.property_code }}', '{{ $('Resolve Property Code1').first().json.session_id }}', 'open')\nON CONFLICT (session_id) DO NOTHING\nRETURNING *;",
+        "query": "INSERT INTO chat_sessions (phone_number, property_code, session_id, status)\nVALUES ('{{ $('Resolve Property Code').first().json.phone_number }}', '{{ $('Resolve Property Code').first().json.property_code }}', '{{ $('Resolve Property Code').first().json.session_id }}', 'open')\nON CONFLICT (session_id) DO NOTHING\nRETURNING *;",
         "options": {}
       },
-      "id": "c7aba1b9-a94a-49de-9780-c254d4a23ffe",
-      "name": "Upsert Chat Session1",
+      "id": "80acd6b5-7a20-4400-9fec-039a208e6851",
+      "name": "Upsert Chat Session",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -3648,
-        -480
+        -1440,
+        -352
       ],
       "credentials": {
         "postgres": {
@@ -314,35 +332,35 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "={{ $('Resolve Property Code1').item.json.message_text }}",
+        "text": "={{ $('Resolve Property Code').first().json.message_text }}",
         "options": {
-          "systemMessage": "=You are a leasing assistant for a PG/hostel property listing platform. Below is the property data and user profile information you must use \u2014 never invent facts not present here.\n\nProperty data:\n{{ JSON.stringify($('Fetch Property Details1').item.json) }}\n\nUser Profile:\nName: {{ $('Fetch User Profile').item.json.name }}\nPhone: {{ $('Fetch User Profile').item.json.phone }}\nMessage Usage: {{ $('Fetch User Profile').item.json.msg_usage }} / {{ $('Fetch User Profile').item.json.msg_limit }}\n\nRules:\n- Be warm, concise, WhatsApp-appropriate (short paragraphs, no markdown headers).\n- Answer questions about rent, location, amenities, availability, and rules using ONLY the data above.\n- If asked something not in the data, say you'll check with the owner/team and note it down.\n- If the user shows strong interest (wants to visit, book, confirm, or asks 'how do I proceed' or wants to connect with owner), ask them to confirm if they want us to share their contact details with the owner. If they confirm (e.g. 'yes', 'confirm', 'connect me'), include the exact token [INTENT:CONFIRMED] at the very end of your message (this token will be stripped before sending, do not explain it to the user).\n- Otherwise include the token [INTENT:OPEN] at the very end.\n- CRITICAL WHATSAPP FORMATTING RULE: For bold text on WhatsApp, use SINGLE asterisks like *Letsellr* or *PROP-101*. NEVER use double asterisks **text**.",
+          "systemMessage": "=You are a leasing assistant for a PG/hostel property listing platform. Below is the property data and user profile information you must use \u2014 never invent facts not present here.\n\nProperty data:\n{{ JSON.stringify($('Fetch Property Details').first().json) }}\n\nUser Profile:\nName: {{ $('Fetch User Profile').first().json.name }}\nPhone: {{ $('Fetch User Profile').first().json.phone }}\nMessage Usage: {{ $('Fetch User Profile').first().json.msg_usage }} / {{ $('Fetch User Profile').first().json.msg_limit }}\n\nRules:\n- Be warm, concise, WhatsApp-appropriate (short paragraphs, no markdown headers).\n- Answer questions about rent, location, amenities, availability, and rules using ONLY the data above.\n- If asked something not in the data, say you'll check with the owner/team and note it down.\n- If the user shows strong interest (wants to visit, book, confirm, or asks 'how do I proceed' or wants to connect with owner), ask them to confirm if they want us to share their contact details with the owner. If they confirm (e.g. 'yes', 'confirm', 'connect me'), include the exact token [INTENT:CONFIRMED] at the very end of your message (this token will be stripped before sending, do not explain it to the user).\n- Otherwise include the token [INTENT:OPEN] at the very end.\n- CRITICAL WHATSAPP FORMATTING RULE: For bold text on WhatsApp, use SINGLE asterisks like *Letsellr* or *PROP-101*. NEVER use double asterisks **text**.",
           "maxIterations": 3
         }
       },
-      "id": "f8f034b9-bdfa-4dd5-bf42-d000ffb5250b",
-      "name": "AI Leasing Assistant1",
+      "id": "34812105-39a0-45ac-8f65-962fa79c4b6e",
+      "name": "AI Leasing Assistant",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [
-        -3424,
-        -480
+        -1216,
+        -352
       ]
     },
     {
       "parameters": {
         "sessionIdType": "customKey",
-        "sessionKey": "={{ $('Resolve Property Code1').item.json.session_id }}",
+        "sessionKey": "={{ $('Resolve Property Code').first().json.session_id }}",
         "tableName": "chat_sessions_memory",
         "contextWindowLength": 12
       },
-      "id": "68f347f5-d246-42ff-9808-6bcf4fbf1a04",
-      "name": "Postgres Chat Memory1",
+      "id": "7659ab93-92cc-4b47-ac66-ba32ecd4a39a",
+      "name": "Postgres Chat Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1.3,
       "position": [
-        -3288,
-        -248
+        -1080,
+        -120
       ],
       "credentials": {
         "postgres": {
@@ -353,27 +371,27 @@
     },
     {
       "parameters": {
-        "jsCode": "// Strip intent token from reply, capture intent flag\nconst raw = $input.first().json.output || '';\nconst confirmed = raw.includes('[INTENT:CONFIRMED]');\nconst cleanText = raw.replace(/\\[INTENT:(CONFIRMED|OPEN)\\]/g, '').trim();\n\nreturn [{\n  json: {\n    ...$('Resolve Property Code1').first().json,\n    reply_text: cleanText,\n    intent_confirmed: confirmed\n  }\n}];"
+        "jsCode": "// Strip intent token from reply, capture intent flag\nconst raw = $input.first().json.output || '';\nconst confirmed = raw.includes('[INTENT:CONFIRMED]');\nconst cleanText = raw.replace(/\\[INTENT:(CONFIRMED|OPEN)\\]/g, '').trim();\n\nreturn [{\n  json: {\n    ...$('Resolve Property Code').first().json,\n    reply_text: cleanText,\n    intent_confirmed: confirmed\n  }\n}];"
       },
-      "id": "03703a24-f083-4799-b0f9-2b8aaf1bf629",
-      "name": "Parse Intent Token1",
+      "id": "1aaa9a90-4a18-4ad3-9ff6-d16318da28b7",
+      "name": "Parse Intent Token",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3072,
-        -480
+        -864,
+        -352
       ]
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://letsellr-wa.letsellr.in/api/sessions/a970e3a9-838d-4d7b-a423-648e2b7fc933/messages/send-text",
+        "url": "https://letsellr-wa.letsellr.in/api/sessions/e92af797-f78c-4ae5-ad10-eac6d2e10274/messages/send-text",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-API-Key",
-              "value": "owa_k1_6ef1aca9ea0ce64ffb42a6383005ff2d74b4c4ae82ef52092a9e8c8478b61b41"
+              "value": "owa_k1_b9e0d0c24b491af4c0a8c68d0af3b61b2aea76af6321df8ba4419c46eb8e6e7d"
             },
             {
               "name": "Content-Type",
@@ -383,16 +401,16 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ chatId: $('Extract Property Code1').first().json.raw_chat_id, text: ($json.reply_text || $json.output || '').replace(/\\*\\*/g, '*') }) }}",
+        "jsonBody": "={{ JSON.stringify({ chatId: $('Extract Property Code').first().json.raw_chat_id, text: ($json.reply_text || $json.output || '').replace(/\\*\\*/g, '*') }) }}",
         "options": {}
       },
-      "id": "437ae5bc-c3bb-4469-9b2d-b76f97e68de7",
-      "name": "Send AI Reply1",
+      "id": "cc7d67a5-38c6-4ac0-ad9a-5162f7a6db4d",
+      "name": "Send AI Reply",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -2848,
-        -480
+        -640,
+        -352
       ]
     },
     {
@@ -407,7 +425,7 @@
           "conditions": [
             {
               "id": "cond-confirmed",
-              "leftValue": "={{ $('Parse Intent Token1').item.json.intent_confirmed }}",
+              "leftValue": "={{ $('Parse Intent Token').first().json.intent_confirmed }}",
               "rightValue": true,
               "operator": {
                 "type": "boolean",
@@ -419,28 +437,28 @@
         },
         "options": {}
       },
-      "id": "055cc140-ff41-46d4-b8f8-133a3a5b644e",
-      "name": "Enquiry Confirmed?1",
+      "id": "dde19868-5579-4532-8a7d-39f86d354c96",
+      "name": "Enquiry Confirmed?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        -2624,
-        -480
+        -416,
+        -352
       ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT message FROM chat_sessions_memory\nWHERE session_id = '{{ $('Resolve Property Code1').first().json.session_id }}'\nORDER BY id ASC;",
+        "query": "SELECT message FROM chat_sessions_memory\nWHERE session_id = '{{ $('Resolve Property Code').first().json.session_id }}'\nORDER BY id ASC;",
         "options": {}
       },
-      "id": "9f9eafd9-29fa-4739-b45a-1908092e27bb",
-      "name": "Get Full Transcript1",
+      "id": "2891f3c6-9e0e-4b54-8fe1-0686cbc2ef46",
+      "name": "Get Full Transcript",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -1952,
-        -480
+        256,
+        -352
       ],
       "credentials": {
         "postgres": {
@@ -453,66 +471,46 @@
       "parameters": {
         "jsCode": "// Combine all transcript items into 1 single output item\nconst allItems = $input.all();\nconst messages = allItems.map(item => {\n  const msg = item.json.message;\n  if (!msg) return '';\n  if (typeof msg === 'string') return msg;\n  if (msg.data?.content) return `${msg.type || 'chat'}: ${msg.data.content}`;\n  return JSON.stringify(msg);\n}).filter(Boolean);\n\nreturn [{\n  json: {\n    transcript_text: messages.join('\\n')\n  }\n}];"
       },
-      "id": "45bc420b-627b-4f2f-bd1f-c5c7860d0712",
+      "id": "15cda719-88e2-4e90-99b6-b9e853495c52",
       "name": "Compile Transcript",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1728,
-        -480
+        480,
+        -352
       ]
     },
     {
       "parameters": {
-        "jsCode": "// Parse Gemini's JSON summary output, guard against markdown fences\nconst first = $input.first().json;\nconst raw = typeof first === 'string' ? first : (first.text || first.content?.[0]?.text || first.output || JSON.stringify(first));\nconst clean = raw.replace(/```json|```/g, '').trim();\n\nlet parsed;\ntry {\n  parsed = JSON.parse(clean);\n} catch (e) {\n  parsed = { summary: clean, outcome: 'no', next_step: 'Review manually - parse failed' };\n}\n\nreturn [{\n  json: {\n    ...$('Parse Intent Token1').first().json,\n    summary: parsed.summary,\n    outcome: parsed.outcome,\n    next_step: parsed.next_step\n  }\n}];"
+        "jsCode": "// Parse Gemini's JSON summary output, guard against markdown fences\nconst first = $input.first().json;\nconst raw = typeof first === 'string' ? first : (first.text || first.content?.[0]?.text || first.output || JSON.stringify(first));\nconst clean = raw.replace(/```json|```/g, '').trim();\n\nlet parsed;\ntry {\n  parsed = JSON.parse(clean);\n} catch (e) {\n  parsed = { summary: clean, outcome: 'no', next_step: 'Review manually - parse failed' };\n}\n\nreturn [{\n  json: {\n    ...$('Parse Intent Token').first().json,\n    summary: parsed.summary,\n    outcome: parsed.outcome,\n    next_step: parsed.next_step\n  }\n}];"
       },
-      "id": "e984387f-ea99-41e8-886b-ebb2e9f17dc2",
-      "name": "Parse Summary JSON1",
+      "id": "dc6cd304-9531-476c-b1ea-b86fbc73bcff",
+      "name": "Parse Summary JSON",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -1152,
-        -480
+        1056,
+        -352
       ]
     },
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "UPDATE chat_sessions\nSET status = 'closed', outcome = '{{ $json.outcome || 'no' }}', summary = '{{ ($json.summary || '').replace(/'/g, \"''\") }}', updated_at = now()\nWHERE session_id = '{{ $('Resolve Property Code1').first().json.session_id }}';",
+        "query": "UPDATE chat_sessions\nSET status = 'closed', outcome = '{{ $json.outcome || 'no' }}', summary = '{{ ($json.summary || '').replace(/'/g, \"''\") }}', updated_at = now()\nWHERE session_id = '{{ $('Resolve Property Code').first().json.session_id }}';",
         "options": {}
       },
-      "id": "bace3027-df33-4e12-a033-acecf5bd6b1d",
-      "name": "Update Session Status1",
+      "id": "dc081988-0de7-4e12-abc8-6a6a5ac001ba",
+      "name": "Update Session Status",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -704,
-        -480
+        1280,
+        -352
       ],
       "credentials": {
         "postgres": {
           "id": "VaFrzIHgGgVHF3uJ",
           "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "model": "google/gemma-4-26b-a4b-it:free",
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
-      "typeVersion": 1,
-      "position": [
-        -3416,
-        -248
-      ],
-      "id": "6704a4d9-4bea-4377-b0af-d4c1c9726ec9",
-      "name": "OpenRouter Chat Model1",
-      "credentials": {
-        "openRouterApi": {
-          "id": "MfspGnw77izN5aKl",
-          "name": "OpenRouter account"
         }
       }
     },
@@ -524,42 +522,22 @@
       "type": "@n8n/n8n-nodes-langchain.chainLlm",
       "typeVersion": 1.4,
       "position": [
-        -1504,
-        -480
+        704,
+        -352
       ],
-      "id": "c859e3ad-1443-4ce5-a5ce-2dc4fd3478a9",
+      "id": "a6e3360f-a1c7-4aac-84e9-a63cf0579fb1",
       "name": "AI Summarizer"
     },
     {
       "parameters": {
-        "modelName": "models/gemini-2.5-flash",
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
-      "typeVersion": 1.1,
-      "position": [
-        -1432,
-        -248
-      ],
-      "id": "6f9e735b-6cdb-4812-83a6-907041929fc9",
-      "name": "Google Gemini Chat Model1",
-      "credentials": {
-        "googlePalmApi": {
-          "id": "AxxgydFUOuqFE6UL",
-          "name": "Google Gemini(PaLM) Api account"
-        }
-      }
-    },
-    {
-      "parameters": {
         "method": "POST",
-        "url": "https://letsellr-wa.letsellr.in/api/sessions/a970e3a9-838d-4d7b-a423-648e2b7fc933/messages/send-text",
+        "url": "https://letsellr-wa.letsellr.in/api/sessions/e92af797-f78c-4ae5-ad10-eac6d2e10274/messages/send-text",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-API-Key",
-              "value": "owa_k1_6ef1aca9ea0ce64ffb42a6383005ff2d74b4c4ae82ef52092a9e8c8478b61b41"
+              "value": "owa_k1_b9e0d0c24b491af4c0a8c68d0af3b61b2aea76af6321df8ba4419c46eb8e6e7d"
             },
             {
               "name": "Content-Type",
@@ -569,28 +547,30 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"chatId\": \"{{ (($('Fetch Property Details1').item.json.owner_phone || $('Fetch Property Details1').item.json.owner?.phone || '').replace(/[^0-9]/g, '')) + '@c.us' }}\",\n  \"text\": \"\ud83c\udfe1 *New Tenant Enquiry Confirmed!*\n\nHi {{ $('Fetch Property Details1').item.json.owner?.name || 'Property Owner' }},\n\nA tenant has confirmed interest in your property *{{ $('Fetch Property Details1').item.json.title }}* (Code: *{{ $('Fetch Property Details1').item.json.ref }}*).\n\n*Tenant Contact Details:*\n\u2022 *Name:* {{ $('Fetch User Profile').item.json.name || 'Tenant' }}\n\u2022 *Phone:* {{ $('Fetch User Profile').item.json.phone || $('Extract Property Code1').first().json.phone_number }}\n\nPlease get in touch with them directly to arrange a visit or answer questions.\"\n}",
+        "jsonBody": "={{ JSON.stringify({ chatId: (() => { const d = $('Fetch Property Details').first().json || {}; let p = String(d.owner_phone || d.owner_whatsapp || d.owner?.phone || '').replace(/[^0-9]/g, ''); if (p.startsWith('0')) p = p.slice(1); if (p.length === 10) p = '91' + p; if (!p || p.length < 10) p = '918137090018'; return p.includes('@') ? p : p + '@c.us'; })(), text: `\ud83c\udfe1 *New Tenant Enquiry Confirmed!*\n\nHi ${$('Fetch Property Details').first().json.owner?.name || 'Property Owner'},\n\nA tenant has confirmed interest in your property *${$('Fetch Property Details').first().json.title || $('Resolve Property Code').first().json.property_code || ''}* (Code: *${$('Fetch Property Details').first().json.ref || $('Resolve Property Code').first().json.property_code || ''}*).\n\n*Tenant Contact Details:*\n\u2022 *Name:* ${$('Fetch User Profile').first().json.name || 'Valued Customer'}\n\u2022 *Phone:* ${$('Fetch User Profile').first().json.phone || $('Extract Property Code').first().json.phone_number || ''}\n\nPlease get in touch with them directly to arrange a visit or answer questions.` }) }}",
         "options": {}
       },
-      "id": "30ee7961-62a0-4970-bb39-e60ce27b535a",
+      "id": "fd6ecd30-e98d-4068-b8c1-2b2d8134ad8d",
       "name": "Send Owner Notification",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -2400,
-        -480
-      ]
+        -192,
+        -352
+      ],
+      "alwaysOutputData": true,
+      "onError": "continueRegularOutput"
     },
     {
       "parameters": {
         "method": "POST",
-        "url": "https://letsellr-wa.letsellr.in/api/sessions/a970e3a9-838d-4d7b-a423-648e2b7fc933/messages/send-text",
+        "url": "https://letsellr-wa.letsellr.in/api/sessions/e92af797-f78c-4ae5-ad10-eac6d2e10274/messages/send-text",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-API-Key",
-              "value": "owa_k1_6ef1aca9ea0ce64ffb42a6383005ff2d74b4c4ae82ef52092a9e8c8478b61b41"
+              "value": "owa_k1_b9e0d0c24b491af4c0a8c68d0af3b61b2aea76af6321df8ba4419c46eb8e6e7d"
             },
             {
               "name": "Content-Type",
@@ -600,149 +580,50 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"chatId\": \"{{ $('Extract Property Code1').first().json.raw_chat_id }}\",\n  \"text\": \"\u2705 *Owner Contact Details Shared!*\n\nWe have shared your enquiry with the property owner (*{{ $('Fetch Property Details1').item.json.owner?.name || 'Owner' }}*).\n\n*Owner Details:*\n\u2022 *Name:* {{ $('Fetch Property Details1').item.json.owner?.name || 'Owner' }}\n\u2022 *Phone:* {{ $('Fetch Property Details1').item.json.owner_phone || $('Fetch Property Details1').item.json.owner?.phone }}\n\nThey will reach out to you shortly regarding *{{ $('Fetch Property Details1').item.json.title }}*.\"\n}",
+        "jsonBody": "={{ JSON.stringify({ chatId: $('Extract Property Code').first().json.raw_chat_id, text: `\u2705 *Owner Contact Details Shared!*\n\nWe have shared your enquiry with the property owner (*${$('Fetch Property Details').first().json.owner?.name || 'Owner'}*).\n\n*Owner Details:*\n\u2022 *Name:* ${$('Fetch Property Details').first().json.owner?.name || 'Owner'}\n\u2022 *Phone:* ${$('Fetch Property Details').first().json.owner_phone || $('Fetch Property Details').first().json.owner?.phone || 'Available upon request'}\n\nThey will reach out to you shortly regarding *${$('Fetch Property Details').first().json.title || $('Resolve Property Code').first().json.property_code || ''}*.` }) }}",
         "options": {}
       },
-      "id": "88b33035-c6c1-4c3a-ae24-83263a6c1c2a",
+      "id": "c6c68a18-96a8-4e1c-8872-050e2fef1b78",
       "name": "Send User Confirmation",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -2176,
-        -480
-      ]
-    },
-    {
-      "parameters": {
-        "operation": "append",
-        "documentId": {
-          "__rl": true,
-          "value": "1cvcNlzpJy0R29SRzwL7UYCOBNyZJIGOpQmPyTtGAdYE",
-          "mode": "list",
-          "cachedResultName": "Letsellr Leads",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1cvcNlzpJy0R29SRzwL7UYCOBNyZJIGOpQmPyTtGAdYE/edit?usp=drivesdk"
-        },
-        "sheetName": {
-          "__rl": true,
-          "value": "gid=0",
-          "mode": "list",
-          "cachedResultName": "Enquiries",
-          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1cvcNlzpJy0R29SRzwL7UYCOBNyZJIGOpQmPyTtGAdYE/edit#gid=0"
-        },
-        "columns": {
-          "mappingMode": "defineBelow",
-          "value": {
-            "Phone": "={{ $json.phone_number }}",
-            "Property Code": "={{ $json.property_code }}",
-            "Summary": "={{ $json.summary }}",
-            "Confirmed (Yes/No)": "={{ $json.outcome }}",
-            "Next Step": "={{ $json.next_step }}",
-            "Name": "={{ $('Fetch User Profile').item.json.name }}"
-          },
-          "matchingColumns": [],
-          "schema": [
-            {
-              "id": "Name",
-              "displayName": "Name",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true,
-              "removed": false
-            },
-            {
-              "id": "Phone",
-              "displayName": "Phone",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "Property Code",
-              "displayName": "Property Code",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "Summary",
-              "displayName": "Summary",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "Confirmed (Yes/No)",
-              "displayName": "Confirmed (Yes/No)",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            },
-            {
-              "id": "Next Step",
-              "displayName": "Next Step",
-              "required": false,
-              "defaultMatch": false,
-              "display": true,
-              "type": "string",
-              "canBeUsedToMatch": true
-            }
-          ],
-          "attemptToConvertTypes": false,
-          "convertFieldsToString": false
-        },
-        "options": {}
-      },
-      "id": "1a6bd72f-5bc1-465c-bab6-6193065436c0",
-      "name": "Append To Google Sheet1",
-      "type": "n8n-nodes-base.googleSheets",
-      "typeVersion": 4.5,
-      "position": [
-        -928,
-        -480
+        32,
+        -352
       ]
     },
     {
       "parameters": {
         "promptType": "define",
-        "text": "={{ $('Extract Property Code1').first().json.message_text }}",
+        "text": "={{ $('Extract Property Code').first().json.message_text }}",
         "options": {
-          "systemMessage": "You are Alex, the friendly virtual assistant for Letsellr (https://app.letsellr.in), a premier platform for finding and listing PGs, hostels, flats, and rental accommodations across Kerala.\n\nUser Information:\n- Name: {{ $('Fetch User Profile').item.json.name || 'Friend' }}\n- Phone: {{ $('Extract Property Code1').first().json.phone_number }}\n\nYour Guidelines:\n- Be super friendly, polite, conversational, and helpful on WhatsApp. Use short paragraphs and emojis naturally.\n- CRITICAL WHATSAPP FORMATTING RULE: For bold text on WhatsApp, use SINGLE asterisks like *Letsellr* or *Kochi*. NEVER use double asterisks **text**.\n- Have a warm, fluid back-and-forth conversation. Answer general questions about Letsellr, how to find hostels/PGs, how owners can list properties, or rental advice.\n- If the user wants to inquire about a specific PG or property, kindly invite them to browse https://app.letsellr.in and share the Property Code (e.g., *PROP-101* or *PG102*) here so you can pull up all property details and connect them with the owner.\n- Keep responses concise and engaging for WhatsApp.",
+          "systemMessage": "=You are Alex, the friendly virtual assistant for Letsellr (https://letsellr.in), a premier platform for finding and listing PGs, hostels, flats, and rental accommodations across Kerala.\n\nUser Information:\n- Name: {{ $('Fetch User Profile').first().json.name || 'Friend' }}\n- Phone: {{ $('Extract Property Code').first().json.phone_number }}\n- Registration Status: {{ $('Fetch User Profile').first().json.id === '00000000-0000-0000-0000-000000000000' || $('Fetch User Profile').first().json.verification_status === 'none' ? 'UNREGISTERED' : 'REGISTERED' }}\n\nYour Guidelines:\n- Be super friendly, polite, conversational, and helpful on WhatsApp. Use short paragraphs and emojis naturally.\n- CRITICAL WHATSAPP FORMATTING RULE: For bold text on WhatsApp, use SINGLE asterisks like *Letsellr* or *Kochi*. NEVER use double asterisks **text**.\n- IF USER IS UNREGISTERED: Kindly inform them: \"Welcome to *Letsellr*! It looks like your phone number is not registered on our platform yet. To inquire about specific properties, view details, and connect directly with owners, please sign up / register at https://letsellr.in! How can I help answer any general questions about our platform in the meantime?\"\n- IF USER IS REGISTERED: Answer general questions about Letsellr, how to find hostels/PGs, how owners can list properties, or rental advice.\n- Keep responses concise and engaging for WhatsApp.",
           "maxIterations": 3
         }
       },
-      "id": "general-ai-agent-001",
+      "id": "d6025c61-acf9-4450-8209-f51b2dcaf06a",
       "name": "General AI Chatbot",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [
-        -4320,
-        -180
+        -2240,
+        -32
       ]
     },
     {
       "parameters": {
         "sessionIdType": "customKey",
-        "sessionKey": "={{ $('Extract Property Code1').first().json.phone_number }}_general",
+        "sessionKey": "={{ $('Extract Property Code').first().json.phone_number }}_general",
         "tableName": "chat_sessions_memory",
         "contextWindowLength": 12
       },
-      "id": "general-chat-memory-001",
+      "id": "13e60237-b4a7-4983-9138-34846279d3d5",
       "name": "General Chat Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1.3,
       "position": [
-        -4184,
-        50
+        -2104,
+        184
       ],
       "credentials": {
         "postgres": {
@@ -754,13 +635,13 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://letsellr-wa.letsellr.in/api/sessions/a970e3a9-838d-4d7b-a423-648e2b7fc933/messages/send-text",
+        "url": "https://letsellr-wa.letsellr.in/api/sessions/e92af797-f78c-4ae5-ad10-eac6d2e10274/messages/send-text",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
             {
               "name": "X-API-Key",
-              "value": "owa_k1_6ef1aca9ea0ce64ffb42a6383005ff2d74b4c4ae82ef52092a9e8c8478b61b41"
+              "value": "owa_k1_b9e0d0c24b491af4c0a8c68d0af3b61b2aea76af6321df8ba4419c46eb8e6e7d"
             },
             {
               "name": "Content-Type",
@@ -770,54 +651,113 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({ chatId: $('Extract Property Code1').first().json.raw_chat_id, text: ($json.output || '').replace(/\\*\\*/g, '*') }) }}",
+        "jsonBody": "={{ JSON.stringify({ chatId: $('Extract Property Code').first().json.raw_chat_id, text: ($json.output || '').replace(/\\*\\*/g, '*') }) }}",
         "options": {}
       },
-      "id": "general-send-reply-001",
+      "id": "cdfee7de-c3e5-4edc-aa18-ce074ccea2dd",
       "name": "Send General AI Reply",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -3960,
-        -180
+        -1888,
+        -32
       ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatNvidia",
+      "typeVersion": 1,
+      "position": [
+        776,
+        -120
+      ],
+      "id": "4cbc25a4-db65-43cb-aaf4-f3b193a6d9ec",
+      "name": "NVIDIA Nemotron Chat Model",
+      "credentials": {
+        "nvidiaApi": {
+          "id": "59OX1lUH2MwqFahk",
+          "name": "NVIDIA Nemotron account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -2232,
+        184
+      ],
+      "id": "0f3e0f01-9286-4919-9f3d-13d8f025f8da",
+      "name": "OpenRouter Chat Model",
+      "credentials": {
+        "openRouterApi": {
+          "id": "MfspGnw77izN5aKl",
+          "name": "OpenRouter account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [
+        -1208,
+        -120
+      ],
+      "id": "2e4ce92e-fe7e-457d-aa65-c59cbb35186c",
+      "name": "OpenRouter Chat Model1",
+      "credentials": {
+        "openRouterApi": {
+          "id": "MfspGnw77izN5aKl",
+          "name": "OpenRouter account"
+        }
+      }
     }
   ],
   "connections": {
-    "WhatsApp Trigger1": {
+    "WhatsApp Trigger": {
       "main": [
         [
           {
-            "node": "Extract Property Code1",
+            "node": "Extract Property Code",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Extract Property Code1": {
+    "Extract Property Code": {
       "main": [
         [
           {
-            "node": "Lookup Active Session1",
+            "node": "Lookup Active Session",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Lookup Active Session1": {
+    "Lookup Active Session": {
       "main": [
         [
           {
-            "node": "Resolve Property Code1",
+            "node": "Resolve Property Code",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Resolve Property Code1": {
+    "Resolve Property Code": {
       "main": [
         [
           {
@@ -850,7 +790,7 @@
         ],
         [
           {
-            "node": "Has Property Code?1",
+            "node": "Has Property Code?",
             "type": "main",
             "index": 0
           }
@@ -868,7 +808,7 @@
         ],
         [
           {
-            "node": "Fetch Property Details1",
+            "node": "Fetch Property Details",
             "type": "main",
             "index": 0
           }
@@ -879,14 +819,14 @@
       "main": [
         [
           {
-            "node": "Fetch Property Details1",
+            "node": "Fetch Property Details",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Has Property Code?1": {
+    "Has Property Code?": {
       "main": [
         [
           {
@@ -904,73 +844,73 @@
         ]
       ]
     },
-    "Fetch Property Details1": {
+    "Fetch Property Details": {
       "main": [
         [
           {
-            "node": "Upsert Chat Session1",
+            "node": "Upsert Chat Session",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Upsert Chat Session1": {
+    "Upsert Chat Session": {
       "main": [
         [
           {
-            "node": "AI Leasing Assistant1",
+            "node": "AI Leasing Assistant",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "AI Leasing Assistant1": {
+    "AI Leasing Assistant": {
       "main": [
         [
           {
-            "node": "Parse Intent Token1",
+            "node": "Parse Intent Token",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Postgres Chat Memory1": {
+    "Postgres Chat Memory": {
       "ai_memory": [
         [
           {
-            "node": "AI Leasing Assistant1",
+            "node": "AI Leasing Assistant",
             "type": "ai_memory",
             "index": 0
           }
         ]
       ]
     },
-    "Parse Intent Token1": {
+    "Parse Intent Token": {
       "main": [
         [
           {
-            "node": "Send AI Reply1",
+            "node": "Send AI Reply",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Send AI Reply1": {
+    "Send AI Reply": {
       "main": [
         [
           {
-            "node": "Enquiry Confirmed?1",
+            "node": "Enquiry Confirmed?",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Enquiry Confirmed?1": {
+    "Enquiry Confirmed?": {
       "main": [
         [
           {
@@ -981,7 +921,7 @@
         ]
       ]
     },
-    "Get Full Transcript1": {
+    "Get Full Transcript": {
       "main": [
         [
           {
@@ -1003,28 +943,12 @@
         ]
       ]
     },
-    "Parse Summary JSON1": {
+    "Parse Summary JSON": {
       "main": [
         [
           {
-            "node": "Append To Google Sheet1",
+            "node": "Update Session Status",
             "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "OpenRouter Chat Model1": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "AI Leasing Assistant1",
-            "type": "ai_languageModel",
-            "index": 0
-          },
-          {
-            "node": "General AI Chatbot",
-            "type": "ai_languageModel",
             "index": 0
           }
         ]
@@ -1034,19 +958,8 @@
       "main": [
         [
           {
-            "node": "Parse Summary JSON1",
+            "node": "Parse Summary JSON",
             "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Google Gemini Chat Model1": {
-      "ai_languageModel": [
-        [
-          {
-            "node": "AI Summarizer",
-            "type": "ai_languageModel",
             "index": 0
           }
         ]
@@ -1067,18 +980,7 @@
       "main": [
         [
           {
-            "node": "Get Full Transcript1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Append To Google Sheet1": {
-      "main": [
-        [
-          {
-            "node": "Update Session Status1",
+            "node": "Get Full Transcript",
             "type": "main",
             "index": 0
           }
@@ -1102,6 +1004,39 @@
           {
             "node": "General AI Chatbot",
             "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "NVIDIA Nemotron Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Summarizer",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "General AI Chatbot",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenRouter Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Leasing Assistant",
+            "type": "ai_languageModel",
             "index": 0
           }
         ]

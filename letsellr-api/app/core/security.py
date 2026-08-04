@@ -67,6 +67,7 @@ def decode_token(token: str) -> dict:
 # OTPs are short-lived numeric codes — HMAC-SHA256 is perfectly
 # safe here and avoids passlib/bcrypt 72-byte bugs entirely.
 
+
 def hash_otp(otp: str) -> str:
     """HMAC-SHA256 hash of a short OTP using SECRET_KEY as the key."""
     return hmac.new(

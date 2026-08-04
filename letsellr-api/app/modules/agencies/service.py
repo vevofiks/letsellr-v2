@@ -14,7 +14,9 @@ from app.modules.agencies.schemas import AgencyPublicResponse
 from app.modules.users.models import AgencyProfile, User
 
 
-def _build_response(user: User, profile: AgencyProfile, listing_count: int) -> AgencyPublicResponse:
+def _build_response(
+    user: User, profile: AgencyProfile, listing_count: int
+) -> AgencyPublicResponse:
     return AgencyPublicResponse(
         id=user.id,
         display_name=profile.display_name,

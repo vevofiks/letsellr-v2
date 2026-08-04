@@ -31,6 +31,7 @@ router = APIRouter(tags=["Properties"])
 
 # ── Public Browse ──────────────────────────────────────────────────────────────
 
+
 @router.get("/featured", response_model=List[PropertyResponse])
 async def get_featured_properties(db: DbSession, limit: int = Query(8, ge=1, le=20)):
     """
@@ -40,7 +41,7 @@ async def get_featured_properties(db: DbSession, limit: int = Query(8, ge=1, le=
     from sqlalchemy import select
     from sqlalchemy.orm import selectinload
     from app.modules.properties.models import Property
-    
+
     query = (
         select(Property)
         .options(selectinload(Property.owner))
@@ -58,13 +59,19 @@ async def list_properties(
     intent: Optional[str] = None,
     category: Optional[str] = None,
     city: Optional[str] = None,
-    q: Optional[str] = Query(None, description="Search query across title, description, area, city"),
+    q: Optional[str] = Query(
+        None, description="Search query across title, description, area, city"
+    ),
     owner_id: Optional[UUID] = None,
     min_price: Optional[int] = Query(None, ge=0),
     max_price: Optional[int] = Query(None, ge=0),
     sort_by: Optional[str] = Query(None, description="newest, price_asc, price_desc"),
-    lat: Optional[float] = Query(None, ge=-90.0, le=90.0, description="Latitude range: -90 to 90"),
-    lng: Optional[float] = Query(None, ge=-180.0, le=180.0, description="Longitude range: -180 to 180"),
+    lat: Optional[float] = Query(
+        None, ge=-90.0, le=90.0, description="Latitude range: -90 to 90"
+    ),
+    lng: Optional[float] = Query(
+        None, ge=-180.0, le=180.0, description="Longitude range: -180 to 180"
+    ),
     radius: Optional[float] = Query(20.0, ge=0.0, description="Radius in kilometers"),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
@@ -95,6 +102,7 @@ async def list_properties(
 
 # ── Static sub-paths — must be declared BEFORE /{property_id} ─────────────────
 
+
 @router.get("/ref/{ref}/enquiry-link", response_model=EnquiryLinkResponse)
 async def get_enquiry_link(ref: str, db: DbSession, current_user: CurrentUser):
     """
@@ -112,7 +120,9 @@ async def get_nearby_locations(
     db: DbSession,
     lat: float = Query(..., description="Latitude"),
     lng: float = Query(..., description="Longitude"),
-    radius: float = Query(5000, description="Radius in meters (e.g. 5000 = 5km) or kilometers"),
+    radius: float = Query(
+        5000, description="Radius in meters (e.g. 5000 = 5km) or kilometers"
+    ),
 ):
     """
     Get live properties and places within a given preferred radius (in meters or km) from coordinates.
@@ -130,6 +140,7 @@ async def get_owner_properties(current_user: CurrentUser, db: DbSession):
 
 # ── Single property by UUID or Property Code (ref) ───────────────────────────
 
+
 @router.get("/{property_id}", response_model=PropertyResponse)
 async def get_property(
     property_id: str,
@@ -145,8 +156,8 @@ async def get_property(
     return await service.get_property(property_id)
 
 
-
 # ── Authenticated mutations ────────────────────────────────────────────────────
+
 
 @router.post("", response_model=PropertyResponse, status_code=status.HTTP_201_CREATED)
 async def create_property(
@@ -191,8 +202,11 @@ async def report_property(
 ):
     """Report a property listing."""
     service = PropertyService(db)
-    await service.report_property(property_id, data.reason, data.description, current_user.id)
+    await service.report_property(
+        property_id, data.reason, data.description, current_user.id
+    )
     return {"message": "Report submitted successfully"}
+
 
 @router.get("/config/types", tags=["Properties"])
 async def list_active_property_types(db: DbSession):
@@ -200,10 +214,15 @@ async def list_active_property_types(db: DbSession):
     from sqlalchemy import select
     from app.modules.properties.models import PropertyType
     from app.modules.admin.schemas import PropertyTypeResponse
-    
-    result = await db.execute(select(PropertyType).where(PropertyType.is_active == True).order_by(PropertyType.label.asc()))
+
+    result = await db.execute(
+        select(PropertyType)
+        .where(PropertyType.is_active == True)
+        .order_by(PropertyType.label.asc())
+    )
     types = result.scalars().all()
     return [PropertyTypeResponse.model_validate(t) for t in types]
+
 
 @router.get("/config/locations", tags=["Properties"])
 async def list_active_locations(db: DbSession):
@@ -211,22 +230,22 @@ async def list_active_locations(db: DbSession):
     from sqlalchemy import select
     from app.modules.properties.models import LocationData
     from app.modules.admin.schemas import LocationDataResponse
-    
-    result = await db.execute(select(LocationData).order_by(LocationData.is_important.desc(), LocationData.title.asc()))
+
+    result = await db.execute(
+        select(LocationData).order_by(
+            LocationData.is_important.desc(), LocationData.title.asc()
+        )
+    )
     locations = result.scalars().all()
     return [LocationDataResponse.model_validate(loc) for loc in locations]
 
 
 @router.get("/autocomplete/locations", response_model=list[str], tags=["Properties"])
-async def autocomplete_locations(
-    q: str,
-    db: DbSession,
-    limit: int = 10
-):
+async def autocomplete_locations(q: str, db: DbSession, limit: int = 10):
     """Get location suggestions based on prefix search."""
     from sqlalchemy import select, or_
     from app.modules.properties.models import Property, LocationData
-    
+
     if len(q) < 2:
         return []
 
@@ -237,7 +256,7 @@ async def autocomplete_locations(
                 Property.location_area.ilike(f"{q}%"),
                 Property.location_city.ilike(f"{q}%"),
                 Property.location_area.ilike(f"% {q}%"),
-                Property.location_city.ilike(f"% {q}%")
+                Property.location_city.ilike(f"% {q}%"),
             )
         )
         .where(Property.status == "live")
@@ -246,14 +265,14 @@ async def autocomplete_locations(
     )
     result = await db.execute(stmt)
     rows = result.all()
-    
+
     locations = set()
     for area, city in rows:
         if area and city and area.lower() != city.lower() and area.lower() != "n/a":
             locations.add(f"{area}, {city}")
         elif city:
             locations.add(city)
-            
+
     # Also fetch from LocationData table
     loc_stmt = (
         select(LocationData.title)
@@ -262,8 +281,8 @@ async def autocomplete_locations(
     )
     loc_result = await db.execute(loc_stmt)
     loc_rows = loc_result.scalars().all()
-    
+
     for title in loc_rows:
         locations.add(title)
-        
+
     return sorted(list(locations))[:limit]

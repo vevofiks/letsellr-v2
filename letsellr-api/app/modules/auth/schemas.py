@@ -8,11 +8,12 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-
 # ── Registration ──────────────────────────────────────────────────────────────
+
 
 class UserRegisterRequest(BaseModel):
     """Registration payload for normal users/seekers (phone-based)."""
+
     name: str = Field(..., min_length=2, max_length=200)
     email: Optional[str] = None
     phone: str = Field(..., min_length=7, max_length=20)
@@ -23,6 +24,7 @@ class UserRegisterRequest(BaseModel):
 
 class RegisterRequest(BaseModel):
     """Step 1 of registration for owners/agencies: collect profile, trigger WhatsApp OTP."""
+
     role: Literal["owner", "agency"]
     name: str = Field(..., min_length=2, max_length=200)
     email: Optional[str] = None
@@ -40,46 +42,55 @@ class RegisterRequest(BaseModel):
 
 class VerifyRegistrationRequest(BaseModel):
     """Step 2 of registration: submit OTP to activate account."""
+
     phone: str = Field(..., min_length=7, max_length=20)
     otp: str = Field(..., min_length=4, max_length=10)
 
 
 # ── Login ─────────────────────────────────────────────────────────────────────
 
+
 class LoginRequest(BaseModel):
     """Sign in using phone number + 4-digit PIN."""
+
     phone: str = Field(..., min_length=7, max_length=20)
     pin: str = Field(..., min_length=4, max_length=4, pattern="^[0-9]{4}$")
 
 
 class VerifyLoginRequest(BaseModel):
     """Step 2 of login: verify OTP."""
+
     phone: str = Field(..., min_length=7, max_length=20)
     otp: str = Field(..., min_length=4, max_length=10)
 
 
 class AdminLoginRequest(BaseModel):
     """Admin login: email + password."""
+
     email: str = Field(..., description="Admin email address")
     password: str = Field(..., min_length=6, max_length=100)
 
 
 # ── Responses ─────────────────────────────────────────────────────────────────
 
+
 class RegisterResponse(BaseModel):
     """Returned after step 1: registration accepted."""
+
     message: str = "OTP sent to your WhatsApp. Please verify to complete registration."
     phone: str
 
 
 class ResendOTPRequest(BaseModel):
     """Resend an OTP for login or registration."""
+
     phone: str = Field(..., min_length=7, max_length=20)
     purpose: Literal["login", "registration"] = "login"
 
 
 class UserPublic(BaseModel):
     """Public-safe user representation returned after auth."""
+
     id: uuid.UUID
     role: str
     name: str
@@ -91,6 +102,7 @@ class UserPublic(BaseModel):
     location_area: str
     verification_status: str
     status: str
+    is_registered: bool = True
     msg_limit: int = 3
     msg_usage: int = 0
 
@@ -99,6 +111,7 @@ class UserPublic(BaseModel):
 
 class TokenResponse(BaseModel):
     """JWT tokens returned after successful OTP verification."""
+
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
@@ -107,9 +120,11 @@ class TokenResponse(BaseModel):
 
 class MessageResponse(BaseModel):
     """Generic message response."""
+
     message: str
 
 
 class RefreshTokenRequest(BaseModel):
     """Payload to exchange a refresh token for new access+refresh tokens."""
+
     refresh_token: str

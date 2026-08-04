@@ -4,6 +4,7 @@ Revision ID: 3d4cadbd5a57
 Revises: f20c6fef8f58
 Create Date: 2026-07-28 00:04:37.872165
 """
+
 from __future__ import annotations
 
 from typing import Sequence, Union
@@ -11,10 +12,9 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-
 # revision identifiers, used by Alembic.
-revision: str = '3d4cadbd5a57'
-down_revision: Union[str, None] = 'f20c6fef8f58'
+revision: str = "3d4cadbd5a57"
+down_revision: Union[str, None] = "f20c6fef8f58"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -42,8 +42,12 @@ def upgrade() -> None:
       updated_at  TIMESTAMP WITH TIME ZONE DEFAULT now()
     );
     """)
-    op.execute("CREATE INDEX IF NOT EXISTS ix_limit_overrides_user_id ON limit_overrides (user_id);")
-    op.execute("CREATE INDEX IF NOT EXISTS ix_limit_overrides_created_at ON limit_overrides (created_at);")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_limit_overrides_user_id ON limit_overrides (user_id);"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_limit_overrides_created_at ON limit_overrides (created_at);"
+    )
 
 
 def downgrade() -> None:

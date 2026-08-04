@@ -606,11 +606,6 @@ export const PropertyDetailsPage: React.FC = () => {
                 <span className="bg-slate-900 text-white px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
                   For {property.intent === "buy" ? "Sale" : property.intent === "rent" ? "Rent" : "Lease"}
                 </span>
-                {property.status && property.status !== "active" && (
-                  <span className="bg-rose-100 text-rose-700 px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
-                    {property.status}
-                  </span>
-                )}
               </div>
               
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 leading-tight m-0 tracking-tight">
@@ -649,6 +644,60 @@ export const PropertyDetailsPage: React.FC = () => {
               )}
             </div>
 
+            {/* Mobile Pricing Widget (Visible on phone view directly under address) */}
+            <div className="block lg:hidden my-2">
+              <Card className="border border-slate-200/80 bg-white shadow-md rounded-2xl p-5 relative overflow-hidden space-y-4">
+                {/* Header */}
+                <div className="space-y-1 border-b border-slate-100 pb-3">
+                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Property Price</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-black text-[#0B6E4F]">
+                      {formatPrice(property.price, property.price_unit)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Total Calculation */}
+                <div className="space-y-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+                  <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
+                    <span>Base Price:</span>
+                    <span className="font-bold text-slate-800">{formatPrice(property.price, property.price_unit)}</span>
+                  </div>
+                  {property.deposit ? (
+                    <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
+                      <span>Security Deposit:</span>
+                      <span className="font-bold text-slate-800">₹{property.deposit.toLocaleString()}</span>
+                    </div>
+                  ) : null}
+                  <div className="flex justify-between items-center pt-2 font-black text-sm text-slate-900 border-t border-slate-200/60">
+                    <span>Estimated Total:</span>
+                    <span className="text-base font-extrabold text-[#0B6E4F]">
+                      {formatPrice(property.price + (property.deposit || 0), property.price_unit)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="pt-1">
+                  <Button
+                    onClick={handleWhatsAppContact}
+                    className="w-full bg-[#23D283] hover:bg-[#11995E] text-white font-extrabold py-6 text-sm rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all active:scale-98"
+                  >
+                    <MessageSquare className="h-4.5 w-4.5" />
+                    Chat on WhatsApp
+                  </Button>
+                </div>
+
+                {/* Verified listing note */}
+                <div className="pt-2 border-t border-slate-100 flex items-start gap-2 text-xs text-slate-500 font-medium">
+                  <Clock className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                  <span>
+                    High interest listing in {property.location_city}. Contact early to schedule a visit.
+                  </span>
+                </div>
+              </Card>
+            </div>
+
             {/* Key Specs Cards Grid */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white border border-slate-200/80 rounded-2xl p-4 shadow-2xs text-left">
               <div className="space-y-1">
@@ -669,7 +718,7 @@ export const PropertyDetailsPage: React.FC = () => {
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Area</span>
                 <div className="flex items-center gap-2 text-slate-900 font-black text-sm">
                   <Maximize className="h-4 w-4 text-[#0B6E4F] shrink-0" />
-                  <span>{property.area ? `${property.area.toLocaleString()} sqft` : "N/A"}</span>
+                  <span>{property.area && Number(property.area) > 0 ? `${Number(property.area).toLocaleString()} sqft` : "Not Specified"}</span>
                 </div>
               </div>
               <div className="space-y-1 border-t sm:border-t-0 sm:border-l border-slate-100 pt-2 sm:pt-0 sm:pl-3">
@@ -678,7 +727,7 @@ export const PropertyDetailsPage: React.FC = () => {
                   <div className="h-3.5 w-3.5 rounded-full border-2 border-emerald-500 flex items-center justify-center shrink-0">
                     <span className="h-1.5 w-1.5 bg-emerald-600 rounded-full" />
                   </div>
-                  <span>{property.furnishing || "N/A"}</span>
+                  <span>{property.furnishing || "Not Specified"}</span>
                 </div>
               </div>
             </div>
@@ -963,8 +1012,8 @@ export const PropertyDetailsPage: React.FC = () => {
           {/* Right Sticky Sidebar: Price Card & Owner/Agency Info */}
           <div className="w-full lg:w-full shrink-0 sticky top-24 space-y-6">
             
-            {/* Pricing & Contact Widget */}
-            <Card className="border border-slate-200/80 bg-white shadow-xl rounded-2xl p-6 relative overflow-hidden space-y-5">
+            {/* Pricing & Contact Widget (Desktop sidebar) */}
+            <Card className="hidden lg:block border border-slate-200/80 bg-white shadow-xl rounded-2xl p-6 relative overflow-hidden space-y-5">
               
               {/* Header */}
               <div className="space-y-1 border-b border-slate-100 pb-4">

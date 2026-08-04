@@ -137,18 +137,18 @@ export default function FeaturedCategories() {
   }, []);
 
   return (
-    <section className="py-16 md:py-24 px-6 md:px-12 lg:px-20 w-full bg-[#FAF9F6] text-[#0F0F11]">
+    <section className="py-6 md:py-24 px-4 sm:px-6 md:px-12 lg:px-20 w-full bg-[#FAF9F6] text-[#0F0F11]">
       <div className="max-w-360 mx-auto">
         {/* Header Badge & Title */}
-        <div className="flex flex-col items-center justify-center text-center mb-12">
-          <div className="inline-flex items-center gap-2.5 mb-3">
-            <span className="w-5 h-0.5 bg-[#23D283] rounded-full"></span>
-            <span className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#014645]">
+        <div className="flex flex-col items-center justify-center text-center mb-6 md:mb-12">
+          <div className="inline-flex items-center gap-2 mb-1.5 md:mb-3">
+            <span className="w-4 md:w-5 h-0.5 bg-[#23D283] rounded-full"></span>
+            <span className="text-[10px] md:text-xs font-extrabold uppercase tracking-[0.22em] text-[#014645]">
               Featured Categories
             </span>
-            <span className="w-5 h-0.5 bg-[#23D283] rounded-full"></span>
+            <span className="w-4 md:w-5 h-0.5 bg-[#23D283] rounded-full"></span>
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-center text-[#0F0F11]">
+          <h2 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-center text-[#0F0F11]">
             Explore Collections
           </h2>
         </div>

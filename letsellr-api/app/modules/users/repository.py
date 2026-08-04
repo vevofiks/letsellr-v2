@@ -21,7 +21,7 @@ class UserRepository:
 
     async def create(self, user: User) -> User:
         self.db.add(user)
-        await self.db.flush()   # get ID without committing (session handles commit)
+        await self.db.flush()  # get ID without committing (session handles commit)
         await self.db.refresh(user)
         return user
 
@@ -45,7 +45,11 @@ class UserRepository:
             return None
 
         # 1. Exact match
-        stmt = select(User).where(User.phone == phone).options(selectinload(User.agency_profile))
+        stmt = (
+            select(User)
+            .where(User.phone == phone)
+            .options(selectinload(User.agency_profile))
+        )
         result = await self.db.execute(stmt)
         user = result.scalar_one_or_none()
         if user:
@@ -58,9 +62,9 @@ class UserRepository:
                 stmt = (
                     select(User)
                     .where(
-                        (User.phone == suffix) |
-                        (User.phone == f"+{suffix}") |
-                        (User.phone.endswith(suffix))
+                        (User.phone == suffix)
+                        | (User.phone == f"+{suffix}")
+                        | (User.phone.endswith(suffix))
                     )
                     .options(selectinload(User.agency_profile))
                 )
@@ -96,6 +100,7 @@ class UserRepository:
 
         # Count total
         from sqlalchemy import func
+
         count_stmt = select(func.count()).select_from(stmt.subquery())
         total = (await self.db.execute(count_stmt)).scalar_one()
 

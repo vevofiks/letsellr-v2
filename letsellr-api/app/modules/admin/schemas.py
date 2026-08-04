@@ -2,6 +2,7 @@ import uuid
 from pydantic import BaseModel, EmailStr
 from datetime import datetime
 
+
 class AgencyProfileResponse(BaseModel):
     id: uuid.UUID
     display_name: str
@@ -10,6 +11,7 @@ class AgencyProfileResponse(BaseModel):
     areas_served: list[str] = []
     created_at: datetime
     model_config = {"from_attributes": True}
+
 
 class UserAdminResponse(BaseModel):
     id: uuid.UUID
@@ -27,6 +29,7 @@ class UserAdminResponse(BaseModel):
     agency_profile: AgencyProfileResponse | None = None
     model_config = {"from_attributes": True}
 
+
 class VerificationRequestResponse(BaseModel):
     id: uuid.UUID
     user_id: uuid.UUID
@@ -36,11 +39,14 @@ class VerificationRequestResponse(BaseModel):
     created_at: datetime
     model_config = {"from_attributes": True}
 
+
 class UpdateUserStatusRequest(BaseModel):
     status: str
 
+
 class VerificationActionRequest(BaseModel):
     note: str | None = None
+
 
 class DashboardStatsResponse(BaseModel):
     pending_property_reviews: int
@@ -54,8 +60,10 @@ class DashboardStatsResponse(BaseModel):
     owners_count: int = 0
     admins_count: int = 0
 
+
 class PropertyReviewActionRequest(BaseModel):
     reason: str | None = None
+
 
 class PropertyTypeResponse(BaseModel):
     id: uuid.UUID
@@ -69,6 +77,7 @@ class PropertyTypeResponse(BaseModel):
     updated_at: datetime
     model_config = {"from_attributes": True}
 
+
 class PropertyTypeCreate(BaseModel):
     slug: str
     label: str
@@ -77,6 +86,7 @@ class PropertyTypeCreate(BaseModel):
     is_active: bool = True
     allowed_roles: list[str] = []
 
+
 class PropertyTypeUpdate(BaseModel):
     slug: str | None = None
     label: str | None = None
@@ -84,6 +94,7 @@ class PropertyTypeUpdate(BaseModel):
     image_url: str | None = None
     is_active: bool | None = None
     allowed_roles: list[str] | None = None
+
 
 class LocationDataResponse(BaseModel):
     id: uuid.UUID
@@ -95,10 +106,12 @@ class LocationDataResponse(BaseModel):
     updated_at: datetime
     model_config = {"from_attributes": True}
 
+
 class LocationDataCreate(BaseModel):
     title: str
     google_map_url: str | None = None
     is_important: bool = False
+
 
 class LocationDataUpdate(BaseModel):
     title: str | None = None
@@ -115,9 +128,9 @@ class UserLimitResponse(BaseModel):
     remaining: int
     limit_reached: bool
 
+
 class UserLimitUpdate(BaseModel):
     msg_limit: int
     reset_usage: bool = False
     note: str = ""
     payment_ref: str | None = None
-

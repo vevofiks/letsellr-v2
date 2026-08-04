@@ -24,25 +24,36 @@ class User(UUIDMixin, TimestampMixin, Base):
     Platform users — owners, agencies, and admins.
     Seekers/clients are NOT stored here (they enquire anonymously).
     """
+
     __tablename__ = "users"
 
     # ── Identity ──────────────────────────────────────────────────────────────
     auth_provider_uid: Mapped[str | None] = mapped_column(
-        String(256), unique=True, nullable=True, index=True,
+        String(256),
+        unique=True,
+        nullable=True,
+        index=True,
         comment="Firebase UID or Supabase UUID (legacy/optional)",
     )
     role: Mapped[str] = mapped_column(
-        String(20), nullable=False, index=True,
+        String(20),
+        nullable=False,
+        index=True,
         comment="owner | agency | admin",
     )
 
     # ── Profile ───────────────────────────────────────────────────────────────
     name: Mapped[str] = mapped_column(String(200), nullable=False)
-    email: Mapped[str | None] = mapped_column(String(256), unique=True, nullable=True, index=True)
+    email: Mapped[str | None] = mapped_column(
+        String(256), unique=True, nullable=True, index=True
+    )
     email_verified: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
-    phone: Mapped[str] = mapped_column(String(20), nullable=False, unique=True, index=True)
+    phone: Mapped[str] = mapped_column(
+        String(20), nullable=False, unique=True, index=True
+    )
     preference_type: Mapped[str] = mapped_column(
-        String(255), nullable=False,
+        String(255),
+        nullable=False,
         comment="e.g. 'residential'",
     )
     location_city: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -50,29 +61,44 @@ class User(UUIDMixin, TimestampMixin, Base):
 
     # ── Verification & Status ─────────────────────────────────────────────────
     verification_status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="unverified", index=True,
+        String(20),
+        nullable=False,
+        default="unverified",
+        index=True,
         comment="unverified | review_request | verified | rejected",
     )
     verification_note: Mapped[str | None] = mapped_column(
-        Text, nullable=True, comment="Admin rejection reason",
+        Text,
+        nullable=True,
+        comment="Admin rejection reason",
     )
     status: Mapped[str] = mapped_column(
-        String(20), nullable=False, default="active", index=True,
+        String(20),
+        nullable=False,
+        default="active",
+        index=True,
         comment="active | suspended",
     )
-    msg_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=3, server_default="3")
-    msg_usage: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    msg_limit: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=3, server_default="3"
+    )
+    msg_usage: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=0, server_default="0"
+    )
 
     # ── Relationships ─────────────────────────────────────────────────────────
     agency_profile: Mapped["AgencyProfile | None"] = relationship(
-        "AgencyProfile", back_populates="user", uselist=False, cascade="all, delete-orphan",
+        "AgencyProfile",
+        back_populates="user",
+        uselist=False,
+        cascade="all, delete-orphan",
         lazy="selectin",
     )
     properties: Mapped[list["Property"]] = relationship(
         "Property",
         back_populates="owner",
         cascade="all, delete-orphan",
-        foreign_keys="Property.owner_id"
+        foreign_keys="Property.owner_id",
     )
     verification_requests: Mapped[list["VerificationRequest"]] = relationship(
         "VerificationRequest",
@@ -87,17 +113,23 @@ class User(UUIDMixin, TimestampMixin, Base):
 
 class AgencyProfile(UUIDMixin, TimestampMixin, Base):
     """Extended profile for agency accounts (1-to-1 with User)."""
+
     __tablename__ = "agency_profiles"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"),
-        unique=True, nullable=False, index=True,
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
+        index=True,
     )
     display_name: Mapped[str] = mapped_column(String(200), nullable=False)
     about: Mapped[str] = mapped_column(Text, default="", nullable=False)
     logo_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
     banner_key: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    areas_served: Mapped[list[str]] = mapped_column(ARRAY(String), default=list, nullable=False)
+    areas_served: Mapped[list[str]] = mapped_column(
+        ARRAY(String), default=list, nullable=False
+    )
 
     user: Mapped["User"] = relationship("User", back_populates="agency_profile")
 
@@ -107,11 +139,14 @@ class AgencyProfile(UUIDMixin, TimestampMixin, Base):
 
 class LimitOverride(UUIDMixin, TimestampMixin, Base):
     """Audit log for when an admin overrides a user's message limit."""
+
     __tablename__ = "limit_overrides"
 
     user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False, index=True
+        UUID(as_uuid=True),
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     old_limit: Mapped[int] = mapped_column(Integer, nullable=False)
     new_limit: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -121,7 +156,5 @@ class LimitOverride(UUIDMixin, TimestampMixin, Base):
     note: Mapped[str] = mapped_column(Text, nullable=False)
     payment_ref: Mapped[str | None] = mapped_column(String(255), nullable=True)
     done_by: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"),
-        nullable=True
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
-

@@ -35,19 +35,26 @@ class PropertyService:
         random_str = "".join(random.choices(chars, k=6))
         return f"PROP-{random_str}"
 
-    async def create_property(self, data: PropertyCreate, current_user: User) -> Property:
+    async def create_property(
+        self, data: PropertyCreate, current_user: User
+    ) -> Property:
         if current_user.role == "owner" and data.category not in ["pg", "hostel"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Individual owners can only list in PG or Hostel categories.",
             )
-        if current_user.role == "agency" and data.category not in AGENCY_ALLOWED_CATEGORIES:
+        if (
+            current_user.role == "agency"
+            and data.category not in AGENCY_ALLOWED_CATEGORIES
+        ):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Agencies cannot list in category: {data.category}",
             )
 
-        enquiry_type = "whatsapp_bot" if data.category in ["pg", "hostel"] else "manual_chat"
+        enquiry_type = (
+            "whatsapp_bot" if data.category in ["pg", "hostel"] else "manual_chat"
+        )
         ref = self._generate_ref()
 
         location_data = data.location.model_dump()
@@ -57,7 +64,7 @@ class PropertyService:
                 "owner_id": current_user.id,
                 "owner_role": current_user.role,
                 "ref": ref,
-                "enquiry_type": enquiry_type,   
+                "enquiry_type": enquiry_type,
                 "location_address": location_data.get("address"),
                 "location_area": location_data.get("area"),
                 "location_city": location_data.get("city"),
@@ -80,7 +87,9 @@ class PropertyService:
             raise HTTPException(status_code=404, detail="Property not found")
 
         if prop.owner_id != current_user.id and current_user.role != "admin":
-            raise HTTPException(status_code=403, detail="Not authorized to edit this property")
+            raise HTTPException(
+                status_code=403, detail="Not authorized to edit this property"
+            )
 
         update_data = data.model_dump(exclude_unset=True)
         if "location" in update_data:
@@ -102,13 +111,17 @@ class PropertyService:
 
         return await self.repo.update(prop, update_data)
 
-    async def delete_property(self, property_id: str | uuid.UUID, current_user: User) -> None:
+    async def delete_property(
+        self, property_id: str | uuid.UUID, current_user: User
+    ) -> None:
         prop = await self.repo.get_by_id(property_id)
         if not prop:
             raise HTTPException(status_code=404, detail="Property not found")
 
         if prop.owner_id != current_user.id and current_user.role != "admin":
-            raise HTTPException(status_code=403, detail="Not authorized to delete this property")
+            raise HTTPException(
+                status_code=403, detail="Not authorized to delete this property"
+            )
 
         await self.repo.delete(prop)
 
@@ -135,8 +148,9 @@ class PropertyService:
 
         return prop
 
-
-    async def get_enquiry_link(self, ref: str, current_user_id: uuid.UUID) -> EnquiryLinkResponse:
+    async def get_enquiry_link(
+        self, ref: str, current_user_id: uuid.UUID
+    ) -> EnquiryLinkResponse:
         """
         Resolve a property ref to a WhatsApp wa.me deep-link.
 
@@ -149,8 +163,18 @@ class PropertyService:
         category_lower = (prop.category or "").lower()
         is_pg_or_hostel = category_lower in ["pg", "hostel"]
 
-        bot_num = getattr(settings, "WHATSAPP_BOT_NUMBER", "918136990018").replace("+", "").replace(" ", "").replace("-", "")
-        sales_num = getattr(settings, "WHATSAPP_SALES_NUMBER", "918137090018").replace("+", "").replace(" ", "").replace("-", "")
+        bot_num = (
+            getattr(settings, "WHATSAPP_BOT_NUMBER", "918136990018")
+            .replace("+", "")
+            .replace(" ", "")
+            .replace("-", "")
+        )
+        sales_num = (
+            getattr(settings, "WHATSAPP_SALES_NUMBER", "918137090018")
+            .replace("+", "")
+            .replace(" ", "")
+            .replace("-", "")
+        )
 
         phone = bot_num if is_pg_or_hostel else sales_num
 
@@ -164,7 +188,7 @@ class PropertyService:
         # Increment enquiry & views stat by 1 only when Chat on WhatsApp is clicked by a unique user
         current_stats = dict(prop.stats or {})
         viewed_by_users = current_stats.get("viewed_by_users", [])
-        
+
         user_id_str = str(current_user_id)
         if user_id_str not in viewed_by_users:
             viewed_by_users.append(user_id_str)
@@ -179,7 +203,7 @@ class PropertyService:
             ref=ref,
             link=wa_link,
             enquiry_type=enquiry_type,
-            is_pg_or_hostel=is_pg_or_hostel
+            is_pg_or_hostel=is_pg_or_hostel,
         )
 
     async def list_public_properties(
@@ -196,17 +220,24 @@ class PropertyService:
         lng: Optional[float] = None,
         radius: Optional[float] = 20.0,
         page: int = 1,
-        limit: int = 20
+        limit: int = 20,
     ) -> PropertyBrowseResponse:
         filters: Dict[str, Any] = {}
-        if intent: filters["intent"] = intent
-        if category: filters["category"] = category
-        if city: filters["city"] = city
-        if q: filters["q"] = q
-        if owner_id: filters["owner_id"] = owner_id
-        if min_price is not None: filters["min_price"] = min_price
-        if max_price is not None: filters["max_price"] = max_price
-        
+        if intent:
+            filters["intent"] = intent
+        if category:
+            filters["category"] = category
+        if city:
+            filters["city"] = city
+        if q:
+            filters["q"] = q
+        if owner_id:
+            filters["owner_id"] = owner_id
+        if min_price is not None:
+            filters["min_price"] = min_price
+        if max_price is not None:
+            filters["max_price"] = max_price
+
         offset = (page - 1) * limit
         items, total = await self.repo.list_public(
             filters=filters,
@@ -215,35 +246,41 @@ class PropertyService:
             lat=lat,
             lng=lng,
             radius=radius,
-            sort_by=sort_by
+            sort_by=sort_by,
         )
-        
+
         total_pages = math.ceil(total / limit) if limit else 0
-        
+
         return PropertyBrowseResponse(
             results=items,
             total=total,
             page=page,
             page_size=limit,
-            total_pages=total_pages
+            total_pages=total_pages,
         )
 
     async def list_owner_properties(self, owner_id: uuid.UUID) -> List[Property]:
         return await self.repo.list_by_owner(owner_id)
 
-    async def get_nearby_locations(self, lat: float, lng: float, radius: float | int = 5000) -> NearbyLocationsResponse:
+    async def get_nearby_locations(
+        self, lat: float, lng: float, radius: float | int = 5000
+    ) -> NearbyLocationsResponse:
         # Normalize radius: if radius >= 100 treat as meters, else treat as kilometers
         radius_km = float(radius) / 1000.0 if radius >= 100 else float(radius)
         if radius_km <= 0:
             radius_km = 5.0
 
         # Query live properties with lat & lng within preferred radius
-        db_props = await self.repo.get_properties_near_location(lat=lat, lng=lng, radius_km=radius_km, limit=50)
+        db_props = await self.repo.get_properties_near_location(
+            lat=lat, lng=lng, radius_km=radius_km, limit=50
+        )
 
         suggestions: list[LocationSuggestion] = []
         for prop in db_props:
             photo_url = prop.photos[0] if prop.photos and len(prop.photos) > 0 else None
-            addr = prop.location_address or f"{prop.location_area}, {prop.location_city}"
+            addr = (
+                prop.location_address or f"{prop.location_area}, {prop.location_city}"
+            )
             suggestions.append(
                 LocationSuggestion(
                     name=prop.title,
@@ -278,7 +315,9 @@ class PropertyService:
                             props = feature.get("properties", {})
                             suggestions.append(
                                 LocationSuggestion(
-                                    name=props.get("name") or props.get("street") or "Unknown Place",
+                                    name=props.get("name")
+                                    or props.get("street")
+                                    or "Unknown Place",
                                     address=props.get("formatted"),
                                     latitude=props.get("lat", 0.0),
                                     longitude=props.get("lon", 0.0),
@@ -290,18 +329,25 @@ class PropertyService:
 
         return NearbyLocationsResponse(results=suggestions)
 
-    async def report_property(self, property_id: uuid.UUID, reason: str, description: Optional[str], user_id: Optional[uuid.UUID]):
+    async def report_property(
+        self,
+        property_id: uuid.UUID,
+        reason: str,
+        description: Optional[str],
+        user_id: Optional[uuid.UUID],
+    ):
         prop = await self.repo.get_by_id(property_id)
         if not prop:
             raise HTTPException(status_code=404, detail="Property not found")
-        
+
         from app.modules.properties.models import PropertyReport
+
         report = PropertyReport(
             property_id=property_id,
             reporter_id=user_id,
             reason=reason,
             description=description,
-            status="pending"
+            status="pending",
         )
         self.repo.db.add(report)
         await self.repo.db.commit()

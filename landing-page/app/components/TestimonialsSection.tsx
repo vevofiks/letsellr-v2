@@ -126,22 +126,22 @@ export default function TestimonialsSection() {
   ];
 
   return (
-    <section ref={containerRef} className="relative py-24 bg-[#014645] text-white overflow-hidden">
+    <section ref={containerRef} className="relative py-12 md:py-24 bg-[#014645] text-white overflow-hidden">
       {/* Background Decorative Gradient Orbs */}
       <div ref={orb1Ref} className="absolute top-0 right-1/4 w-96 h-96 bg-[#23D283]/15 rounded-full blur-3xl pointer-events-none" />
       <div ref={orb2Ref} className="absolute bottom-0 left-1/4 w-96 h-96 bg-[#23D283]/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 relative z-10">
         {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#23D283]/15 border border-[#23D283]/30 text-[#23D283] text-xs font-semibold uppercase tracking-widest mb-4">
+        <div className="text-center max-w-3xl mx-auto mb-8 md:mb-16">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 md:px-4 md:py-2 rounded-full bg-[#23D283]/15 border border-[#23D283]/30 text-[#23D283] text-[10px] md:text-xs font-semibold uppercase tracking-widest mb-3 md:mb-4">
             <Sparkles className="w-3.5 h-3.5" />
             Verified User Stories
           </div>
-          <h2 className="text-3xl lg:text-5xl font-extrabold tracking-tight text-white mb-6">
-            Loved by Owners, Buyers & Premier Agencies
+          <h2 className="text-xl sm:text-3xl lg:text-5xl font-extrabold tracking-tight text-white mb-3 md:mb-6">
+            Loved by Buyers &amp; Owners
           </h2>
-          <p className="text-base lg:text-lg text-slate-300 font-light leading-relaxed">
+          <p className="text-xs sm:text-base lg:text-lg text-slate-300 font-light leading-relaxed">
             Discover how Letsellr empowers direct property connections across India with zero brokerage fee exploitation.
           </p>
         </div>

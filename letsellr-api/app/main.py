@@ -40,8 +40,12 @@ from app.modules.admin.router import router as admin_router
 from app.modules.media.router import router as media_router
 from app.modules.webhooks.router import router as webhooks_router
 from app.modules.reviews.router import router as reviews_router
-from app.modules.admin.testimonials.router import admin_router as admin_testimonials_router
-from app.modules.admin.testimonials.router import public_router as public_testimonials_router
+from app.modules.admin.testimonials.router import (
+    admin_router as admin_testimonials_router,
+)
+from app.modules.admin.testimonials.router import (
+    public_router as public_testimonials_router,
+)
 
 
 # ── Lifespan (startup / shutdown) ─────────────────────────────────────────────
@@ -54,7 +58,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     async with engine.connect() as conn:
         await conn.execute(__import__("sqlalchemy").text("SELECT 1"))
 
-    print(f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} started — {settings.ENVIRONMENT}")
+    print(
+        f"🚀 {settings.APP_NAME} v{settings.APP_VERSION} started — {settings.ENVIRONMENT}"
+    )
     yield
 
     # Graceful shutdown — dispose connection pool
@@ -96,7 +102,9 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(500)
     async def server_error_handler(request, exc):
-        return JSONResponse(status_code=500, content={"detail": "Internal server error."})
+        return JSONResponse(
+            status_code=500, content={"detail": "Internal server error."}
+        )
 
     # ── Health Check ───────────────────────────────────────────────────────────
     @app.get("/health", tags=["health"])
@@ -105,22 +113,38 @@ def create_app() -> FastAPI:
 
     # ── Register Module Routers ────────────────────────────────────────────────
     api_prefix = "/api"
-    app.include_router(auth_router,       prefix=f"{api_prefix}/auth",       tags=["Auth"])
-    app.include_router(users_router,      prefix=f"{api_prefix}/users",      tags=["Users"])
-    app.include_router(properties_router, prefix=f"{api_prefix}/properties", tags=["Properties"])
-    app.include_router(agencies_router,   prefix=f"{api_prefix}/agencies",   tags=["Agencies"])
-    app.include_router(chat_router,       prefix=f"{api_prefix}/chats",      tags=["Chat"])
-    app.include_router(admin_router,      prefix=f"{api_prefix}/admin",      tags=["Admin"])
-    app.include_router(media_router,      prefix=f"{api_prefix}/media",      tags=["Media"])
-    app.include_router(webhooks_router,   prefix=f"{api_prefix}/webhooks",   tags=["Webhooks"])
+    app.include_router(auth_router, prefix=f"{api_prefix}/auth", tags=["Auth"])
+    app.include_router(users_router, prefix=f"{api_prefix}/users", tags=["Users"])
+    app.include_router(
+        properties_router, prefix=f"{api_prefix}/properties", tags=["Properties"]
+    )
+    app.include_router(
+        agencies_router, prefix=f"{api_prefix}/agencies", tags=["Agencies"]
+    )
+    app.include_router(chat_router, prefix=f"{api_prefix}/chats", tags=["Chat"])
+    app.include_router(admin_router, prefix=f"{api_prefix}/admin", tags=["Admin"])
+    app.include_router(media_router, prefix=f"{api_prefix}/media", tags=["Media"])
+    app.include_router(
+        webhooks_router, prefix=f"{api_prefix}/webhooks", tags=["Webhooks"]
+    )
     # ── Static Uploads Mounting ────────────────────────────────────────────────
-    upload_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "uploads"))
+    upload_dir = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "uploads")
+    )
     os.makedirs(upload_dir, exist_ok=True)
     app.mount("/uploads", StaticFiles(directory=upload_dir), name="uploads")
 
-    app.include_router(reviews_router,    prefix=api_prefix)
-    app.include_router(public_testimonials_router, prefix=f"{api_prefix}/testimonials", tags=["Testimonials"])
-    app.include_router(admin_testimonials_router, prefix=f"{api_prefix}/admin/testimonials", tags=["Admin Testimonials"])
+    app.include_router(reviews_router, prefix=api_prefix)
+    app.include_router(
+        public_testimonials_router,
+        prefix=f"{api_prefix}/testimonials",
+        tags=["Testimonials"],
+    )
+    app.include_router(
+        admin_testimonials_router,
+        prefix=f"{api_prefix}/admin/testimonials",
+        tags=["Admin Testimonials"],
+    )
 
     return app
 

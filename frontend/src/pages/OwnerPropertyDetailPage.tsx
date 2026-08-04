@@ -410,7 +410,7 @@ export const OwnerPropertyDetailPage: React.FC = () => {
                   <span className="text-slate-400 font-extrabold block text-[9.5px] uppercase tracking-wider">Carpet Area</span>
                   <span className="font-extrabold text-slate-900 flex items-center gap-1">
                     <Maximize2 className="h-3.5 w-3.5 text-slate-500" />
-                    {property.area ? `${property.area} sq.ft` : "N/A"}
+                    {property.area && Number(property.area) > 0 ? `${property.area} sq.ft` : "Not Specified"}
                   </span>
                 </div>
 
@@ -418,7 +418,7 @@ export const OwnerPropertyDetailPage: React.FC = () => {
                   <span className="text-slate-400 font-extrabold block text-[9.5px] uppercase tracking-wider">Bedrooms</span>
                   <span className="font-extrabold text-slate-900 flex items-center gap-1">
                     <Bed className="h-3.5 w-3.5 text-slate-500" />
-                    {property.bedrooms ? `${property.bedrooms} Beds` : "N/A"}
+                    {property.bedrooms ? `${property.bedrooms} Beds` : "Not Specified"}
                   </span>
                 </div>
 
@@ -426,7 +426,7 @@ export const OwnerPropertyDetailPage: React.FC = () => {
                   <span className="text-slate-400 font-extrabold block text-[9.5px] uppercase tracking-wider">Bathrooms</span>
                   <span className="font-extrabold text-slate-900 flex items-center gap-1">
                     <Bath className="h-3.5 w-3.5 text-slate-500" />
-                    {property.bathrooms ? `${property.bathrooms} Baths` : "N/A"}
+                    {property.bathrooms ? `${property.bathrooms} Baths` : "Not Specified"}
                   </span>
                 </div>
 
@@ -434,7 +434,7 @@ export const OwnerPropertyDetailPage: React.FC = () => {
                   <span className="text-slate-400 font-extrabold block text-[9.5px] uppercase tracking-wider">Furnishing</span>
                   <span className="font-extrabold text-slate-900 capitalize flex items-center gap-1">
                     <Sofa className="h-3.5 w-3.5 text-slate-500" />
-                    {property.furnishing || "N/A"}
+                    {property.furnishing || "Not Specified"}
                   </span>
                 </div>
               </div>

@@ -29,6 +29,7 @@ security = HTTPBearer()
 
 # ── Internal JWT ──────────────────────────────────────────────────────────────
 
+
 def _try_internal_jwt(token: str) -> dict | str | None:
     """
     Try decoding as an internally issued JWT (HS256 signed with SECRET_KEY).
@@ -45,6 +46,7 @@ def _try_internal_jwt(token: str) -> dict | str | None:
 
 # ── Server-to-Server / Service Auth ──────────────────────────────────────────
 
+
 def is_valid_service_key(token_or_key: str | None) -> bool:
     """Check if provided string matches N8N_API_KEY."""
     if not token_or_key or not settings.N8N_API_KEY:
@@ -53,6 +55,7 @@ def is_valid_service_key(token_or_key: str | None) -> bool:
 
 
 # ── Main Dependency ───────────────────────────────────────────────────────────
+
 
 async def get_current_user(
     credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
@@ -106,7 +109,10 @@ async def get_current_user(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Your account has been suspended. Contact support.",
         )
-    if (user.status == "pending" or user.verification_status in ("review_request", "pending", "unverified")) and user.role in ("owner", "agency"):
+    if (
+        user.status == "pending"
+        or user.verification_status in ("review_request", "pending", "unverified")
+    ) and user.role in ("owner", "agency"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Your account is currently under review. Access will be enabled once verified and approved by an administrator.",
@@ -125,6 +131,7 @@ def require_role(*roles: str):
     Factory for a role-checking dependency.
     Usage: Depends(require_role("admin")) or Depends(require_role("owner", "agency"))
     """
+
     async def _check(current_user: CurrentUser) -> User:
         if current_user.role not in roles:
             raise HTTPException(
@@ -132,12 +139,14 @@ def require_role(*roles: str):
                 detail=f"Access denied. Required role(s): {', '.join(roles)}.",
             )
         return current_user
+
     return _check
 
 
 # ── Convenience aliases ────────────────────────────────────────────────────────
 def require_admin():
     return require_role("admin")
+
 
 def require_owner_or_agency():
     return require_role("owner", "agency")
