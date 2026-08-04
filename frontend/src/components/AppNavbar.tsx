@@ -230,7 +230,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
                     <button
                       onClick={() => {
                         setDropdownOpen(false);
-                        navigate('/login')
+                        navigate('/register/type')
                       }}
                       className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:rounded-b-md hover:text-brand-deep-green transition-all text-left bg-slate-50/30"
                     >

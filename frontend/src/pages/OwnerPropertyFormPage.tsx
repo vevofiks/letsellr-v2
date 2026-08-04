@@ -90,7 +90,24 @@ export const OwnerPropertyFormPage: React.FC = () => {
 
   const [availabilityStatus, setAvailabilityStatus] = useState<"available" | "occupied" | "upcoming">("available");
   const [availableFrom, setAvailableFrom] = useState("");
+  const [roomSharingOptions, setRoomSharingOptions] = useState<Array<{sharing: number | "", price: number | "", vacancy: number | ""}>>([]);
   const [existingStatus, setExistingStatus] = useState<string>("");
+
+  const addRoomSharingOption = () => {
+    setRoomSharingOptions([...roomSharingOptions, { sharing: "", price: "", vacancy: "" }]);
+  };
+
+  const removeRoomSharingOption = (index: number) => {
+    const newOptions = [...roomSharingOptions];
+    newOptions.splice(index, 1);
+    setRoomSharingOptions(newOptions);
+  };
+
+  const updateRoomSharingOption = (index: number, field: "sharing" | "price" | "vacancy", value: number | "") => {
+    const newOptions = [...roomSharingOptions];
+    newOptions[index][field] = value;
+    setRoomSharingOptions(newOptions);
+  };
 
   // Accordion open/close state
   const [specsOpen, setSpecsOpen] = useState(false);
@@ -349,9 +366,15 @@ export const OwnerPropertyFormPage: React.FC = () => {
       if (data.extra_details) {
         setAvailabilityStatus(data.extra_details.availability_status || "available");
         setAvailableFrom(data.extra_details.available_from || "");
+        if (data.extra_details.room_sharing) {
+          setRoomSharingOptions(data.extra_details.room_sharing);
+        } else {
+          setRoomSharingOptions([]);
+        }
       } else {
         setAvailabilityStatus("available");
         setAvailableFrom("");
+        setRoomSharingOptions([]);
       }
     } catch (err) {
       console.error("Failed to load property details", err);
@@ -514,7 +537,10 @@ export const OwnerPropertyFormPage: React.FC = () => {
         photos: finalPhotos,
         extra_details: {
           availability_status: availabilityStatus,
-          available_from: availableFrom || undefined
+          available_from: availableFrom || undefined,
+          ...(category === "pg" || category === "hostel" ? {
+            room_sharing: roomSharingOptions.filter(opt => opt.sharing !== "" && opt.price !== "" && opt.vacancy !== "")
+          } : {})
         },
         location: {
           address: address.trim() || undefined,
@@ -734,6 +760,75 @@ export const OwnerPropertyFormPage: React.FC = () => {
 
           </div>
         </div>
+
+        {/* Section 2.5: Room Sharing Options (PG/Hostel Only) */}
+        {(category === "pg" || category === "hostel") && (
+          <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-xs space-y-5 text-left">
+            <div className="flex items-center justify-between">
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
+                <Building2 className="h-5 w-5 text-brand-green" /> Room Sharing Options
+              </h2>
+              <button
+                type="button"
+                onClick={addRoomSharingOption}
+                className="bg-emerald-50 text-brand-green font-bold text-xs px-3 py-1.5 rounded-md flex items-center gap-1 hover:bg-emerald-100 transition-colors"
+              >
+                <Plus className="h-4 w-4" /> Add Option
+              </button>
+            </div>
+
+            {roomSharingOptions.length === 0 ? (
+              <p className="text-xs text-slate-500 font-medium">No sharing options added yet.</p>
+            ) : (
+              <div className="space-y-4">
+                {roomSharingOptions.map((option, index) => (
+                  <div key={index} className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end bg-slate-50 p-4 rounded-lg border border-slate-100">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700">Sharing (e.g. 1, 2)</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 2 for Double"
+                        value={option.sharing}
+                        onChange={(e) => updateRoomSharingOption(index, "sharing", e.target.value ? Number(e.target.value) : "")}
+                        className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-brand-green/20"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700">Price per bed (₹)</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 5000"
+                        value={option.price}
+                        onChange={(e) => updateRoomSharingOption(index, "price", e.target.value ? Number(e.target.value) : "")}
+                        className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-brand-green/20"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-slate-700">Vacancy (Beds)</label>
+                      <input
+                        type="number"
+                        placeholder="e.g. 5"
+                        value={option.vacancy}
+                        onChange={(e) => updateRoomSharingOption(index, "vacancy", e.target.value ? Number(e.target.value) : "")}
+                        className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-brand-green/20"
+                      />
+                    </div>
+                    <div className="pb-0.5">
+                      <button
+                        type="button"
+                        onClick={() => removeRoomSharingOption(index)}
+                        className="w-full sm:w-auto bg-rose-50 text-rose-600 hover:bg-rose-100 p-2 rounded-md transition-colors flex items-center justify-center border-0 cursor-pointer"
+                        title="Remove Option"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Section 3: Specs & Features - ACCORDION LAYOUT */}
         <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-xs text-left">

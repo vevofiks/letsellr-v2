@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import {
@@ -50,6 +50,7 @@ import {
 
 // ── Client / Seeker Dashboard ────────────────────────────────────────────────
 export const ClientDashboard: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [properties, setProperties] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   // Helper to read initial URL params synchronously before first render
@@ -168,11 +169,6 @@ export const ClientDashboard: React.FC = () => {
       setInputQuery(qParam);
       setSearchQuery(qParam);
       sessionStorage.setItem("dashboard_searchQuery", qParam);
-
-      if (!cityParam) {
-        setCity(qParam);
-        setSearchCity(qParam);
-      }
     }
   }, []);
 
@@ -275,17 +271,24 @@ export const ClientDashboard: React.FC = () => {
 
   const handleSelectSuggestion = (item: { type: string; label: string; categoryValue?: string }) => {
     if (item.type === "category" && item.categoryValue) {
+      // Select category type, clear any location/text filter
       setCategory(item.categoryValue);
-      setInputQuery("");
+      setInputQuery(item.label);
       setSearchQuery("");
+      setCity("");
+      setSearchCity("");
     } else if (item.type === "location") {
+      // Select location, clear text query
       setCity(item.label);
       setSearchCity(item.label);
       setInputQuery(item.label);
-      setSearchQuery(item.label);
+      setSearchQuery("");
     } else {
+      // Free-text (title match)
       setInputQuery(item.label);
       setSearchQuery(item.label);
+      setCity("");
+      setSearchCity("");
     }
     setShowDrawerSuggestions(false);
     setShowTopSuggestions(false);
@@ -538,6 +541,7 @@ export const ClientDashboard: React.FC = () => {
           page,
         };
         if (city) params.city = city;
+        if (searchQuery) params.q = searchQuery;
 
         const res = await api.get("/api/agencies", { params });
         const newItems = res.data.results || res.data || [];
@@ -870,7 +874,7 @@ export const ClientDashboard: React.FC = () => {
                             <div className="flex items-center gap-2 min-w-0">
                               <div className={cn(
                                 "p-1 rounded-md shrink-0",
-                                item.type === "location" ? "bg-red-50 text-red-500" :
+                                item.type === "location" ? "bg-brand-green/10 text-brand-green" :
                                   item.type === "category" ? "bg-emerald-50 text-emerald-600" :
                                     "bg-blue-50 text-blue-600"
                               )}>
@@ -925,7 +929,7 @@ export const ClientDashboard: React.FC = () => {
                         </Select>
                       </div>
 
-                      {/* Type */}
+                      Type
                       <div className="flex flex-col gap-1 text-left">
                         <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Type</span>
                         <Select
@@ -1015,8 +1019,8 @@ export const ClientDashboard: React.FC = () => {
                           onClick={toggleGPS}
                           disabled={gpsLoading}
                           className={`flex items-center justify-center gap-1.5 px-3 h-8 rounded-md border text-[10px] font-bold transition-all cursor-pointer ${gpsActive
-                              ? "border-emerald-500 text-emerald-700 bg-emerald-50/50"
-                              : "border-slate-200 text-slate-600 bg-white hover:bg-slate-50"
+                            ? "border-emerald-500 text-emerald-700 bg-emerald-50/50"
+                            : "border-slate-200 text-slate-600 bg-white hover:bg-slate-50"
                             }`}
                         >
                           {gpsLoading ? (
@@ -1243,32 +1247,7 @@ export const ClientDashboard: React.FC = () => {
                   </Select>
                 </div>
 
-                {/* Type Dropdown - Hidden on mobile, shown on lg screens */}
-                <div className={cn("hidden lg:flex flex-col text-left min-w-35 flex-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
-                  <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">Type</label>
-                  <Select
-                    value={category || undefined}
-                    onValueChange={(val) => {
-                      setCategory(val === "all" || !val ? "" : val);
-                      setPage(1);
-                    }}
-                  >
-                    <SelectTrigger className={cn(
-                      "w-full bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 font-semibold text-slate-800 text-[13px] shadow-sm cursor-pointer transition-all",
-                      "focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green"
-                    )}>
-                      <SelectValue placeholder="Residence">
-                        {category ? propertyTypes.find(t => t.slug === category)?.label || category : "Residence"}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-slate-100 shadow-md rounded-lg p-1 z-30">
-                      <SelectItem value="all">All Categories</SelectItem>
-                      {propertyTypes.map((t: any) => (
-                        <SelectItem key={t.slug} value={t.slug}>{t.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+
 
                 {/* Price Dropdown - Hidden on mobile, shown on lg screens */}
                 <div className={cn("hidden lg:flex flex-col text-left min-w-35 flex-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
@@ -1391,7 +1370,7 @@ export const ClientDashboard: React.FC = () => {
                               <div className="flex items-center gap-2 min-w-0">
                                 <div className={cn(
                                   "p-1 rounded-md shrink-0",
-                                  item.type === "location" ? "bg-red-50 text-red-500" :
+                                  item.type === "location" ? "bg-brand-green/10 text-brand-green" :
                                     item.type === "category" ? "bg-emerald-50 text-emerald-600" :
                                       "bg-blue-50 text-blue-600"
                                 )}>
@@ -1421,8 +1400,8 @@ export const ClientDashboard: React.FC = () => {
                       type="button"
                       onClick={() => setShowAdvancedPopover(!showAdvancedPopover)}
                       className={`flex items-center justify-center gap-1.5 h-10 px-4 rounded-lg border font-semibold text-xs transition-all duration-200 cursor-pointer shadow-sm ${showAdvancedPopover
-                          ? "bg-slate-100 border-slate-300 text-slate-900"
-                          : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
+                        ? "bg-slate-100 border-slate-300 text-slate-900"
+                        : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50"
                         }`}
                     >
                       <SlidersHorizontal className="h-4 w-4 shrink-0" />
@@ -1507,8 +1486,8 @@ export const ClientDashboard: React.FC = () => {
                               </div>
                             </div>
 
-                            {/* Mobile-only: Looking For + Type in 2-col grid */}
-                            <div className={cn("grid grid-cols-2 gap-2 lg:hidden", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
+                            {/* Mobile-only: Looking For in 1-col grid */}
+                            <div className={cn("grid grid-cols-1 gap-2 lg:hidden", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
                               <div className="flex flex-col gap-1">
                                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Intent</span>
                                 <Select value={intent || undefined} onValueChange={(val) => { setIntent(val === "all" || !val ? "" : val); setPage(1); }}>
@@ -1520,22 +1499,6 @@ export const ClientDashboard: React.FC = () => {
                                     <SelectItem value="buy">For Sale</SelectItem>
                                     <SelectItem value="rent">For Rent</SelectItem>
                                     <SelectItem value="lease">For Lease</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Type</span>
-                                <Select value={category || undefined} onValueChange={(val) => { setCategory(val === "all" || !val ? "" : val); setPage(1); }}>
-                                  <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
-                                    <SelectValue placeholder="All">
-                                      {category ? propertyTypes.find(t => t.slug === category)?.label || category : "All"}
-                                    </SelectValue>
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
-                                    <SelectItem value="all">All</SelectItem>
-                                    {propertyTypes.map((t: any) => (
-                                      <SelectItem key={t.slug} value={t.slug}>{t.label}</SelectItem>
-                                    ))}
                                   </SelectContent>
                                 </Select>
                               </div>

@@ -24,6 +24,9 @@ async def list_agencies(
     city: Optional[str] = Query(
         None, description="Filter by city name (partial match)"
     ),
+    q: Optional[str] = Query(
+        None, description="Search by agency name or location"
+    ),
     page: int = Query(1, ge=1),
 ):
     """
@@ -34,7 +37,25 @@ async def list_agencies(
     verification badge status, and live listing count.
     """
     service = AgencyService(db)
-    return await service.list_agencies(city=city, page=page)
+    return await service.list_agencies(city=city, q=q, page=page)
+
+@router.get("/autocomplete")
+async def autocomplete_agencies(
+    q: str, db: DbSession, limit: int = 10
+):
+    """
+    Autocomplete for agency display names or locations.
+    """
+    service = AgencyService(db)
+    rows = await service.repo.list_agencies(q=q, limit=limit)
+    
+    results = []
+    for user, profile, count in rows:
+        results.append({
+            "label": profile.display_name,
+            "subtext": user.location_city
+        })
+    return results
 
 
 @router.get("/{agency_id}", response_model=AgencyPublicResponse)
