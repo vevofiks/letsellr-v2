@@ -21,7 +21,9 @@ router = APIRouter(tags=["Agencies"])
 @router.get("", response_model=List[AgencyPublicResponse])
 async def list_agencies(
     db: DbSession,
-    city: Optional[str] = Query(None, description="Filter by city name (partial match)"),
+    city: Optional[str] = Query(
+        None, description="Filter by city name (partial match)"
+    ),
     page: int = Query(1, ge=1),
 ):
     """

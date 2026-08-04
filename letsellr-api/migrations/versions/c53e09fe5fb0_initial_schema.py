@@ -4,6 +4,7 @@ Revision ID: c53e09fe5fb0
 Revises: 11acaaacb974
 Create Date: 2026-07-15 19:47:51.690823
 """
+
 from __future__ import annotations
 
 from typing import Sequence, Union
@@ -11,10 +12,9 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-
 # revision identifiers, used by Alembic.
-revision: str = 'c53e09fe5fb0'
-down_revision: Union[str, None] = '11acaaacb974'
+revision: str = "c53e09fe5fb0"
+down_revision: Union[str, None] = "11acaaacb974"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

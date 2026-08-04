@@ -37,8 +37,13 @@ async def _send_email(to_email: str, subject: str, html_body: str) -> None:
 
 # ── Email Templates ──────────────────────────────────────────────────────────
 
+
 def _otp_html(otp: str, purpose: str, expires_minutes: int) -> str:
-    action = "verify your email and complete registration" if purpose == "registration" else "log in"
+    action = (
+        "verify your email and complete registration"
+        if purpose == "registration"
+        else "log in"
+    )
     return f"""
     <!DOCTYPE html>
     <html>
@@ -111,4 +116,6 @@ async def send_otp_email(to_email: str, otp: str, purpose: str = "login") -> Non
     try:
         await _send_email(to_email, subject, html)
     except Exception as e:
-        logger.warning("SMTP delivery failed for %s: %s. [FALLBACK OTP CODE: %s]", to_email, e, otp)
+        logger.warning(
+            "SMTP delivery failed for %s: %s. [FALLBACK OTP CODE: %s]", to_email, e, otp
+        )

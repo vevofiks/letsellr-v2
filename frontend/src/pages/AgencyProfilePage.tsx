@@ -347,7 +347,7 @@ export const AgencyProfilePage: React.FC = () => {
                         <span className="text-slate-200 font-normal">•</span>
                         <span className="flex items-center gap-0.5 whitespace-nowrap">
                           <Maximize className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                          {prop.area ? `${prop.area} SQFT` : "N/A"}
+                          {prop.area && Number(prop.area) > 0 ? `${prop.area} SQFT` : "Not Specified"}
                         </span>
                       </div>
                     </div>

@@ -1088,7 +1088,7 @@ export const ClientDashboard: React.FC = () => {
                         className="relative border border-slate-200/80 bg-white hover:shadow-md transition-all duration-200 overflow-hidden flex flex-row p-3 rounded-lg gap-4 text-left shrink-0 cursor-pointer group animate-in fade-in"
                       >
                         {/* Image Thumbnail */}
-                        <div className="h-28 w-28 rounded-lg overflow-hidden relative shrink-0">
+                        <div className="h-26 w-26 sm:h-28 sm:w-28 rounded-lg overflow-hidden relative shrink-0">
                           <img
                             src={prop.photos && prop.photos.length > 0 ? prop.photos[0] : getCategoryFallbackImage(prop.category)}
                             alt={prop.title}
@@ -1103,18 +1103,23 @@ export const ClientDashboard: React.FC = () => {
                         </div>
 
                         {/* Card Info Right */}
-                        <div className="flex-1 flex flex-col justify-between py-0.5 text-left min-w-0 pr-1">
-                          <div className="space-y-1">
-                            {/* Location line (Red pin + Area/City) */}
-                            <div className="text-[10px] font-semibold text-slate-500 flex items-center gap-1">
-                              <MapPin className="h-3 w-3 text-red-500 shrink-0" />
-                              <span className="truncate">{prop.location_area || prop.location_city}</span>
+                        <div className="flex-1 flex flex-col justify-between py-0.5 text-left min-w-0">
+                          <div className="space-y-1 min-w-0">
+                            {/* Location line + Category badge */}
+                            <div className="flex items-center justify-between gap-1.5 min-w-0">
+                              <div className="text-[10px] font-semibold text-slate-500 flex items-center gap-1 min-w-0">
+                                <MapPin className="h-3 w-3 text-red-500 shrink-0" />
+                                <span className="truncate">{prop.location_area || prop.location_city}</span>
+                              </div>
+
+                              <div className="flex items-center justify-center bg-slate-50 border border-slate-200 rounded-md px-1.5 py-0.5 text-[8.5px] font-bold text-slate-700 shrink-0 gap-1 shadow-2xs">
+                                <Home className="h-2.5 w-2.5 text-slate-500 shrink-0" />
+                                <span className="capitalize whitespace-nowrap">{prop.category.replace("_", " ")}</span>
+                              </div>
                             </div>
 
                             {/* Title */}
-                            <h3
-                              className="text-sm font-extrabold text-slate-900 line-clamp-1 hover:text-brand-green transition-colors leading-tight m-0 pr-16"
-                            >
+                            <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 line-clamp-1 hover:text-brand-green transition-colors leading-tight m-0">
                               {prop.title}
                             </h3>
 
@@ -1124,7 +1129,7 @@ export const ClientDashboard: React.FC = () => {
                             </p>
 
                             {/* Specs Row */}
-                            <div className="flex items-center gap-1.5 text-[9px] text-slate-500 font-bold pt-1 flex-wrap">
+                            <div className="flex items-center gap-1 sm:gap-1.5 text-[9px] text-slate-500 font-bold pt-1 flex-wrap">
                               <span className="flex items-center gap-0.5 whitespace-nowrap shrink-0">
                                 <Bed className="h-3.5 w-3.5 text-slate-400 shrink-0" />
                                 {prop.bedrooms || 0} Bed
@@ -1137,14 +1142,14 @@ export const ClientDashboard: React.FC = () => {
                               <span className="text-slate-300 font-normal">•</span>
                               <span className="flex items-center gap-0.5 whitespace-nowrap shrink-0">
                                 <Maximize className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                                {prop.area ? `${prop.area} SQFT` : "N/A"}
+                                {prop.area && Number(prop.area) > 0 ? `${prop.area} SQFT` : "Not Specified"}
                               </span>
                             </div>
                           </div>
 
                           {/* Price Row */}
                           <div className="flex items-center justify-between pt-1.5 border-t border-slate-100/60 mt-1">
-                            <span className="font-extrabold text-[13px] text-slate-900 flex items-baseline gap-0.5">
+                            <span className="font-extrabold text-[12px] sm:text-[13px] text-slate-900 flex items-baseline gap-0.5">
                               {formatPrice(prop.price, prop.price_unit)}
                               {prop.intent === "rent" && <span className="text-[9px] font-medium text-slate-400">/ month</span>}
                             </span>
@@ -1159,12 +1164,6 @@ export const ClientDashboard: React.FC = () => {
                               </span>
                             )}
                           </div>
-                        </div>
-
-                        {/* Floating Type Badge on Top-Right */}
-                        <div className="absolute top-3 right-3 flex items-center justify-center bg-white border border-slate-200 rounded-lg px-2 py-0.5 text-[9px] font-bold text-slate-700 shadow-sm gap-1">
-                          <Home className="h-2.5 w-2.5 text-slate-500" />
-                          <span className="capitalize">{prop.category.replace("_", " ")}</span>
                         </div>
                       </div>
                     ))}
@@ -2110,7 +2109,7 @@ export const ClientDashboard: React.FC = () => {
                           </div>
                           <div className="flex items-center gap-1 shrink-0">
                             <Maximize className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                            <span>{prop.area ? `${prop.area.toLocaleString()} SQ FT` : "N/A"}</span>
+                            <span>{prop.area && Number(prop.area) > 0 ? `${Number(prop.area).toLocaleString()} SQ FT` : "Not Specified"}</span>
                           </div>
                         </div>
                       </div>

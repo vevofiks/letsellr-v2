@@ -17,7 +17,11 @@ async def list_property_reviews(property_id: uuid.UUID, db: DbSession):
     return await service.get_reviews_by_target("property", property_id)
 
 
-@router.post("/properties/{property_id}/reviews", response_model=ReviewResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/properties/{property_id}/reviews",
+    response_model=ReviewResponse,
+    status_code=status.HTTP_201_CREATED,
+)
 async def create_property_review(
     property_id: uuid.UUID,
     data: ReviewCreate,

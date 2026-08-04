@@ -12,8 +12,8 @@ import pytest
 from app.depends.auth import get_current_user
 from app.main import app
 
-
 # ── GET /api/users/me ─────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_get_profile_owner(client, test_owner):
@@ -70,6 +70,7 @@ async def test_get_profile_unauthenticated(client):
 
 # ── GET /api/auth/me ──────────────────────────────────────────────────────────
 
+
 @pytest.mark.asyncio
 async def test_auth_me_returns_current_user(client, test_owner):
     """GET /api/auth/me returns a compact public profile for the logged-in user."""
@@ -87,6 +88,7 @@ async def test_auth_me_returns_current_user(client, test_owner):
 
 
 # ── PUT /api/users/me ─────────────────────────────────────────────────────────
+
 
 @pytest.mark.asyncio
 async def test_update_profile_name(client, test_owner):
@@ -203,13 +205,21 @@ async def test_update_profile_response_schema(client, test_owner):
 
     data = response.json()
     required_keys = {
-        "id", "role", "name", "email", "phone",
-        "preference_type", "location_city", "location_area",
-        "verification_status", "status", "agency_profile",
+        "id",
+        "role",
+        "name",
+        "email",
+        "phone",
+        "preference_type",
+        "location_city",
+        "location_area",
+        "verification_status",
+        "status",
+        "agency_profile",
     }
-    assert required_keys.issubset(data.keys()), (
-        f"Missing keys: {required_keys - data.keys()}"
-    )
+    assert required_keys.issubset(
+        data.keys()
+    ), f"Missing keys: {required_keys - data.keys()}"
 
 
 @pytest.mark.asyncio
@@ -241,7 +251,9 @@ async def test_update_profile_can_change_phone(client, test_owner):
 
 
 @pytest.mark.asyncio
-async def test_update_profile_does_not_affect_other_user(client, test_owner, test_other_owner):
+async def test_update_profile_does_not_affect_other_user(
+    client, test_owner, test_other_owner
+):
     """Updating one user's profile does not change another user's data."""
     # Update test_owner
     app.dependency_overrides[get_current_user] = lambda: test_owner

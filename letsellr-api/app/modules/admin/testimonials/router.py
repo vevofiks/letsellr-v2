@@ -35,6 +35,7 @@ def _add_avatar_url(item: Testimonial) -> TestimonialResponse:
 
 # ── Public ────────────────────────────────────────────────────────────────────
 
+
 @public_router.get("", response_model=List[TestimonialResponse])
 async def get_public_testimonials(
     db: DbSession,
@@ -57,6 +58,7 @@ async def get_public_testimonials(
 
 # ── Admin ─────────────────────────────────────────────────────────────────────
 
+
 @admin_router.get("", response_model=List[TestimonialResponse])
 async def get_admin_testimonials(
     current_user: CurrentUser,
@@ -78,16 +80,20 @@ async def get_admin_testimonials(
         query = query.where(Testimonial.is_featured == is_featured)
 
     offset = (page - 1) * limit
-    query = query.order_by(
-        Testimonial.display_order.asc(), Testimonial.created_at.desc()
-    ).offset(offset).limit(limit)
+    query = (
+        query.order_by(Testimonial.display_order.asc(), Testimonial.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+    )
 
     result = await db.execute(query)
     items = result.scalars().all()
     return [_add_avatar_url(item) for item in items]
 
 
-@admin_router.post("", response_model=TestimonialResponse, status_code=status.HTTP_201_CREATED)
+@admin_router.post(
+    "", response_model=TestimonialResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_testimonial(
     data: TestimonialCreate,
     current_user: CurrentUser,

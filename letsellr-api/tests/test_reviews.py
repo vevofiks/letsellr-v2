@@ -23,7 +23,7 @@ async def test_property(db, test_owner):
         location_pincode="682020",
         location_state="Kerala",
         owner_phone="+919876543210",
-        status="live"
+        status="live",
     )
     db.add(prop)
     await db.flush()
@@ -38,7 +38,7 @@ async def test_create_review_success(client, test_property, test_other_owner):
 
     response = await client.post(
         f"/api/properties/{test_property.id}/reviews",
-        json={"rating": 5, "comment": "Amazing property! Highly recommended."}
+        json={"rating": 5, "comment": "Amazing property! Highly recommended."},
     )
     assert response.status_code == 201
     res_data = response.json()
@@ -56,14 +56,14 @@ async def test_create_review_duplicate_fails(client, test_property, test_other_o
     # First review
     response = await client.post(
         f"/api/properties/{test_property.id}/reviews",
-        json={"rating": 4, "comment": "Good place"}
+        json={"rating": 4, "comment": "Good place"},
     )
     assert response.status_code == 201
 
     # Second review (should fail)
     response2 = await client.post(
         f"/api/properties/{test_property.id}/reviews",
-        json={"rating": 3, "comment": "Another comment"}
+        json={"rating": 3, "comment": "Another comment"},
     )
     assert response2.status_code == 400
     assert "already submitted a review" in response2.json()["detail"]
@@ -76,7 +76,7 @@ async def test_create_review_own_property_fails(client, test_property, test_owne
 
     response = await client.post(
         f"/api/properties/{test_property.id}/reviews",
-        json={"rating": 5, "comment": "My own property is great!"}
+        json={"rating": 5, "comment": "My own property is great!"},
     )
     assert response.status_code == 403
     assert "cannot review their own properties" in response.json()["detail"]
@@ -90,7 +90,7 @@ async def test_create_review_unauthenticated_fails(client, test_property):
 
     response = await client.post(
         f"/api/properties/{test_property.id}/reviews",
-        json={"rating": 5, "comment": "Anonymous review"}
+        json={"rating": 5, "comment": "Anonymous review"},
     )
     assert response.status_code == 403
 
@@ -100,25 +100,42 @@ async def test_create_review_validation_fails(client, test_property, test_other_
     app.dependency_overrides[get_current_user] = lambda: test_other_owner
 
     # Empty comment
-    res = await client.post(f"/api/properties/{test_property.id}/reviews", json={"rating": 5, "comment": ""})
+    res = await client.post(
+        f"/api/properties/{test_property.id}/reviews", json={"rating": 5, "comment": ""}
+    )
     assert res.status_code == 400
 
     # Whitespace only
-    res = await client.post(f"/api/properties/{test_property.id}/reviews", json={"rating": 5, "comment": "   "})
+    res = await client.post(
+        f"/api/properties/{test_property.id}/reviews",
+        json={"rating": 5, "comment": "   "},
+    )
     assert res.status_code == 400
 
     # Repeated characters
-    res = await client.post(f"/api/properties/{test_property.id}/reviews", json={"rating": 5, "comment": "......"})
+    res = await client.post(
+        f"/api/properties/{test_property.id}/reviews",
+        json={"rating": 5, "comment": "......"},
+    )
     assert res.status_code == 400
 
-    res = await client.post(f"/api/properties/{test_property.id}/reviews", json={"rating": 5, "comment": "------"})
+    res = await client.post(
+        f"/api/properties/{test_property.id}/reviews",
+        json={"rating": 5, "comment": "------"},
+    )
     assert res.status_code == 400
 
-    res = await client.post(f"/api/properties/{test_property.id}/reviews", json={"rating": 5, "comment": "*****"})
+    res = await client.post(
+        f"/api/properties/{test_property.id}/reviews",
+        json={"rating": 5, "comment": "*****"},
+    )
     assert res.status_code == 400
 
     # Meaningless content / only punctuation
-    res = await client.post(f"/api/properties/{test_property.id}/reviews", json={"rating": 5, "comment": "!!! ???"})
+    res = await client.post(
+        f"/api/properties/{test_property.id}/reviews",
+        json={"rating": 5, "comment": "!!! ???"},
+    )
     assert res.status_code == 400
 
 
@@ -129,14 +146,14 @@ async def test_update_review_success(client, test_property, test_other_owner):
     # Create first
     create_res = await client.post(
         f"/api/properties/{test_property.id}/reviews",
-        json={"rating": 4, "comment": "Good place"}
+        json={"rating": 4, "comment": "Good place"},
     )
     review_id = create_res.json()["id"]
 
     # Update rating & comment
     update_res = await client.patch(
         f"/api/reviews/{review_id}",
-        json={"rating": 5, "comment": "Actually it is amazing!"}
+        json={"rating": 5, "comment": "Actually it is amazing!"},
     )
     assert update_res.status_code == 200
     assert update_res.json()["rating"] == 5
@@ -144,20 +161,21 @@ async def test_update_review_success(client, test_property, test_other_owner):
 
 
 @pytest.mark.asyncio
-async def test_update_review_unauthorized_fails(client, test_property, test_other_owner, test_admin):
+async def test_update_review_unauthorized_fails(
+    client, test_property, test_other_owner, test_admin
+):
     # Other user creates
     app.dependency_overrides[get_current_user] = lambda: test_other_owner
     create_res = await client.post(
         f"/api/properties/{test_property.id}/reviews",
-        json={"rating": 4, "comment": "Good place"}
+        json={"rating": 4, "comment": "Good place"},
     )
     review_id = create_res.json()["id"]
 
     # Log in as admin (unauthorized to edit someone else's review)
     app.dependency_overrides[get_current_user] = lambda: test_admin
     update_res = await client.patch(
-        f"/api/reviews/{review_id}",
-        json={"comment": "I want to edit this"}
+        f"/api/reviews/{review_id}", json={"comment": "I want to edit this"}
     )
     assert update_res.status_code == 403
 
@@ -169,7 +187,7 @@ async def test_delete_review_success(client, test_property, test_other_owner):
     # Create first
     create_res = await client.post(
         f"/api/properties/{test_property.id}/reviews",
-        json={"rating": 4, "comment": "Good place"}
+        json={"rating": 4, "comment": "Good place"},
     )
     review_id = create_res.json()["id"]
 

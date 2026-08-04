@@ -9,7 +9,12 @@ This file is imported by migrations/env.py.
 
 from app.db.base import Base  # noqa: F401 — re-export for Alembic target_metadata
 from app.modules.users.models import User, AgencyProfile  # noqa: F401
-from app.modules.properties.models import Property, PropertyType, LocationData, PropertyReport  # noqa: F401
+from app.modules.properties.models import (
+    Property,
+    PropertyType,
+    LocationData,
+    PropertyReport,
+)  # noqa: F401
 from app.modules.chat.models import Chat, Message  # noqa: F401
 from app.modules.admin.models import VerificationRequest  # noqa: F401
 from app.modules.reviews.models import Review  # noqa: F401

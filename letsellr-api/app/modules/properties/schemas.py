@@ -20,23 +20,27 @@ class PropertyCreate(BaseModel):
     intent: Literal["rent", "buy", "lease"]
     title: str = Field(..., max_length=300)
     description: Optional[str] = None
-    
+
     price: int
     price_unit: Literal["per_month", "total"] = "total"
     deposit: Optional[int] = None
-    
+
     area: Optional[int] = None
     bedrooms: Optional[int] = None
     bathrooms: Optional[int] = None
     furnishing: Optional[Literal["unfurnished", "semi", "furnished"]] = None
-    extra_details: Optional[dict[str, Any]] = Field(None, description="Flexible field for PG sharing, vacancies, etc.")
-    
+    extra_details: Optional[dict[str, Any]] = Field(
+        None, description="Flexible field for PG sharing, vacancies, etc."
+    )
+
     amenities: list[str] = Field(default_factory=list)
     photos: list[str] = Field(..., min_length=1, max_length=10)
-    video_link: Optional[str] = Field(None, max_length=1000, description="Direct URL or iframe embed code")
-    
+    video_link: Optional[str] = Field(
+        None, max_length=1000, description="Direct URL or iframe embed code"
+    )
+
     location: LocationSchema
-    
+
     owner_phone: str = Field(..., max_length=20)
     owner_whatsapp: Optional[str] = Field(None, max_length=20)
     status: Optional[Literal["draft", "pending_review"]] = "pending_review"
@@ -88,23 +92,23 @@ class PropertyResponse(BaseModel):
     category: str
     intent: str
     enquiry_type: str
-    
+
     title: str
     description: Optional[str]
     price: int
     price_unit: str
     deposit: Optional[int]
-    
+
     area: Optional[int]
     bedrooms: Optional[int]
     bathrooms: Optional[int]
     furnishing: Optional[str]
     extra_details: Optional[dict[str, Any]]
-    
+
     amenities: list[str]
     photos: list[str]
     video_link: Optional[str]
-    
+
     location_address: Optional[str]
     location_area: str
     location_city: str
@@ -112,15 +116,15 @@ class PropertyResponse(BaseModel):
     location_state: str
     latitude: Optional[float]
     longitude: Optional[float]
-    
+
     owner_phone: str
     owner_whatsapp: Optional[str]
     owner: Optional[OwnerMinimal] = None
-    
+
     status: str
     is_featured: bool = False
     stats: StatsSchema
-    
+
     created_at: datetime
     updated_at: datetime
 
@@ -130,12 +134,14 @@ class PropertyResponse(BaseModel):
 
 # ── Enquiry Link ───────────────────────────────────────────────────────────────
 
+
 class EnquiryLinkResponse(BaseModel):
     """
     Returned by GET /api/properties/ref/{ref}/enquiry-link.
 
     `link` is a wa.me deep-link URL that opens a pre-filled WhatsApp chat.
     """
+
     ref: str
     link: str
     enquiry_type: str
@@ -144,8 +150,10 @@ class EnquiryLinkResponse(BaseModel):
 
 # ── Paginated Browse Response ──────────────────────────────────────────────────
 
+
 class PropertyBrowseResponse(BaseModel):
     """Paginated wrapper for the public property list endpoint."""
+
     results: list[PropertyResponse]
     total: int
     page: int
@@ -154,6 +162,7 @@ class PropertyBrowseResponse(BaseModel):
 
 
 # ── Nearby Locations ───────────────────────────────────────────────────────────
+
 
 class LocationSuggestion(BaseModel):
     name: str
@@ -167,11 +176,13 @@ class LocationSuggestion(BaseModel):
     intent: Optional[str] = None
     photo: Optional[str] = None
 
+
 class NearbyLocationsResponse(BaseModel):
     results: list[LocationSuggestion]
 
 
 # ── Property Reports ───────────────────────────────────────────────────────────
+
 
 class PropertyReportCreate(BaseModel):
     reason: str = Field(..., max_length=100)
@@ -187,7 +198,7 @@ class PropertyReportResponse(BaseModel):
     status: str
     created_at: datetime
     updated_at: datetime
-    
+
     # We might want some nested data for admin view
     property: Optional[PropertyResponse] = None
 

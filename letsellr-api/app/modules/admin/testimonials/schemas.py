@@ -3,6 +3,7 @@ from typing import Optional
 from uuid import UUID
 from pydantic import BaseModel, Field
 
+
 class TestimonialBase(BaseModel):
     author_name: str
     author_role: str
@@ -12,8 +13,10 @@ class TestimonialBase(BaseModel):
     is_featured: bool = False
     display_order: int = 0
 
+
 class TestimonialCreate(TestimonialBase):
     pass
+
 
 class TestimonialUpdate(BaseModel):
     author_name: Optional[str] = None
@@ -25,6 +28,7 @@ class TestimonialUpdate(BaseModel):
     display_order: Optional[int] = None
     status: Optional[str] = None
     is_active: Optional[bool] = None
+
 
 class TestimonialResponse(TestimonialBase):
     id: UUID
