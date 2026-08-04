@@ -40,6 +40,7 @@ export default function Footer() {
                   width={62}
                   height={62}
                   className="object-contain"
+                  style={{ width: "auto", height: "auto" }}
                 />
                 <span className="font-extrabold text-2xl tracking-tight text-white">LETSELLR</span>
               </div>

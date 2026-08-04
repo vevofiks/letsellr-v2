@@ -21,6 +21,7 @@ class AgencyRepository:
     async def list_agencies(
         self,
         city: Optional[str] = None,
+        q: Optional[str] = None,
         limit: int = 20,
         offset: int = 0,
     ) -> List[Any]:
@@ -48,10 +49,10 @@ class AgencyRepository:
             .where(User.status == "active")
         )
 
+        from sqlalchemy import or_
+
         if city and city != "My Location":
             search_pattern = f"%{city}%"
-            from sqlalchemy import or_
-
             stmt = stmt.where(
                 or_(
                     User.location_city.ilike(search_pattern),
@@ -59,6 +60,17 @@ class AgencyRepository:
                     func.array_to_string(AgencyProfile.areas_served, ",").ilike(
                         search_pattern
                     ),
+                )
+            )
+
+        if q:
+            q_pattern = f"%{q}%"
+            stmt = stmt.where(
+                or_(
+                    AgencyProfile.display_name.ilike(q_pattern),
+                    User.location_city.ilike(q_pattern),
+                    User.location_area.ilike(q_pattern),
+                    AgencyProfile.about.ilike(q_pattern)
                 )
             )
 

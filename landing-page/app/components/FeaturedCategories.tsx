@@ -153,15 +153,15 @@ export default function FeaturedCategories() {
           </h2>
         </div>
 
-        {/* Bento Grid */}
-        <div ref={containerRef} className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-2">
+        {/* Mobile: Horizontal Carousel, Desktop: Bento Grid */}
+        <div ref={containerRef} className="flex md:grid overflow-x-auto md:overflow-visible snap-x snap-mandatory hide-scrollbar md:grid-cols-4 gap-3 md:gap-2 pb-4 md:pb-0">
           {categories.map((cat) => (
             <a
               key={cat.id}
-              href={`${getAppUrl()}/dashboard?category=${cat.slug}`}
+              href={`${getAppUrl()}/properties?q=${cat.slug}`}
               target="_blank"
               rel="noopener noreferrer"
-              className={`group relative overflow-hidden rounded-2xl md:rounded-3xl ${cat.spanClass} ${cat.spanClass.startsWith("col-span-2") ? "h-36" : "h-44"} md:h-72 lg:h-80 flex flex-col justify-between p-4 md:p-8 cursor-pointer shadow-sm hover:shadow-2xl transition-all duration-500`}
+              className={`group relative overflow-hidden rounded-2xl md:rounded-3xl shrink-0 w-[280px] md:w-auto h-[160px] md:h-72 lg:h-80 ${cat.spanClass} flex flex-col justify-between p-4 md:p-8 cursor-pointer shadow-sm hover:shadow-2xl transition-all duration-500 snap-start`}
             >
               {/* Background Image */}
               <img

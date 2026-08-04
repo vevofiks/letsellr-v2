@@ -44,6 +44,7 @@ export default function Navbar() {
             width={39}
             height={39}
             className="object-contain"
+            style={{ width: "auto", height: "auto" }}
           />
           <span className="font-extrabold text-xl tracking-tight text-[#0F0F11] font-sans uppercase">
             LETSELLR
@@ -83,14 +84,20 @@ export default function Navbar() {
         </nav>
 
         {/* Right CTA Button */}
-        <a
-          href="https://app.letsellr.in/login"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="bg-[#23D283] hover:bg-[#11995E] text-white text-xs font-bold px-5 py-2.5 rounded-full transition-all shadow-md shadow-[#23D283]/20 hover:scale-105"
-        >
-          List Property
-        </a>
+        <div className="relative group">
+          <a
+            href="https://app.letsellr.in/register/type"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center bg-[#23D283] hover:bg-[#11995E] text-white text-xs font-bold px-5 py-2.5 rounded-full transition-transform duration-300 shadow-md shadow-[#23D283]/20 group-hover:scale-105"
+          >
+            List Property
+          </a>
+          {/* Free Badge */}
+          <span className="absolute -top-2 -right-2.5 bg-zinc-900 text-[#23D283] text-[9px] font-extrabold px-2 py-0.5 rounded-full shadow-sm border-[1.5px] border-white pointer-events-none group-hover:scale-110 transition-transform duration-300 z-10 uppercase tracking-widest">
+            Free
+          </span>
+        </div>
       </div>
     </header>
   );
