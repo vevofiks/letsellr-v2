@@ -140,28 +140,26 @@ export default function FeaturedCategories() {
     <section className="py-6 md:py-24 px-4 sm:px-6 md:px-12 lg:px-20 w-full bg-[#FAF9F6] text-[#0F0F11]">
       <div className="max-w-360 mx-auto">
         {/* Header Badge & Title */}
-        <div className="flex flex-col items-center justify-center text-center mb-6 md:mb-12">
-          <div className="inline-flex items-center gap-2 mb-1.5 md:mb-3">
-            <span className="w-4 md:w-5 h-0.5 bg-[#23D283] rounded-full"></span>
-            <span className="text-[10px] md:text-xs font-extrabold uppercase tracking-[0.22em] text-[#014645]">
-              Featured Categories
-            </span>
-            <span className="w-4 md:w-5 h-0.5 bg-[#23D283] rounded-full"></span>
-          </div>
-          <h2 className="text-xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold tracking-tight text-center text-[#0F0F11]">
-            Explore Collections
-          </h2>
+        <div className="flex flex-col items-center text-center mb-14 max-w-2xl mx-auto">
+        <div className="inline-flex items-center gap-2.5 mb-3">
+        </div>
+        <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#0F0F11] mb-3">
+          Featured Categories
+        </h2>
+        <p className="text-zinc-500 text-sm font-normal leading-relaxed">
+          Explore our curated selection of premier properties across prime locations.
+        </p>
         </div>
 
-        {/* Mobile: Horizontal Carousel, Desktop: Bento Grid */}
-        <div ref={containerRef} className="flex md:grid overflow-x-auto md:overflow-visible snap-x snap-mandatory hide-scrollbar md:grid-cols-4 gap-3 md:gap-2 pb-4 md:pb-0">
+        {/* Bento Grid */}
+        <div ref={containerRef} className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-2">
           {categories.map((cat) => (
             <a
               key={cat.id}
-              href={`${getAppUrl()}/properties?q=${cat.slug}`}
+              href={`${getAppUrl()}/dashboard?category=${cat.slug}`}
               target="_blank"
               rel="noopener noreferrer"
-              className={`group relative overflow-hidden rounded-2xl md:rounded-3xl shrink-0 w-[280px] md:w-auto h-[160px] md:h-72 lg:h-80 ${cat.spanClass} flex flex-col justify-between p-4 md:p-8 cursor-pointer shadow-sm hover:shadow-2xl transition-all duration-500 snap-start`}
+              className={`group relative overflow-hidden rounded-2xl md:rounded-3xl ${cat.spanClass} ${cat.spanClass.startsWith("col-span-2") ? "h-36" : "h-44"} md:h-72 lg:h-80 flex flex-col justify-between p-4 md:p-8 cursor-pointer shadow-sm hover:shadow-2xl transition-all duration-500`}
             >
               {/* Background Image */}
               <img

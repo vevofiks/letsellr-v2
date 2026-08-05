@@ -215,7 +215,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
               className="font-extrabold tracking-tight text-[#0F0F11] uppercase leading-tight"
               style={{ fontSize: "7.5vw" }}
             >
-              Choose Your<br /><span style={{ color: "#23D283" }}>Next </span> Home
+              Choose <br />Your<br /><span style={{ color: "#23D283" }}>Next </span> Home
             </h2>
           </div>
 

@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Playfair_Display } from "next/font/google";
+import { Plus_Jakarta_Sans, Playfair_Display, Open_Sans } from "next/font/google";
 import "./globals.css";
 
 const jakartaSans = Plus_Jakarta_Sans({
   variable: "--font-sans",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
+});
+
+const openSans = Open_Sans({
+  variable: "--font-google-sans",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
 });
 
 const playfairDisplay = Playfair_Display({
@@ -75,7 +81,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${jakartaSans.variable} ${playfairDisplay.variable} h-full antialiased light`}
+      className={`${jakartaSans.variable} ${playfairDisplay.variable} ${openSans.variable} h-full antialiased light`}
     >
       <body className="min-h-full flex flex-col bg-[#FAFAF8] text-[#0F0F11] font-sans selection:bg-black selection:text-white">
         {children}

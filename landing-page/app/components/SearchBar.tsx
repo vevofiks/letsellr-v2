@@ -44,7 +44,7 @@ export function SearchBarTrigger({ onClick }: { onClick: () => void }) {
       id="search-trigger-btn"
       type="button"
       onClick={onClick}
-      className="w-full bg-white rounded-full shadow-lg border border-black/5 flex items-center px-4 py-3 transition-all duration-300 hover:shadow-xl hover:border-[#23D283]/30 cursor-pointer group"
+      className="w-full bg-white rounded-full shadow-xs shadow-green-400 border border-black/5 flex items-center px-4 py-3 transition-all duration-300 hover:shadow-sm hover:border-[#23D283]/30 cursor-pointer group"
     >
       <Search className="w-4 h-4 text-zinc-400 group-hover:text-[#23D283] transition-colors mr-3 shrink-0" />
       <span className="flex-1 text-sm font-semibold text-zinc-400 text-left">
@@ -425,10 +425,7 @@ export default function SearchBar() {
           position: absolute;
           bottom: -8px;
           left: 50%;
-          transform: translateX(-50%);
-          border-width: 8px 8px 0;
-          border-style: solid;
-          border-color: rgba(35, 210, 131, 0.5) transparent transparent transparent;
+          
         }
       `}</style>
 

@@ -405,9 +405,9 @@ export default function EditorialSection() {
         className="-mx-6 md:-mx-12 lg:-mx-20 bg-[#D9F7E9]/60 border-y border-[#23D283]/30 py-10 md:py-14 px-6 md:px-12 lg:px-20 grid grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10 mt-16 text-center shadow-xs"
       >
         {[
-          { value: "15K", suffix: "+", label: "Direct Enquiries" },
+          { value: "10K", suffix: "+", label: "Direct Enquiries" },
           { value: "100", suffix: "%", label: "Client Satisfaction" },
-          { value: "50", suffix: "+", label: "Properties Sold" },
+          { value: "100", suffix: "+", label: "Properties Sold" },
           { value: "4.9", suffix: "★", label: "User Rating Score" },
         ].map((stat) => (
           <div key={stat.label} className="editorial-stat flex flex-col items-center justify-center">

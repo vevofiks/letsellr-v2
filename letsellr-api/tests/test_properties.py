@@ -448,7 +448,7 @@ async def test_get_enquiry_link_success(client, db, test_owner):
     assert response.status_code == 200
     link_data = response.json()
     assert "link" in link_data
-    assert "wa.me/919895415718" in link_data["link"]
+    assert "wa.me/918137090018" in link_data["link"]
     assert "PROP-ENQ-PG" in link_data["link"]
     assert link_data["is_pg_or_hostel"] is True
 
