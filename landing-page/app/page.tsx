@@ -34,12 +34,13 @@ export default function Home() {
         >
           <SearchBar />
         </div>
-
-        {/* Featured Locations (Hidden if empty) */}
-        <FeaturedLocations />
+        
 
         {/* Featured Categories (Bento Grid) */}
         <FeaturedCategories />
+       
+        {/* Featured Locations (Hidden if empty) */}
+        <FeaturedLocations />
 
         {/* Property Showcase (Featured Inventory) — directly under the search bar */}
         <PropertyShowcase />

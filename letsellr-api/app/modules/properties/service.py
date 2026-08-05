@@ -164,7 +164,7 @@ class PropertyService:
         is_pg_or_hostel = category_lower in ["pg", "hostel"]
 
         bot_num = (
-            getattr(settings, "WHATSAPP_BOT_NUMBER", "919895415718")
+            getattr(settings, "WHATSAPP_BOT_NUMBER", "918137090018")
             .replace("+", "")
             .replace(" ", "")
             .replace("-", "")

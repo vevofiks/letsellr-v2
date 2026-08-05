@@ -145,14 +145,9 @@ export default function FeaturesGrid() {
   const secondRow = list.slice(halfLength).length > 0 ? list.slice(halfLength) : firstRow;
 
   return (
-    <section id="testimonials" className="py-24 px-4 md:px-8 max-w-7xl mx-auto w-full bg-[#FAF9F6] text-[#0F0F11]">
+    <section id="testimonials" className=" px-4 md:px-8 max-w-7xl mx-auto w-full bg-[#FAF9F6] text-[#0F0F11]">
       <div ref={headerRef} className="flex flex-col items-center text-center mb-14 max-w-2xl mx-auto">
         <div className="inline-flex items-center gap-2.5 mb-3">
-          <span className="w-5 h-0.5 bg-[#23D283] rounded-full"></span>
-          <span className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#014645]">
-            Testimonials
-          </span>
-          <span className="w-5 h-0.5 bg-[#23D283] rounded-full"></span>
         </div>
         <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-[#0F0F11] mb-3">
           Loved by Buyers &amp; Owners

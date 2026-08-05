@@ -15,11 +15,11 @@ import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { AppNavbar } from "@/components/AppNavbar";
 import { AuthModal, type AuthModalMode } from "@/components/AuthModal";
 
-import { 
+import {
   ArrowLeft,
-  MapPin, 
-  Bed, 
-  Bath, 
+  MapPin,
+  Bed,
+  Bath,
   Maximize,
   HelpCircle,
   MessageSquare,
@@ -42,7 +42,7 @@ const getYoutubeEmbedUrl = (url: string | undefined): string | null => {
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
   const match = url.match(regExp);
   if (match && match[2].length === 11) {
-    return `https://www.youtube.com/embed/${match[2]}`;
+    return `https://www.youtube.com/embed/${match[2]}?playsinline=1&enablejsapi=1&rel=0`;
   }
   return null;
 };
@@ -63,7 +63,7 @@ export const PropertyDetailsPage: React.FC = () => {
   const { propertyId } = useParams<{ propertyId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
-  
+
   const [property, setProperty] = useState<any | null>(null);
   const [agency, setAgency] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
@@ -81,7 +81,7 @@ export const PropertyDetailsPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [newRating, setNewRating] = useState(5);
   const [newComment, setNewComment] = useState("");
-  
+
   const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
   const [editRating, setEditRating] = useState(5);
   const [editComment, setEditComment] = useState("");
@@ -223,11 +223,10 @@ export const PropertyDetailsPage: React.FC = () => {
           <Star
             key={star}
             onClick={() => interactive && onChange && onChange(star)}
-            className={`${interactive ? 'cursor-pointer hover:scale-110' : ''} transition-all ${
-              star <= rating
+            className={`${interactive ? 'cursor-pointer hover:scale-110' : ''} transition-all ${star <= rating
                 ? 'fill-amber-400 text-amber-400'
                 : 'text-slate-300'
-            }`}
+              }`}
             style={{ width: `${size * 4}px`, height: `${size * 4}px` }}
           />
         ))}
@@ -263,6 +262,29 @@ export const PropertyDetailsPage: React.FC = () => {
   const handlePrevPhoto = () => {
     if (mediaList.length === 0) return;
     setActivePhotoIndex((prev) => (prev - 1 + mediaList.length) % mediaList.length);
+  };
+
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const [touchEndX, setTouchEndX] = useState<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEndX(null);
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX || !touchEndX) return;
+    const distance = touchStartX - touchEndX;
+    const minSwipeDistance = 40;
+    if (distance > minSwipeDistance) {
+      handleNextPhoto();
+    } else if (distance < -minSwipeDistance) {
+      handlePrevPhoto();
+    }
   };
 
   useEffect(() => {
@@ -405,7 +427,7 @@ export const PropertyDetailsPage: React.FC = () => {
       const categoryLower = (property.category || property.type || "").toLowerCase();
       const isPgOrHostel = categoryLower.includes("pg") || categoryLower.includes("hostel");
 
-      const botNumber = import.meta.env.VITE_WHATSAPP_BOT_NUMBER || "919895415718";
+      const botNumber = import.meta.env.VITE_WHATSAPP_BOT_NUMBER || "918137090018";
       const salesNumber = import.meta.env.VITE_WHATSAPP_SALES_NUMBER || "918137090018";
 
       const targetNumber = isPgOrHostel ? botNumber : salesNumber;
@@ -421,7 +443,7 @@ export const PropertyDetailsPage: React.FC = () => {
       navigator.share({
         title: property?.title || "Property Details",
         url: window.location.href
-      }).catch(() => {});
+      }).catch(() => { });
     } else {
       navigator.clipboard.writeText(window.location.href);
       toast.success("Property link copied to clipboard!");
@@ -443,10 +465,10 @@ export const PropertyDetailsPage: React.FC = () => {
         <div className="flex flex-col items-center gap-5">
           <div className="relative flex items-center justify-center h-20 w-20">
             <div className="absolute inset-0 rounded-full border-[3px] border-slate-200 border-t-[#23D283] animate-spin" />
-            <img 
-              src="/logo.png" 
-              alt="Letsellr Logo" 
-              className="h-8 w-auto z-10 animate-pulse" 
+            <img
+              src="/logo.png"
+              alt="Letsellr Logo"
+              className="h-8 w-auto z-10 animate-pulse"
             />
           </div>
           <p className="text-[11px] font-black uppercase tracking-widest text-slate-400 animate-pulse">Loading Property Details...</p>
@@ -459,18 +481,18 @@ export const PropertyDetailsPage: React.FC = () => {
 
   const descriptionText = property.description || "No description provided for this listing.";
   const isDescriptionLong = descriptionText.length > 280;
-  const displayedDescription = showFullDescription || !isDescriptionLong 
-    ? descriptionText 
+  const displayedDescription = showFullDescription || !isDescriptionLong
+    ? descriptionText
     : `${descriptionText.slice(0, 280)}...`;
 
   return (
     <div className="min-h-screen bg-[#f8faf9] text-left relative font-sans">
-      
+
       <AppNavbar logoHref="/dashboard" />
 
       {/* Main Container */}
       <main className="mx-auto max-w-9xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-8">
-        
+
         {/* Top Breadcrumb & Actions Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-slate-200/60">
           <div className="flex items-center gap-2 text-xs font-semibold text-slate-500 overflow-x-auto">
@@ -497,14 +519,19 @@ export const PropertyDetailsPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-          
+
           {/* Left Side: Media Grid, Specs, Description, Amenities, Map */}
           <div className="lg:col-span-2 space-y-8">
-            
+
             {/* Interactive Image Carousel */}
             <div className="space-y-2.5">
-              <div className="relative h-56 sm:h-72 md:h-100 w-full overflow-hidden rounded-2xl bg-slate-900 border border-slate-200/80 shadow-xs group">
-                
+              <div
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                className="relative h-56 sm:h-72 md:h-100 w-full overflow-hidden rounded-2xl bg-slate-900 border border-slate-200/80 shadow-xs group touch-pan-y select-none"
+              >
+
                 {/* Active Slide */}
                 {mediaList.length === 0 ? (
                   <div className="h-full w-full flex flex-col items-center justify-center bg-slate-800 text-slate-400 gap-3">
@@ -516,13 +543,13 @@ export const PropertyDetailsPage: React.FC = () => {
                     src={mediaList[activePhotoIndex].url}
                     title="Property Video Tour"
                     className="h-full w-full border-0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                     allowFullScreen
                   />
                 ) : (
-                  <img 
-                    src={mediaList[activePhotoIndex]?.url} 
-                    alt={`${property.title} - View ${activePhotoIndex + 1}`} 
+                  <img
+                    src={mediaList[activePhotoIndex]?.url}
+                    alt={`${property.title} - View ${activePhotoIndex + 1}`}
                     className="h-full w-full object-cover transition-all duration-500 ease-out"
                   />
                 )}
@@ -531,15 +558,21 @@ export const PropertyDetailsPage: React.FC = () => {
                 {mediaList.length > 1 && (
                   <>
                     <button
-                      onClick={handlePrevPhoto}
-                      className="absolute left-4 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 hover:bg-white backdrop-blur-md text-slate-800 hover:text-[#0B6E4F] transition-all shadow-md cursor-pointer opacity-0 group-hover:opacity-100 border border-slate-200/60 active:scale-90"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePrevPhoto();
+                      }}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 hover:bg-white backdrop-blur-md text-slate-800 hover:text-[#0B6E4F] transition-all shadow-md cursor-pointer z-20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 pointer-events-auto sm:pointer-events-none sm:group-hover:pointer-events-auto border border-slate-200/60 active:scale-90"
                       aria-label="Previous image"
                     >
                       <ArrowLeft className="h-4.5 w-4.5" />
                     </button>
                     <button
-                      onClick={handleNextPhoto}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 hover:bg-white backdrop-blur-md text-slate-800 hover:text-[#0B6E4F] transition-all shadow-md cursor-pointer opacity-0 group-hover:opacity-100 border border-slate-200/60 active:scale-90"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNextPhoto();
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 hover:bg-white backdrop-blur-md text-slate-800 hover:text-[#0B6E4F] transition-all shadow-md cursor-pointer z-20 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 pointer-events-auto sm:pointer-events-none sm:group-hover:pointer-events-auto border border-slate-200/60 active:scale-90"
                       aria-label="Next image"
                     >
                       <ChevronRight className="h-4.5 w-4.5" />
@@ -549,13 +582,13 @@ export const PropertyDetailsPage: React.FC = () => {
 
                 {/* Overlay Badge */}
                 {property.owner_role === "agency" ? (
-                  <div className="absolute top-3 left-3 z-10">
+                  <div className="absolute top-3 left-3 z-10 pointer-events-none">
                     <span className="bg-slate-900/90 backdrop-blur-md text-emerald-400 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider shadow-md border border-emerald-500/30 flex items-center gap-1.5">
                       <Building2 className="h-3 w-3" /> Agency Partner
                     </span>
                   </div>
                 ) : (
-                  <div className="absolute top-3 left-3 z-10">
+                  <div className="absolute top-3 left-3 z-10 pointer-events-none">
                     <span className="bg-slate-900/90 backdrop-blur-md text-[#23D283] px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider shadow-md border border-[#23D283]/30 flex items-center gap-1.5">
                       <Shield className="h-3 w-3" /> Direct Owner
                     </span>
@@ -564,7 +597,7 @@ export const PropertyDetailsPage: React.FC = () => {
 
                 {/* Counter Pill */}
                 {mediaList.length > 0 && (
-                  <div className="absolute bottom-3 right-3 bg-slate-950/80 backdrop-blur-md text-white text-[10px] font-extrabold rounded-full px-3 py-1 shadow-sm border border-white/10">
+                  <div className="absolute bottom-3 right-3 z-10 pointer-events-none bg-slate-950/80 backdrop-blur-md text-white text-[10px] font-extrabold rounded-full px-3 py-1 shadow-sm border border-white/10">
                     {activePhotoIndex + 1} / {mediaList.length}
                   </div>
                 )}
@@ -577,9 +610,8 @@ export const PropertyDetailsPage: React.FC = () => {
                     <button
                       key={i}
                       onClick={() => setActivePhotoIndex(i)}
-                      className={`relative h-12 w-12 sm:h-14 sm:w-14 rounded-xl overflow-hidden border-2 shrink-0 transition-all duration-300 cursor-pointer ${
-                        i === activePhotoIndex ? "border-[#23D283] scale-105 shadow-sm ring-2 ring-[#23D283]/20" : "border-transparent opacity-60 hover:opacity-100"
-                      }`}
+                      className={`relative h-12 w-12 sm:h-14 sm:w-14 rounded-xl overflow-hidden border-2 shrink-0 transition-all duration-300 cursor-pointer ${i === activePhotoIndex ? "border-[#23D283] scale-105 shadow-sm ring-2 ring-[#23D283]/20" : "border-transparent opacity-60 hover:opacity-100"
+                        }`}
                     >
                       {media.type === "video" ? (
                         <div className="relative h-full w-full bg-slate-900">
@@ -607,11 +639,11 @@ export const PropertyDetailsPage: React.FC = () => {
                   For {property.intent === "buy" ? "Sale" : property.intent === "rent" ? "Rent" : "Lease"}
                 </span>
               </div>
-              
+
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 leading-tight m-0 tracking-tight">
                 {property.title}
               </h1>
-              
+
               <div className="text-sm font-semibold text-slate-500 flex flex-wrap items-center gap-1.5">
                 <MapPin className="h-4 w-4 text-rose-500 shrink-0" />
                 <span>
@@ -780,8 +812,8 @@ export const PropertyDetailsPage: React.FC = () => {
                 <h3 className="text-xl font-bold text-slate-900">Featured Amenities</h3>
                 <div className="flex flex-wrap gap-2.5">
                   {property.amenities.map((amenity: string, index: number) => (
-                    <div 
-                      key={index} 
+                    <div
+                      key={index}
                       className="inline-flex items-center gap-2 bg-white border border-slate-200/80 rounded-xl px-3.5 py-2 shadow-2xs hover:border-[#23D283]/50 hover:bg-emerald-50/20 transition-all cursor-default"
                     >
                       <CheckCircle2 className="h-3.5 w-3.5 text-[#23D283] shrink-0" />
@@ -800,9 +832,9 @@ export const PropertyDetailsPage: React.FC = () => {
                 <MapPin className="h-5 w-5 text-rose-500" /> Location Map
               </h3>
               {property.latitude && property.longitude ? (
-                <div 
-                  ref={mapRef} 
-                  className="h-96 w-full rounded-2xl border border-slate-200/80 shadow-inner overflow-hidden relative z-10" 
+                <div
+                  ref={mapRef}
+                  className="h-96 w-full rounded-2xl border border-slate-200/80 shadow-inner overflow-hidden relative z-10"
                   style={{ minHeight: '380px' }}
                 />
               ) : (
@@ -867,7 +899,7 @@ export const PropertyDetailsPage: React.FC = () => {
                   ) : (
                     <form onSubmit={handleSubmitReview} className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-2xs space-y-4">
                       <h4 className="text-base font-bold text-slate-900">Write a Review</h4>
-                      
+
                       <div className="space-y-1.5">
                         <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider block">Your Rating</label>
                         <RenderStars rating={newRating} interactive onChange={setNewRating} size={6} />
@@ -1011,10 +1043,10 @@ export const PropertyDetailsPage: React.FC = () => {
 
           {/* Right Sticky Sidebar: Price Card & Owner/Agency Info */}
           <div className="w-full lg:w-full shrink-0 sticky top-24 space-y-6">
-            
+
             {/* Pricing & Contact Widget (Desktop sidebar) */}
             <Card className="hidden lg:block border border-slate-200/80 bg-white shadow-xl rounded-2xl p-6 relative overflow-hidden space-y-5">
-              
+
               {/* Header */}
               <div className="space-y-1 border-b border-slate-100 pb-4">
                 <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Property Price</span>
@@ -1054,7 +1086,7 @@ export const PropertyDetailsPage: React.FC = () => {
                   <MessageSquare className="h-4.5 w-4.5" />
                   Chat on WhatsApp
                 </Button>
-                
+
               </div>
 
               {/* Verified listing note */}
@@ -1092,7 +1124,7 @@ export const PropertyDetailsPage: React.FC = () => {
                 </div>
 
                 <div className="border-t border-slate-100 pt-3">
-                  <Link 
+                  <Link
                     to={`/agencies/${property.owner_id}`}
                     className="w-full border border-slate-200 hover:bg-slate-50 text-slate-800 font-extrabold py-2.5 text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                   >
@@ -1119,7 +1151,7 @@ export const PropertyDetailsPage: React.FC = () => {
             <div className="lg:col-span-3 space-y-6 pt-10 border-t border-slate-200/80">
               <div className="flex items-center justify-between">
                 <h3 className="text-2xl font-black text-slate-900">Similar Properties Nearby</h3>
-                <button 
+                <button
                   onClick={() => navigate("/dashboard")}
                   className="text-xs font-bold text-[#0B6E4F] hover:text-[#23D283] transition-colors flex items-center gap-1 cursor-pointer"
                 >
@@ -1129,8 +1161,8 @@ export const PropertyDetailsPage: React.FC = () => {
 
               <div className="grid gap-6 grid-cols-1 sm:grid-cols-3">
                 {relatedProperties.map((related) => (
-                  <Card 
-                    key={related.id} 
+                  <Card
+                    key={related.id}
                     onClick={() => {
                       navigate(`/properties/${related.id}`);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
