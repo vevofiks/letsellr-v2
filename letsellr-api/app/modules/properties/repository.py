@@ -75,11 +75,27 @@ class PropertyRepository:
         stmt = select(Property).where(Property.status == "live")
 
         if "category" in filters:
-            stmt = stmt.where(Property.category == filters["category"])
+            categories = [c for c in filters["category"].split(",") if c]
+            if len(categories) > 1:
+                stmt = stmt.where(Property.category.in_(categories))
+            else:
+                stmt = stmt.where(Property.category == categories[0])
         if "intent" in filters:
             stmt = stmt.where(Property.intent == filters["intent"])
         if "city" in filters:
-            stmt = stmt.where(Property.location_city.ilike(f"%{filters['city']}%"))
+            city_f = filters["city"].strip()
+            if "," in city_f:
+                p1, p2 = [p.strip() for p in city_f.split(",", 1)]
+                stmt = stmt.where(
+                    (Property.location_area.ilike(f"%{p1}%") & Property.location_city.ilike(f"%{p2}%")) |
+                    (Property.location_city.ilike(f"%{p1}%") & Property.location_state.ilike(f"%{p2}%")) |
+                    Property.location_area.ilike(f"%{p1}%") |
+                    Property.location_city.ilike(f"%{p1}%")
+                )
+            else:
+                stmt = stmt.where(
+                    Property.location_city.ilike(f"%{city_f}%") | Property.location_area.ilike(f"%{city_f}%")
+                )
         if "q" in filters and filters["q"]:
             q_term = f"%{filters['q']}%"
             stmt = stmt.where(

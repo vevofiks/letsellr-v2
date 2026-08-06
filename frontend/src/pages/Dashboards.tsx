@@ -1485,8 +1485,8 @@ export const ClientDashboard: React.FC = () => {
                               </div>
                             </div>
 
-                            {/* Mobile-only: Looking For in 1-col grid */}
-                            <div className={cn("grid grid-cols-1 gap-2 lg:hidden", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
+                            {/* Mobile-only: Looking For + Type in 2-col grid */}
+                            <div className={cn("grid grid-cols-2 gap-2 lg:hidden", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
                               <div className="flex flex-col gap-1">
                                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Intent</span>
                                 <Select value={intent || undefined} onValueChange={(val) => { setIntent(val === "all" || !val ? "" : val); setPage(1); }}>
@@ -1498,6 +1498,23 @@ export const ClientDashboard: React.FC = () => {
                                     <SelectItem value="buy">For Sale</SelectItem>
                                     <SelectItem value="rent">For Rent</SelectItem>
                                     <SelectItem value="lease">For Lease</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              <div className="flex flex-col gap-1">
+                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Type</span>
+                                <Select value={category || undefined} onValueChange={(val) => { setCategory(val === "all" || !val ? "" : val); setPage(1); }}>
+                                  <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
+                                    <SelectValue placeholder="All Types">
+                                      {category ? (propertyTypes.find(t => t.slug === category || (t.slug === "pg_hostel" && category === "pg,hostel"))?.label || category.replace("_", " ")) : "All Types"}
+                                    </SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
+                                    <SelectItem value="all">All Types</SelectItem>
+                                    {propertyTypes.map((t: any) => (
+                                      <SelectItem key={t.slug} value={t.slug === "pg_hostel" ? "pg,hostel" : t.slug}>{t.label}</SelectItem>
+                                    ))}
                                   </SelectContent>
                                 </Select>
                               </div>

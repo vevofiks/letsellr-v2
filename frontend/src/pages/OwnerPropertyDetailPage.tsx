@@ -29,6 +29,12 @@ import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
+interface RoomSharingOption {
+  sharing: number;
+  price: number;
+  vacancy: number;
+}
+
 interface Property {
   id: string;
   ref: string;
@@ -58,6 +64,10 @@ interface Property {
   owner_whatsapp?: string;
   created_at: string;
   admin_review_reason?: string;
+  extra_details?: {
+    room_sharing?: RoomSharingOption[];
+    [key: string]: unknown;
+  };
   stats: {
     views: number;
     enquiries: number;
@@ -405,39 +415,41 @@ export const OwnerPropertyDetailPage: React.FC = () => {
               </div>
 
               {/* Quick Spec Highlights */}
-              <div className="pt-4 border-t border-slate-100 grid grid-cols-2 gap-3 text-xs">
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
-                  <span className="text-slate-400 font-extrabold block text-[9.5px] uppercase tracking-wider">Carpet Area</span>
-                  <span className="font-extrabold text-slate-900 flex items-center gap-1">
-                    <Maximize2 className="h-3.5 w-3.5 text-slate-500" />
-                    {property.area && Number(property.area) > 0 ? `${property.area} sq.ft` : "Not Specified"}
-                  </span>
-                </div>
+              {((property.bedrooms && property.bedrooms > 0) || (property.bathrooms && property.bathrooms > 0) || (property.area && Number(property.area) > 0) || (property.furnishing && property.furnishing.toLowerCase() !== "none" && property.furnishing.toLowerCase() !== "not specified")) && (
+                <div className="pt-4 border-t border-slate-100 grid grid-cols-2 gap-3 text-xs">
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
+                    <span className="text-slate-400 font-extrabold block text-[9.5px] uppercase tracking-wider">Carpet Area</span>
+                    <span className="font-extrabold text-slate-900 flex items-center gap-1">
+                      <Maximize2 className="h-3.5 w-3.5 text-slate-500" />
+                      {property.area && Number(property.area) > 0 ? `${property.area} sq.ft` : "Not Specified"}
+                    </span>
+                  </div>
 
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
-                  <span className="text-slate-400 font-extrabold block text-[9.5px] uppercase tracking-wider">Bedrooms</span>
-                  <span className="font-extrabold text-slate-900 flex items-center gap-1">
-                    <Bed className="h-3.5 w-3.5 text-slate-500" />
-                    {property.bedrooms ? `${property.bedrooms} Beds` : "Not Specified"}
-                  </span>
-                </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
+                    <span className="text-slate-400 font-extrabold block text-[9.5px] uppercase tracking-wider">Bedrooms</span>
+                    <span className="font-extrabold text-slate-900 flex items-center gap-1">
+                      <Bed className="h-3.5 w-3.5 text-slate-500" />
+                      {property.bedrooms ? `${property.bedrooms} Beds` : "Not Specified"}
+                    </span>
+                  </div>
 
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
-                  <span className="text-slate-400 font-extrabold block text-[9.5px] uppercase tracking-wider">Bathrooms</span>
-                  <span className="font-extrabold text-slate-900 flex items-center gap-1">
-                    <Bath className="h-3.5 w-3.5 text-slate-500" />
-                    {property.bathrooms ? `${property.bathrooms} Baths` : "Not Specified"}
-                  </span>
-                </div>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
+                    <span className="text-slate-400 font-extrabold block text-[9.5px] uppercase tracking-wider">Bathrooms</span>
+                    <span className="font-extrabold text-slate-900 flex items-center gap-1">
+                      <Bath className="h-3.5 w-3.5 text-slate-500" />
+                      {property.bathrooms ? `${property.bathrooms} Baths` : "Not Specified"}
+                    </span>
+                  </div>
 
-                <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
-                  <span className="text-slate-400 font-extrabold block text-[9.5px] uppercase tracking-wider">Furnishing</span>
-                  <span className="font-extrabold text-slate-900 capitalize flex items-center gap-1">
-                    <Sofa className="h-3.5 w-3.5 text-slate-500" />
-                    {property.furnishing || "Not Specified"}
-                  </span>
+                  <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/60 space-y-0.5">
+                    <span className="text-slate-400 font-extrabold block text-[9.5px] uppercase tracking-wider">Furnishing</span>
+                    <span className="font-extrabold text-slate-900 capitalize flex items-center gap-1">
+                      <Sofa className="h-3.5 w-3.5 text-slate-500" />
+                      {property.furnishing || "Not Specified"}
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
 
             {/* Quick Action Footer */}
@@ -467,6 +479,42 @@ export const OwnerPropertyDetailPage: React.FC = () => {
                 <p className="text-xs text-slate-600 font-normal leading-relaxed whitespace-pre-line my-0">
                   {property.description}
                 </p>
+              </div>
+            )}
+
+            {/* Room Sharing Prices & Vacancy Card (PG/Hostel Only) */}
+            {(property.category === "pg" || property.category === "hostel") &&
+              property.extra_details?.room_sharing && property.extra_details.room_sharing.length > 0 && (
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-2xs space-y-3">
+                <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider my-0 flex items-center gap-2">
+                  <Bed className="h-4 w-4 text-[#014645]" /> Room Sharing & Vacancy
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {property.extra_details.room_sharing.map((opt, idx) => (
+                    <div
+                      key={idx}
+                      className="bg-slate-50 border border-slate-200/60 rounded-xl p-3.5 flex items-center justify-between"
+                    >
+                      <div>
+                        <span className="text-xs font-black text-slate-900 block">
+                          {opt.sharing} Sharing
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-500">
+                          ₹{opt.price?.toLocaleString()} / bed / month
+                        </span>
+                      </div>
+                      <span
+                        className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border ${
+                          opt.vacancy > 0
+                            ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
+                            : "bg-rose-50 text-rose-600 border-rose-200/60"
+                        }`}
+                      >
+                        {opt.vacancy > 0 ? `${opt.vacancy} Vacant` : "Full"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 

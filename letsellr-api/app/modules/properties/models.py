@@ -26,12 +26,22 @@ from app.modules.users.models import User
 OWNER_ALLOWED_CATEGORIES = {
     "pg",
     "hostel",
+    "pg_hostel",
     "apartment",
+    "flat_apartment",
     "villa_house",
     "land",
     "commercial",
+    "coworking_space",
 }
-AGENCY_ALLOWED_CATEGORIES = {"apartment", "villa_house", "land", "commercial"}
+AGENCY_ALLOWED_CATEGORIES = {
+    "apartment",
+    "flat_apartment",
+    "villa_house",
+    "land",
+    "commercial",
+    "coworking_space",
+}
 
 
 class PropertyType(UUIDMixin, TimestampMixin, Base):
@@ -136,7 +146,7 @@ class Property(UUIDMixin, TimestampMixin, Base):
         String(50),
         nullable=False,
         index=True,
-        comment="pg | hostel | apartment | villa_house | land | commercial",
+        comment="pg | hostel | apartment | villa_house | land | commercial | coworking_space",
     )
     intent: Mapped[str] = mapped_column(
         String(20),

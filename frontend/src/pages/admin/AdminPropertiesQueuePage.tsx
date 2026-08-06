@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   CheckCircle2,
   Search,
@@ -88,6 +89,8 @@ const getCategoryFallbackImage = (cat: string) => {
 };
 
 export const AdminPropertiesQueuePage: React.FC = () => {
+  const navigate = useNavigate();
+
   // Tabs: "pending" | "live"
   const [activeTab, setActiveTab] = useState<"pending" | "live">("pending");
 
@@ -185,6 +188,22 @@ export const AdminPropertiesQueuePage: React.FC = () => {
   const [newVideoLinkInput, setNewVideoLinkInput] = useState<string>("");
   const [specsOpen, setSpecsOpen] = useState<boolean>(true);
   const [editSaving, setEditSaving] = useState<boolean>(false);
+
+  const [editRoomSharingOptions, setEditRoomSharingOptions] = useState<Array<{ sharing: number | ""; price: number | ""; vacancy: number | "" }>>([]);
+
+  const addEditRoomSharingOption = () => {
+    setEditRoomSharingOptions([...editRoomSharingOptions, { sharing: "", price: "", vacancy: "" }]);
+  };
+
+  const updateEditRoomSharingOption = (index: number, field: "sharing" | "price" | "vacancy", value: number | "") => {
+    const newOptions = [...editRoomSharingOptions];
+    newOptions[index][field] = value;
+    setEditRoomSharingOptions(newOptions);
+  };
+
+  const removeEditRoomSharingOption = (index: number) => {
+    setEditRoomSharingOptions(editRoomSharingOptions.filter((_, i) => i !== index));
+  };
 
   // Map & Search states for edit modal
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -472,6 +491,12 @@ export const AdminPropertiesQueuePage: React.FC = () => {
     const photosList = (prop.photos || []).map((p) => getPhotoUrl(p)).filter(Boolean);
     setEditPhotos(photosList);
 
+    if (prop.extra_details?.room_sharing) {
+      setEditRoomSharingOptions(prop.extra_details.room_sharing);
+    } else {
+      setEditRoomSharingOptions([]);
+    }
+
     // Destroy existing map instance so it cleanly initializes
     if (mapInstanceRef.current) {
       mapInstanceRef.current.remove();
@@ -584,12 +609,21 @@ export const AdminPropertiesQueuePage: React.FC = () => {
 
     try {
       setEditSaving(true);
+      const isPg = ["pg", "hostel", "pg_hostel"].includes(editCategory);
+      
+      const validSharingOptions = editRoomSharingOptions.filter(
+        (opt) => opt.sharing !== "" && opt.price !== "" && opt.vacancy !== ""
+      );
+      const leastPrice = validSharingOptions.length > 0 
+        ? Math.min(...validSharingOptions.map(opt => Number(opt.price))) 
+        : 0;
+
       const payload = {
         title: editTitle.trim(),
         description: editDescription.trim() || undefined,
         category: editCategory,
         intent: editIntent,
-        price: Number(editPrice),
+        price: isPg ? leastPrice : Number(editPrice),
         price_unit: editPriceUnit,
         deposit: editDeposit ? Number(editDeposit) : undefined,
         bedrooms: editBedrooms ? Number(editBedrooms) : undefined,
@@ -599,6 +633,10 @@ export const AdminPropertiesQueuePage: React.FC = () => {
         video_link: editVideoLinks.filter(Boolean).join("\n") || undefined,
         amenities: editAmenities,
         photos: editPhotos,
+        extra_details: {
+          ...(editingProperty.extra_details || {}),
+          ...(isPg ? { room_sharing: validSharingOptions } : {})
+        },
         location: {
           address: editAddress.trim() || undefined,
           area: editAreaLocation.trim(),
@@ -674,14 +712,24 @@ export const AdminPropertiesQueuePage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => fetchProperties(true)}
-          disabled={refreshing}
-          className="inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl border border-slate-200/80 shadow-2xs transition-all cursor-pointer disabled:opacity-50 shrink-0"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-          <span>Refresh Queue</span>
-        </button>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={() => navigate("/admin-platform/properties/add")}
+            className="inline-flex items-center justify-center gap-2 bg-[#014645] hover:bg-[#013534] text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-2xs transition-all cursor-pointer"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            <span>Add Property</span>
+          </button>
+
+          <button
+            onClick={() => fetchProperties(true)}
+            disabled={refreshing}
+            className="inline-flex items-center justify-center gap-2 bg-white hover:bg-slate-50 text-slate-700 font-bold text-xs px-4 py-2.5 rounded-xl border border-slate-200/80 shadow-2xs transition-all cursor-pointer disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+            <span>Refresh Queue</span>
+          </button>
+        </div>
       </div>
 
       {/* Main Tabs Container */}
@@ -1523,6 +1571,7 @@ export const AdminPropertiesQueuePage: React.FC = () => {
               </div>
 
               {/* Section 2: Pricing & Terms (With Security Deposit) */}
+              { !["pg", "hostel", "pg_hostel"].includes(editCategory) && (
               <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-2xs space-y-4">
                 <h4 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-2 my-0">
                   ₹ Pricing & Deposit Terms
@@ -1565,6 +1614,76 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                   </div>
                 </div>
               </div>
+              )}
+
+              {/* Section 2.5: Room Sharing Options (PG/Hostel Only) */}
+              { ["pg", "hostel", "pg_hostel"].includes(editCategory) && (
+              <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-2xs space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-2 my-0">
+                    <Building2 className="h-4 w-4 text-[#014645]" /> Room Sharing Options
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={addEditRoomSharingOption}
+                    className="bg-[#014645]/10 text-[#014645] font-bold text-xs px-3 py-1.5 rounded-md flex items-center gap-1 hover:bg-[#014645]/20 transition-colors border-0 cursor-pointer"
+                  >
+                    <Plus className="h-3 w-3" /> Add Option
+                  </button>
+                </div>
+
+                {editRoomSharingOptions.length === 0 ? (
+                  <p className="text-xs text-slate-500 font-medium">No sharing options added yet.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {editRoomSharingOptions.map((option, index) => (
+                      <div key={index} className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end bg-slate-50 p-4 rounded-lg border border-slate-100">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-700">Sharing (e.g. 1, 2)</label>
+                          <input
+                            type="number"
+                            placeholder="e.g. 2 for Double"
+                            value={option.sharing}
+                            onChange={(e) => updateEditRoomSharingOption(index, "sharing", e.target.value ? Number(e.target.value) : "")}
+                            className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-[#014645]/20"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-700">Price per bed (₹)</label>
+                          <input
+                            type="number"
+                            placeholder="e.g. 5000"
+                            value={option.price}
+                            onChange={(e) => updateEditRoomSharingOption(index, "price", e.target.value ? Number(e.target.value) : "")}
+                            className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-[#014645]/20"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-slate-700">Vacancy (Beds)</label>
+                          <input
+                            type="number"
+                            placeholder="e.g. 5"
+                            value={option.vacancy}
+                            onChange={(e) => updateEditRoomSharingOption(index, "vacancy", e.target.value ? Number(e.target.value) : "")}
+                            className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-[#014645]/20"
+                          />
+                        </div>
+                        <div className="pb-0.5">
+                          <button
+                            type="button"
+                            onClick={() => removeEditRoomSharingOption(index)}
+                            className="w-full sm:w-auto bg-rose-50 text-rose-600 hover:bg-rose-100 p-2 rounded-md transition-colors flex items-center justify-center border-0 cursor-pointer"
+                            title="Remove Option"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              )}
 
               {/* Section 4: Property Specifications (Accordion) */}
               <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-2xs text-left">

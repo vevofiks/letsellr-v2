@@ -239,23 +239,6 @@ const RegisterClientStep: React.FC<{
             )}
           </div>
 
-          {/* Email */}
-          <div>
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">
-              Email Address <span className="text-slate-400 font-normal lowercase">(optional)</span>
-            </label>
-            <input
-              id="rc-email"
-              type="email"
-              placeholder="jane@example.com"
-              {...register("email")}
-              className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
-            />
-            {errors.email && (
-              <p className="mt-1 text-xs text-rose-600 font-medium">{errors.email.message}</p>
-            )}
-          </div>
-
           {/* Phone */}
           <div>
             <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Phone Number</label>
@@ -292,8 +275,8 @@ const RegisterClientStep: React.FC<{
           </div>
 
           {/* Location */}
-          <div className="sm:col-span-2">
-            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Target Location / City</label>
+          <div>
+            <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-1">Preferred Location / City</label>
             <input
               id="rc-location"
               placeholder="e.g. London, UK"

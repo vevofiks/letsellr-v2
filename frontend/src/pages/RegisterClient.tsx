@@ -66,7 +66,7 @@ export const RegisterClient: React.FC = () => {
               Property Seeker
             </span>
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 m-0">
-              Create Seeker Account
+              Create Seeker Account 
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 max-w-xs mx-auto text-center leading-relaxed">
               Create an account to start looking for your perfect property.
@@ -93,22 +93,7 @@ export const RegisterClient: React.FC = () => {
                 )}
               </div>
 
-              {/* Email Address (Optional) */}
-              <div className="space-y-1.5 text-left">
-                <label htmlFor="email" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
-                  Email Address <span className="text-slate-400 font-normal lowercase">(optional)</span>
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  placeholder="jane@example.com"
-                  {...register("email")}
-                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
-                />
-                {errors.email && (
-                  <p className="text-xs text-rose-600 font-medium text-left">{errors.email.message}</p>
-                )}
-              </div>
+
 
               {/* Phone Number */}
               <div className="space-y-1.5 text-left">
@@ -124,25 +109,6 @@ export const RegisterClient: React.FC = () => {
                 />
                 {errors.phone && (
                   <p className="text-xs text-rose-600 font-medium text-left">{errors.phone.message}</p>
-                )}
-              </div>
-
-              {/* 4-Digit Security PIN */}
-              <div className="space-y-1.5 text-left">
-                <label htmlFor="pin" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
-                  Set 4-Digit Security PIN
-                </label>
-                <input
-                  id="pin"
-                  type="password"
-                  maxLength={4}
-                  inputMode="numeric"
-                  placeholder="e.g. 1234"
-                  {...register("pin")}
-                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
-                />
-                {errors.pin && (
-                  <p className="text-xs text-rose-600 font-medium text-left">{errors.pin.message}</p>
                 )}
               </div>
 
@@ -169,7 +135,7 @@ export const RegisterClient: React.FC = () => {
               {/* Target Location */}
               <div className="space-y-1.5 text-left">
                 <label htmlFor="location" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
-                  Target Location / City
+                  Preferred Location / City
                 </label>
                 <input
                   id="location"
@@ -180,6 +146,25 @@ export const RegisterClient: React.FC = () => {
                 />
                 {errors.location && (
                   <p className="text-xs text-rose-600 font-medium text-left">{errors.location.message}</p>
+                )}
+              </div>
+
+              {/* 4-Digit Security PIN */}
+              <div className="space-y-1.5 text-left sm:col-span-2">
+                <label htmlFor="pin" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
+                  Set 4-Digit Security PIN
+                </label>
+                <input
+                  id="pin"
+                  type="password"
+                  maxLength={4}
+                  inputMode="numeric"
+                  placeholder="e.g. 1234"
+                  {...register("pin")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+                />
+                {errors.pin && (
+                  <p className="text-xs text-rose-600 font-medium text-left">{errors.pin.message}</p>
                 )}
               </div>
             </div>

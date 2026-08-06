@@ -30,7 +30,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [authModal, setAuthModal] = useState<{ open: boolean; mode: AuthModalMode }>({
     open: false,
-    mode: "login",
+    mode: "register-client",
   });
 
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -211,7 +211,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
                       id="dropdown-register-client"
                       onClick={() => {
                         setDropdownOpen(false);
-                        setAuthModal({ open: true, mode: "login" });
+                        setAuthModal({ open: true, mode: "register-client" });
                       }}
                       className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors text-left"
                     >
@@ -259,7 +259,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
       {authModal.open && (
         <AuthModal
           initialMode={authModal.mode}
-          onClose={() => setAuthModal({ open: false, mode: "login" })}
+          onClose={() => setAuthModal({ open: false, mode: "register-client" })}
         />
       )}
     </>
