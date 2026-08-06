@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import gsap from "gsap";
 
 export default function HeroSection({ isLoading = true }: { isLoading?: boolean }) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [imgSrc, setImgSrc] = useState("https://cdn.letsellr.in/isolated-villa-wbg.png");
 
   useEffect(() => {
     if (isLoading) return;
@@ -113,11 +114,12 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
           style={{ top: "180px", bottom: "0", zIndex: 10, width: "min(1050px, 88vw)", opacity: 0 }}
         >
           <Image
-            src="/images/isolated-villa-wbg.png"
+            src={imgSrc}
             alt="Letsellr Premium Villa"
             fill
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 88vw, 1050px"
             priority
+            onError={() => setImgSrc("/images/isolated-villa-wbg.png")}
             className="object-contain object-bottom animate-float"
             style={{
               filter: "drop-shadow(0 24px 50px rgba(0,0,0,0.13))",

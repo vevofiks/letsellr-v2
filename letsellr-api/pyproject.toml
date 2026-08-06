@@ -36,6 +36,7 @@ httpx = "^0.28.0"
 python-multipart = "^0.0.19"               # File uploads
 boto3 = "^1.35.0"                          # Cloudflare R2 (S3-compatible)
 aiosmtplib = "^3.0.0"                      # Async SMTP email sending
+Pillow = "^11.0.0"                         # Image conversion (WebP)
 
 # --- Real-time ---
 websockets = "^14.0"

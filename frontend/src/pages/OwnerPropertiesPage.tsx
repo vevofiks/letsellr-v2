@@ -24,6 +24,12 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
+interface RoomSharingOption {
+  sharing: number;
+  price: number;
+  vacancy: number;
+}
+
 interface Property {
   id: string;
   ref: string;
@@ -38,6 +44,10 @@ interface Property {
   photos: string[];
   created_at: string;
   admin_review_reason?: string;
+  extra_details?: {
+    room_sharing?: RoomSharingOption[];
+    [key: string]: unknown;
+  };
   stats: {
     views: number;
     enquiries: number;
@@ -336,6 +346,25 @@ export const OwnerPropertiesPage: React.FC = () => {
                   </div>
 
                 </div>
+
+                {/* Room Sharing Prices & Vacancy (PG/Hostel Only) */}
+                {(prop.category === "pg" || prop.category === "hostel") &&
+                  prop.extra_details?.room_sharing && prop.extra_details.room_sharing.length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-slate-100">
+                    {prop.extra_details.room_sharing.map((opt, idx) => (
+                      <span
+                        key={idx}
+                        className="bg-slate-50 border border-slate-200 rounded-md px-2.5 py-1 text-[10px] font-bold text-slate-700 flex items-center gap-1"
+                      >
+                        {opt.sharing} Sharing
+                        <span className="text-brand-green font-black">₹{opt.price?.toLocaleString()}</span>
+                        <span className={`font-black ${opt.vacancy > 0 ? "text-emerald-600" : "text-rose-500"}`}>
+                          · {opt.vacancy > 0 ? `${opt.vacancy} vacant` : "Full"}
+                        </span>
+                      </span>
+                    ))}
+                  </div>
+                )}
 
                 {/* Admin Rejection Reason Banner if rejected */}
                 {prop.status === "rejected" && prop.admin_review_reason && (

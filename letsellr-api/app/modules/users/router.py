@@ -144,9 +144,13 @@ async def upload_agency_logo(
     media_service = MediaService()
     public_url, key = await media_service.upload_file(file, folder="uploads")
 
+    old_logo_url = current_user.agency_profile.logo_key
     current_user.agency_profile.logo_key = public_url
     db.add(current_user.agency_profile)
     await db.commit()
+
+    if old_logo_url and old_logo_url != public_url:
+        await media_service.delete_files_by_url([old_logo_url])
 
     return {"message": "Logo uploaded successfully", "url": public_url}
 
@@ -172,8 +176,12 @@ async def upload_agency_banner(
     media_service = MediaService()
     public_url, key = await media_service.upload_file(file, folder="uploads")
 
+    old_banner_url = current_user.agency_profile.banner_key
     current_user.agency_profile.banner_key = public_url
     db.add(current_user.agency_profile)
     await db.commit()
+
+    if old_banner_url and old_banner_url != public_url:
+        await media_service.delete_files_by_url([old_banner_url])
 
     return {"message": "Banner uploaded successfully", "url": public_url}

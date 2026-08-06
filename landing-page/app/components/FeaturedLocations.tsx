@@ -66,7 +66,7 @@ export default function FeaturedLocations() {
   const speed = Math.max(18, locations.length * 3.5);
 
   return (
-    <section ref={sectionRef} className="w-full py-8 md:py-16 bg-[#FAF9F6] overflow-hidden mt-10">
+    <section ref={sectionRef} className="w-full py-8 md:py-10 bg-[#FAF9F6] overflow-hidden mt-10">
       <style>{`
         @keyframes loc-marquee {
           0%   { transform: translateX(0); }

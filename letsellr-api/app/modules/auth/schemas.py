@@ -15,7 +15,6 @@ class UserRegisterRequest(BaseModel):
     """Registration payload for normal users/seekers (phone-based)."""
 
     name: str = Field(..., min_length=2, max_length=200)
-    email: Optional[str] = None
     phone: str = Field(..., min_length=7, max_length=20)
     preference_type: str = Field(..., min_length=1)
     location: str = Field(..., min_length=2, max_length=200)
@@ -27,7 +26,7 @@ class RegisterRequest(BaseModel):
 
     role: Literal["owner", "agency"]
     name: str = Field(..., min_length=2, max_length=200)
-    email: Optional[str] = None
+    email: str | None = None
     phone: str = Field(..., min_length=7, max_length=20)
     preference_type: str = Field(..., min_length=1)
     location_city: str = Field(..., min_length=2, max_length=100)
@@ -94,7 +93,6 @@ class UserPublic(BaseModel):
     id: uuid.UUID
     role: str
     name: str
-    email: Optional[str] = None
     email_verified: bool
     phone: str
     preference_type: str

@@ -1,5 +1,15 @@
 # PROGRESS
 
+## [2026-08-06]
+
+- **Frontend**: Fixed missing "Room Sharing Options" UI block in the Admin edit property modal (`AdminPropertiesQueuePage.tsx`) to allow admins to correctly configure bed sharing options for PG/Hostels.
+- **Frontend**: Expanded category logic checks in `OwnerPropertyFormPage.tsx` to ensure legacy property categories (`"pg"`, `"hostel"`) gracefully load and support room sharing capabilities.
+- **Frontend**: Dynamically hid the "Pricing & Terms" block during PG/Hostel property creation/editing as it is intelligently derived from the lowest sharing option.
+- **Frontend**: Refactored `PropertyDetailsPage.tsx` specification rendering to conditionally hide `0 Bed`, `0 Bath`, or `Not Specified` items. The property specifications grid now smartly reflows via CSS conditionally rendering borders (`first:border-0`) to maintain perfect layout alignment.
+- **Frontend**: Resolved a React crash (`ReferenceError: conso is not defined`) in `AdminAddPropertyPage.tsx`.
+- **Backend**: Resolved a `422 Unprocessable Entity` error during listing creation by properly updating Pydantic model schemas to support the consolidated `"pg_hostel"` and `"flat_apartment"` categories.
+- **Backend**: Fixed a `403 Forbidden` property creation block for owner accounts by correcting role-based category logic in the backend `service.py` to match the model specifications rather than using hardcoded literals.
+
 ## [2026-07-19]
 
 - **Frontend**: Unified authentication flow to be exclusively passwordless (OTP-based) via a centralized `AuthModal.tsx`, removing legacy standalone login and password forms.

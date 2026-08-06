@@ -24,12 +24,18 @@ interface CategoryItem {
 }
 
 const DEFAULT_IMAGES: Record<string, string> = {
+  flat_apartment: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1000&q=80",
+  house_villa: "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1000&q=80",
+  pg_hostel: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1000&q=80",
+  comercial: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1000&q=80",
+  land: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1000&q=80",
+  coworking_space: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1000&q=80",
   apartment: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1000&q=80",
   commercial: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=1000&q=80",
   coworking: "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1000&q=80",
   "co-working space": "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1000&q=80",
   hostel: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?auto=format&fit=crop&w=1000&q=80",
-  land: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1000&q=80",
+  land_default: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&w=1000&q=80",
   pg: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1000&q=80",
   villa: "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1000&q=80",
   villas: "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&w=1000&q=80",
@@ -38,37 +44,37 @@ const DEFAULT_IMAGES: Record<string, string> = {
 const DEFAULT_CATEGORIES: CategoryItem[] = [
   {
     id: "1",
-    slug: "apartment",
-    title: "APARTMENT",
-    subtitle: "Apartment where family...",
-    image: DEFAULT_IMAGES.apartment,
+    slug: "flat_apartment",
+    title: "FLAT & APARTMENT",
+    subtitle: "For the luxury and semi furnished...",
+    image: DEFAULT_IMAGES.flat_apartment,
     spanClass: "col-span-1 md:col-span-2",
     hasButton: true,
   },
   {
     id: "2",
-    slug: "commercial",
-    title: "COMMERCIAL",
-    subtitle: "commercial...",
-    image: DEFAULT_IMAGES.commercial,
+    slug: "house_villa",
+    title: "HOUSE & VILLA",
+    subtitle: "Luxury villas",
+    image: DEFAULT_IMAGES.house_villa,
     spanClass: "col-span-1 md:col-span-1",
     hasButton: false,
   },
   {
     id: "3",
-    slug: "coworking",
-    title: "CO-WORKING SPACE",
-    subtitle: "Explore Collection",
-    image: DEFAULT_IMAGES.coworking,
+    slug: "pg_hostel",
+    title: "PG & HOSTEL",
+    subtitle: "Rent for everyone",
+    image: DEFAULT_IMAGES.pg_hostel,
     spanClass: "col-span-2 md:col-span-1",
     hasButton: false,
   },
   {
     id: "4",
-    slug: "hostel",
-    title: "HOSTEL",
-    subtitle: "hostel...",
-    image: DEFAULT_IMAGES.hostel,
+    slug: "comercial",
+    title: "COMMERCIAL",
+    subtitle: "Office use",
+    image: DEFAULT_IMAGES.comercial,
     spanClass: "col-span-1 md:col-span-1",
     hasButton: false,
   },
@@ -76,17 +82,17 @@ const DEFAULT_CATEGORIES: CategoryItem[] = [
     id: "5",
     slug: "land",
     title: "LAND",
-    subtitle: "land...",
+    subtitle: "Lands for any purpose",
     image: DEFAULT_IMAGES.land,
     spanClass: "col-span-1 md:col-span-1",
     hasButton: false,
   },
   {
     id: "6",
-    slug: "pg",
-    title: "PG",
+    slug: "coworking_space",
+    title: "COWORKING SPACE",
     subtitle: "Explore Collection",
-    image: DEFAULT_IMAGES.pg,
+    image: DEFAULT_IMAGES.coworking_space,
     spanClass: "col-span-2 md:col-span-2",
     hasButton: false,
   },
@@ -104,6 +110,13 @@ export default function FeaturedCategories() {
         if (res.ok) {
           const data: DbPropertyType[] = await res.json();
           if (data && data.length > 0) {
+            const order = ["flat_apartment", "house_villa", "pg_hostel", "comercial", "land", "coworking_space"];
+            data.sort((a, b) => {
+              const indexA = order.indexOf(a.slug);
+              const indexB = order.indexOf(b.slug);
+              return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
+            });
+
             const formatted: CategoryItem[] = data.map((dbCat, index) => {
               const slugKey = dbCat.slug.toLowerCase();
               const isDesktopWide = index === 0 || index % 5 === 0;
@@ -137,7 +150,7 @@ export default function FeaturedCategories() {
   }, []);
 
   return (
-    <section className="py-6 md:py-24 px-4 sm:px-6 md:px-12 lg:px-20 w-full bg-[#FAF9F6] text-[#0F0F11]">
+    <section className="py-6 md:py-10 px-4 sm:px-6 md:px-12 lg:px-20 w-full bg-[#FAF9F6] text-[#0F0F11]">
       <div className="max-w-360 mx-auto">
         {/* Header Badge & Title */}
         <div className="flex flex-col items-center text-center mb-14 max-w-2xl mx-auto">

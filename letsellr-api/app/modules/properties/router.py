@@ -57,7 +57,10 @@ async def get_featured_properties(db: DbSession, limit: int = Query(8, ge=1, le=
 async def list_properties(
     db: DbSession,
     intent: Optional[str] = None,
-    category: Optional[str] = None,
+    category: Optional[str] = Query(
+        None,
+        description="Comma-separated category values for OR matching, e.g. 'pg,hostel'",
+    ),
     city: Optional[str] = None,
     q: Optional[str] = Query(
         None, description="Search query across title, description, area, city"
@@ -79,7 +82,7 @@ async def list_properties(
     """
     Public property browse — returns paginated live listings.
 
-    **Filters:** category, intent, city (case-insensitive partial), q (general search), min/max price, owner_id.
+    **Filters:** category (comma-separated for multiple, e.g. `pg,hostel`), intent, city (case-insensitive partial), q (general search), min/max price, owner_id.
     **Sorting:** newest (default), price_asc, price_desc.
     """
     service = PropertyService(db)

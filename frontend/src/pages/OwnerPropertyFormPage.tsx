@@ -479,7 +479,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
       toast.error("Property title is required.");
       return;
     }
-    if (!price || Number(price) <= 0) {
+    if (!["pg", "hostel", "pg_hostel"].includes(category) && (!price || Number(price) <= 0)) {
       toast.error("Valid price is required.");
       return;
     }
@@ -503,7 +503,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
         const uploadPromises = newFiles.map(async (file) => {
           const formData = new FormData();
           formData.append("file", file);
-          formData.append("folder", "uploads");
+          formData.append("folder", "properties");
           try {
             const res = await api.post("/api/media/upload", formData, {
               headers: { "Content-Type": "multipart/form-data" }
@@ -522,12 +522,19 @@ export const OwnerPropertyFormPage: React.FC = () => {
 
       const finalPhotos = [...photos, ...uploadedUrls];
 
+      const validSharingOptions = roomSharingOptions.filter(
+        (opt) => opt.sharing !== "" && opt.price !== "" && opt.vacancy !== ""
+      );
+      const leastPrice = validSharingOptions.length > 0 
+        ? Math.min(...validSharingOptions.map(opt => Number(opt.price))) 
+        : 0;
+
       const payload = {
         category,
         intent,
         title: title.trim(),
         description: description.trim() || undefined,
-        price: Number(price),
+        price: ["pg", "hostel", "pg_hostel"].includes(category) ? leastPrice : Number(price),
         price_unit: priceUnit,
         area: area ? Number(area) : undefined,
         bedrooms: bedrooms ? Number(bedrooms) : undefined,
@@ -536,10 +543,10 @@ export const OwnerPropertyFormPage: React.FC = () => {
         amenities,
         photos: finalPhotos,
         extra_details: {
-          availability_status: availabilityStatus,
-          available_from: availableFrom || undefined,
-          ...(category === "pg" || category === "hostel" ? {
-            room_sharing: roomSharingOptions.filter(opt => opt.sharing !== "" && opt.price !== "" && opt.vacancy !== "")
+          availability_status: showAvailability ? availabilityStatus : undefined,
+          available_from: showAvailability && availableFrom ? availableFrom : undefined,
+          ...(["pg", "hostel", "pg_hostel"].includes(category) ? {
+            room_sharing: validSharingOptions
           } : {})
         },
         location: {
@@ -605,7 +612,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
     );
   }
 
-  const showAvailability = isEdit && existingStatus === "live";
+  const showAvailability = isEdit && existingStatus === "live" && category !== "pg" && category !== "hostel";
 
   return (
     <div className="min-h-screen bg-slate-50/70 flex flex-col font-sans pb-12 text-slate-900">
@@ -727,42 +734,44 @@ export const OwnerPropertyFormPage: React.FC = () => {
         </div>
 
         {/* Section 2: Pricing */}
-        <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-xs space-y-5 text-left">
-          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
-            ₹ Pricing & Terms
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Price (₹) *</label>
-              <input
-                type="number"
-                placeholder="e.g. 15000"
-                value={price}
-                onChange={(e) => setPrice(e.target.value ? Number(e.target.value) : "")}
-                className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-green/20"
-                required
-              />
+        { !["pg", "hostel", "pg_hostel"].includes(category) && (
+          <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-xs space-y-5 text-left">
+            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
+              ₹ Pricing & Terms
+            </h2>
+  
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">Price (₹) *</label>
+                <input
+                  type="number"
+                  placeholder="e.g. 15000"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value ? Number(e.target.value) : "")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-green/20"
+                  required
+                />
+              </div>
+  
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">Price Unit</label>
+                <select
+                  value={priceUnit}
+                  onChange={(e) => setPriceUnit(e.target.value as "per_month" | "total")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20"
+                >
+                  <option value="per_month">Per Month</option>
+                  <option value="total">Total Price</option>
+                </select>
+              </div>
+  
             </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Price Unit</label>
-              <select
-                value={priceUnit}
-                onChange={(e) => setPriceUnit(e.target.value as "per_month" | "total")}
-                className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20"
-              >
-                <option value="per_month">Per Month</option>
-                <option value="total">Total Price</option>
-              </select>
-            </div>
-
           </div>
-        </div>
+        )}
 
         {/* Section 2.5: Room Sharing Options (PG/Hostel Only) */}
-        {(category === "pg" || category === "hostel") && (
+        { ["pg", "hostel", "pg_hostel"].includes(category) && (
           <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-xs space-y-5 text-left">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">

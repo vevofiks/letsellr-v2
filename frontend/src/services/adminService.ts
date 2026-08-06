@@ -88,6 +88,7 @@ export interface AdminProperty {
   created_at: string;
   photos?: (string | { photo_url: string; display_order?: number })[];
   amenities?: (string | { name: string; category?: string })[];
+  extra_details?: any;
   owner_phone?: string;
   owner_whatsapp?: string;
   owner?: {
@@ -154,6 +155,12 @@ export const adminService = {
   // Get live properties
   getLiveProperties: async (): Promise<AdminProperty[]> => {
     const res = await api.get<AdminProperty[]>("/api/admin/properties/live");
+    return res.data;
+  },
+
+  // Admin creates a listing, attributed to an owner, an agency, or the admin itself
+  createProperty: async (payload: any): Promise<AdminProperty> => {
+    const res = await api.post<AdminProperty>("/api/admin/properties", payload);
     return res.data;
   },
 
