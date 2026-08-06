@@ -227,6 +227,16 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
           />
         </div>
 
+        {/* Claims a fixed slice of the leftover height *below* the villa, which
+            forces the flex-1 spacer above to give the same amount back — so the
+            wordmark and villa both rise by exactly this height and their
+            alignment to each other is untouched. Shrinks away first on short
+            screens, before anything can overflow. Raise 0.10 to lift further. */}
+        <div
+          aria-hidden="true"
+          style={{ height: "calc(var(--hero-w) * 0.10)", flex: "0 1 auto", minHeight: 0 }}
+        />
+
         {/* Bottom: tagline left + stats right */}
         <div
           className="shrink-0 px-5 sm:px-8 flex justify-between items-end gap-4 z-30"
