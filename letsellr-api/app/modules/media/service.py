@@ -1,14 +1,30 @@
 """
 Module: Media
-Service — Local Storage File Handling (Cloudflare R2 commented out)
+Service — Cloudflare R2 object storage upload/delete
 """
 
-import os
+import io
 import uuid
 import boto3
 from botocore.config import Config
 from fastapi import UploadFile, HTTPException, status
+from PIL import Image, UnidentifiedImageError
 from app.core.config import settings
+
+# Raster formats we convert to WebP on upload. SVG (vector) and animated GIF
+# are left as-is — Pillow would flatten a GIF to its first frame.
+CONVERTIBLE_CONTENT_TYPES = {
+    "image/png",
+    "image/jpeg",
+    "image/jpg",
+    "image/bmp",
+    "image/tiff",
+}
+WEBP_QUALITY = 82
+# Property/profile photos never need to render larger than this — phone camera
+# uploads (often 12MP+) would otherwise re-encode losslessly-large into WebP,
+# multiplying storage/bandwidth for no visual benefit at listing/card sizes.
+MAX_DIMENSION = 2048
 
 
 class MediaService:
@@ -29,11 +45,27 @@ class MediaService:
                 region_name="auto",
             )
 
+    @staticmethod
+    def _to_webp(contents: bytes) -> bytes:
+        """
+        Re-encodes raster image bytes as WebP. Flattens transparency onto a
+        white background only for modes WebP can't store directly.
+        """
+        with Image.open(io.BytesIO(contents)) as img:
+            if img.mode not in ("RGB", "RGBA"):
+                img = img.convert("RGBA" if "A" in img.getbands() else "RGB")
+            if img.width > MAX_DIMENSION or img.height > MAX_DIMENSION:
+                img.thumbnail((MAX_DIMENSION, MAX_DIMENSION), Image.Resampling.LANCZOS)
+            buffer = io.BytesIO()
+            img.save(buffer, format="WEBP", quality=WEBP_QUALITY, method=6)
+            return buffer.getvalue()
+
     async def upload_file(
         self, file: UploadFile, folder: str = "uploads", base_url: str | None = None
     ) -> tuple[str, str]:
         """
         Uploads a file to Cloudflare R2 storage and returns the public URL and key.
+        Raster images (PNG/JPEG/BMP/TIFF) are transcoded to WebP before upload.
         """
         if not self.s3:
             raise HTTPException(
@@ -41,23 +73,40 @@ class MediaService:
                 detail="Cloudflare R2 is not configured on the server.",
             )
 
-        # Generate a unique key
         filename = file.filename or ""
-        ext = filename.split(".")[-1] if "." in filename else "bin"
+        ext = filename.split(".")[-1].lower() if "." in filename else "bin"
+        content_type = (file.content_type or "application/octet-stream").lower()
+
+        contents = await file.read()
+
+        if content_type in CONVERTIBLE_CONTENT_TYPES or ext in {"png", "jpg", "jpeg", "bmp", "tiff", "tif"}:
+            try:
+                import asyncio
+                loop = asyncio.get_running_loop()
+                contents = await loop.run_in_executor(None, self._to_webp, contents)
+                ext = "webp"
+                content_type = "image/webp"
+            except UnidentifiedImageError:
+                # Not actually a decodable image despite the extension/content-type — upload as-is.
+                pass
+
         unique_id = str(uuid.uuid4())
-        filename = f"{unique_id}.{ext}"
+        key = f"{folder}/{unique_id}.{ext}"
 
-        # Use the specified folder (defaults to 'uploads')
-        key = f"{folder}/{filename}"
-
-        # Read and upload file contents
+        # Upload file contents
         try:
-            contents = await file.read()
-            self.s3.put_object(
-                Bucket=settings.R2_BUCKET_NAME,
-                Key=key,
-                Body=contents,
-                ContentType=file.content_type or "application/octet-stream",
+            import asyncio
+            from functools import partial
+            loop = asyncio.get_running_loop()
+            await loop.run_in_executor(
+                None,
+                partial(
+                    self.s3.put_object,
+                    Bucket=settings.R2_BUCKET_NAME,
+                    Key=key,
+                    Body=contents,
+                    ContentType=content_type,
+                )
             )
         except Exception as e:
             raise HTTPException(
@@ -70,6 +119,22 @@ class MediaService:
         public_url = f"{base_url}/{key}"
 
         return public_url, key
+
+    async def delete_files_by_url(self, urls: list[str]) -> None:
+        """
+        Best-effort cleanup for one or more R2 objects (e.g. photos replaced/removed
+        on edit, or a listing's photos once the listing itself is deleted). Never
+        raises — a storage hiccup or missing R2 config must not block the caller's
+        primary DB operation, it should just leave the object as an orphan to be
+        cleaned up later.
+        """
+        if not self.s3:
+            return
+        for url in urls:
+            try:
+                await self.delete_file_by_url(url)
+            except Exception as e:
+                print(f"Failed to clean up {url} from R2: {str(e)}")
 
     async def delete_file_by_url(self, url: str) -> bool:
         """

@@ -156,6 +156,7 @@ export const RegisterOwnerAgency: React.FC = () => {
                 )}
               </div>
 
+
               {/* Email Address (Optional) */}
               <div className="space-y-1.5 text-left">
                 <label htmlFor="email" className="text-[11px] font-bold uppercase tracking-wider text-slate-600 block">
@@ -164,7 +165,7 @@ export const RegisterOwnerAgency: React.FC = () => {
                 <input
                   id="email"
                   type="email"
-                  placeholder="john@example.com"
+                  placeholder="owner@example.com"
                   {...register("email")}
                   className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
                 />

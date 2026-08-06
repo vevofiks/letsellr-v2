@@ -21,15 +21,7 @@ const phoneSchema = z
   .regex(/^\+?[0-9](?!.*\s{2,})[0-9\s\-]*$/, "Invalid phone number format.")
   .trim();
 
-// Optional email schema for registration forms
-const optionalEmailSchema = z
-  .string()
-  .optional()
-  .or(z.literal(""))
-  .refine((val) => {
-    if (!val || val.trim() === "") return true;
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
-  }, "Invalid email format");
+
 
 const locationSchema = strictTextSchema("Location", 2, 200);
 
@@ -42,7 +34,6 @@ const pinSchema = z
 export const clientRegisterSchema = z
   .object({
     name: nameSchema,
-    email: optionalEmailSchema,
     phone: phoneSchema,
     preference_type: z.string().min(1, "Please select a preference type"),
     location: locationSchema,
@@ -56,7 +47,7 @@ export const ownerAgencyRegisterSchema = z
   .object({
     role: z.enum(["owner", "agency"]),
     name: nameSchema,
-    email: optionalEmailSchema,
+    email: z.string().email("Invalid email address").optional().or(z.literal("")),
     phone: phoneSchema,
     preference_type: z.string().min(1, "Please select a preference type"),
     location_city: strictTextSchema("City", 2, 100),

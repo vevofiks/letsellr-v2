@@ -407,8 +407,7 @@ export const PropertyDetailsPage: React.FC = () => {
   const handleWhatsAppContact = async () => {
     if (!property) return;
     if (!user) {
-      toast.error("Please sign in to contact the owner.");
-      setAuthModal({ open: true, mode: "login" });
+      setAuthModal({ open: true, mode: "register-client" });
       return;
     }
     let serverWaLink = "";
@@ -484,6 +483,18 @@ export const PropertyDetailsPage: React.FC = () => {
   const displayedDescription = showFullDescription || !isDescriptionLong
     ? descriptionText
     : `${descriptionText.slice(0, 280)}...`;
+
+  const hasBed = Boolean(property.bedrooms && property.bedrooms > 0);
+  const hasBath = Boolean(property.bathrooms && property.bathrooms > 0);
+  const hasArea = Boolean(property.area && Number(property.area) > 0);
+  const hasFurnish = Boolean(
+    property.furnishing &&
+    property.furnishing.toLowerCase() !== "none" &&
+    property.furnishing.toLowerCase() !== "not specified"
+  );
+  const hasAnySpec = hasBed || hasBath || hasArea || hasFurnish;
+  
+  const specCardClass = "space-y-1 w-full sm:w-auto pt-3 sm:pt-0 sm:pl-5 border-t sm:border-t-0 sm:border-l border-slate-100 first:border-0 first:pt-0 first:sm:pl-0";
 
   return (
     <div className="min-h-screen bg-[#f8faf9] text-left relative font-sans">
@@ -731,38 +742,48 @@ export const PropertyDetailsPage: React.FC = () => {
             </div>
 
             {/* Key Specs Cards Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white border border-slate-200/80 rounded-2xl p-4 shadow-2xs text-left">
-              <div className="space-y-1">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Bedroom</span>
-                <div className="flex items-center gap-2 text-slate-900 font-black text-sm">
-                  <Bed className="h-4 w-4 text-[#0B6E4F] shrink-0" />
-                  <span>{property.bedrooms || 0} Bed</span>
-                </div>
-              </div>
-              <div className="space-y-1 border-t sm:border-t-0 sm:border-l border-slate-100 pt-2 sm:pt-0 sm:pl-3">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Bathroom</span>
-                <div className="flex items-center gap-2 text-slate-900 font-black text-sm">
-                  <Bath className="h-4 w-4 text-[#0B6E4F] shrink-0" />
-                  <span>{property.bathrooms || 0} Bath</span>
-                </div>
-              </div>
-              <div className="space-y-1 border-t sm:border-t-0 sm:border-l border-slate-100 pt-2 sm:pt-0 sm:pl-3">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Area</span>
-                <div className="flex items-center gap-2 text-slate-900 font-black text-sm">
-                  <Maximize className="h-4 w-4 text-[#0B6E4F] shrink-0" />
-                  <span>{property.area && Number(property.area) > 0 ? `${Number(property.area).toLocaleString()} sqft` : "Not Specified"}</span>
-                </div>
-              </div>
-              <div className="space-y-1 border-t sm:border-t-0 sm:border-l border-slate-100 pt-2 sm:pt-0 sm:pl-3">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Furnishing</span>
-                <div className="flex items-center gap-2 text-slate-900 font-black text-sm capitalize">
-                  <div className="h-3.5 w-3.5 rounded-full border-2 border-emerald-500 flex items-center justify-center shrink-0">
-                    <span className="h-1.5 w-1.5 bg-emerald-600 rounded-full" />
+            {hasAnySpec && (
+              <div className="flex flex-wrap sm:flex-nowrap sm:items-center gap-y-3 sm:gap-y-0 bg-white border border-slate-200/80 rounded-2xl p-4 sm:px-5 sm:py-4 shadow-2xs text-left">
+                {hasBed && (
+                  <div className={specCardClass}>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Bedroom</span>
+                    <div className="flex items-center gap-2 text-slate-900 font-black text-sm">
+                      <Bed className="h-4 w-4 text-[#0B6E4F] shrink-0" />
+                      <span>{property.bedrooms} Bed</span>
+                    </div>
                   </div>
-                  <span>{property.furnishing || "Not Specified"}</span>
-                </div>
+                )}
+                {hasBath && (
+                  <div className={specCardClass}>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Bathroom</span>
+                    <div className="flex items-center gap-2 text-slate-900 font-black text-sm">
+                      <Bath className="h-4 w-4 text-[#0B6E4F] shrink-0" />
+                      <span>{property.bathrooms} Bath</span>
+                    </div>
+                  </div>
+                )}
+                {hasArea && (
+                  <div className={specCardClass}>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Total Area</span>
+                    <div className="flex items-center gap-2 text-slate-900 font-black text-sm">
+                      <Maximize className="h-4 w-4 text-[#0B6E4F] shrink-0" />
+                      <span>{Number(property.area).toLocaleString()} sqft</span>
+                    </div>
+                  </div>
+                )}
+                {hasFurnish && (
+                  <div className={specCardClass}>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Furnishing</span>
+                    <div className="flex items-center gap-2 text-slate-900 font-black text-sm capitalize">
+                      <div className="h-3.5 w-3.5 rounded-full border-2 border-emerald-500 flex items-center justify-center shrink-0">
+                        <span className="h-1.5 w-1.5 bg-emerald-600 rounded-full" />
+                      </div>
+                      <span>{property.furnishing}</span>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
+            )}
 
             {/* Property Overview / Description */}
             <div className="space-y-3 pt-6 border-t border-slate-200/80">
@@ -934,9 +955,9 @@ export const PropertyDetailsPage: React.FC = () => {
                     </div>
                     <Button
                       onClick={() => setAuthModal({ open: true, mode: "login" })}
-                      className="bg-[#23D283] hover:bg-[#11995E] text-white font-extrabold px-5 py-2 text-xs rounded-xl cursor-pointer shrink-0 shadow-2xs"
+                      className="bg-[#23D283] hover:bg-[#11995E] text-white font-extrabold px-5 py-2 text-xs rounded-xl cursor-pointer shrink-0 shadow-2xs flex items-center gap-1.5"
                     >
-                      Sign In
+                      ✏️ Write a Review
                     </Button>
                   </div>
                 )}

@@ -21,7 +21,6 @@ class UserProfileResponse(BaseModel):
     id: uuid.UUID
     role: str
     name: str
-    email: EmailStr
     phone: str
     preference_type: str
     location_city: str

@@ -1,6 +1,6 @@
 """Module: Media — Router"""
 
-from fastapi import APIRouter, UploadFile, File, Form, Depends, Request
+from fastapi import APIRouter, UploadFile, File, Form, Request
 from app.depends.auth import CurrentUser
 from app.modules.media.schemas import MediaUploadResponse, MediaDeleteRequest
 from app.modules.media.service import MediaService
@@ -16,8 +16,8 @@ async def upload_file(
     folder: str = Form("uploads"),
 ):
     """
-    Upload a file to local storage.
-    Returns the public static file URL.
+    Upload a file to Cloudflare R2 object storage.
+    Returns the public CDN URL.
     """
     service = MediaService()
     url, key = await service.upload_file(

@@ -25,7 +25,8 @@ from app.modules.admin.schemas import (
     LocationDataUpdate,
 )
 from app.modules.properties.models import Property, PropertyType, LocationData
-from app.modules.properties.schemas import PropertyResponse
+from app.modules.properties.schemas import PropertyResponse, AdminPropertyCreate
+from app.modules.properties.service import PropertyService
 from app.modules.reviews.models import Review
 
 router = APIRouter()
@@ -204,6 +205,39 @@ async def get_dashboard_stats(current_user: CurrentUser, db: DbSession):
         owners_count=owners_count or 0,
         admins_count=admins_count or 0,
     )
+
+
+@router.post(
+    "/properties",
+    response_model=PropertyResponse,
+    status_code=201,
+    tags=["Admin - Properties"],
+)
+async def admin_create_property(
+    data: AdminPropertyCreate,
+    current_user: CurrentUser,
+    db: DbSession,
+):
+    """Admin creates a listing, attributed to an owner, an agency, or the admin itself."""
+    require_admin(current_user)
+
+    if data.listing_party == "admin":
+        owner_user = current_user
+    else:
+        if not data.owner_id:
+            raise HTTPException(
+                status_code=400,
+                detail="owner_id is required when listing_party is 'owner' or 'agency'",
+            )
+        owner_user = await db.get(User, data.owner_id)
+        if not owner_user or owner_user.role != data.listing_party:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Selected user is not a valid {data.listing_party}",
+            )
+
+    service = PropertyService(db)
+    return await service.create_property(data, current_user, owner_user=owner_user)
 
 
 @router.get(

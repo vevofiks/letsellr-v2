@@ -25,7 +25,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: ${{ secrets.VPS_PORT }}
-          script_stop_on_error: true
+          script_stop: true
           script: |
             PROJECT_DIR="/root/letsellr-v2"
             BACKEND_DIR="$PROJECT_DIR/letsellr-api"
@@ -73,13 +73,16 @@ jobs:
             fi
             
             # 4. Realistic Health Check
-            echo "==> Waiting for service workers to initialize (up to 20 seconds)..."
-            
+            # The dependency set (firebase-admin, google-cloud-firestore, supabase,
+            # sentry-sdk) is import-heavy and lifespan startup blocks on a live DB
+            # round-trip (see app/main.py), so give it real headroom instead of ~20s.
+            echo "==> Waiting for service workers to initialize (up to 60 seconds)..."
+
             # Retry loop for health check
             HEALTH_CHECK_URL="http://127.0.0.1:8000/api/docs"
-            MAX_RETRIES=4
+            MAX_RETRIES=12
             RETRY_COUNT=0
-            
+
             while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
                 sleep 5
                 echo "==> Checking HTTP health status (Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)..."
@@ -89,7 +92,10 @@ jobs:
                 fi
                 RETRY_COUNT=$((RETRY_COUNT + 1))
             done
-            
-            echo "ERROR: App failed to respond after multiple attempts! Check 'sudo journalctl -u fastapi -n 50' on the server."
+
+            echo "ERROR: App failed to respond after multiple attempts!"
+            echo "==> systemctl status fastapi:"
+            sudo systemctl status fastapi --no-pager -l || true
+            echo "==> Last 80 lines of journalctl -u fastapi:"
+            sudo journalctl -u fastapi -n 80 --no-pager || true
             exit 1
-            fi

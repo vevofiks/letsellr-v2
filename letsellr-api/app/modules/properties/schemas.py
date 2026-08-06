@@ -16,7 +16,9 @@ class LocationSchema(BaseModel):
 
 
 class PropertyCreate(BaseModel):
-    category: Literal["pg", "hostel", "apartment", "villa_house", "land", "commercial"]
+    category: Literal[
+        "pg", "hostel", "pg_hostel", "apartment", "flat_apartment", "villa_house", "land", "commercial", "coworking_space"
+    ]
     intent: Literal["rent", "buy", "lease"]
     title: str = Field(..., max_length=300)
     description: Optional[str] = None
@@ -44,6 +46,20 @@ class PropertyCreate(BaseModel):
     owner_phone: str = Field(..., max_length=20)
     owner_whatsapp: Optional[str] = Field(None, max_length=20)
     status: Optional[Literal["draft", "pending_review"]] = "pending_review"
+
+
+class AdminPropertyCreate(PropertyCreate):
+    """Property creation payload for the admin-side "Add Property" form.
+
+    `listing_party` decides who the listing is attributed to: an existing
+    owner/agency user (picked via `owner_id`) or the admin's own account.
+    """
+
+    listing_party: Literal["owner", "admin", "agency"]
+    owner_id: Optional[UUID] = Field(
+        None, description="Required when listing_party is 'owner' or 'agency'"
+    )
+    status: Optional[Literal["draft", "pending_review", "live"]] = "pending_review"
 
 
 class PropertyUpdate(BaseModel):

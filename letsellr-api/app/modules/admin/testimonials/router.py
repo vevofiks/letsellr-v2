@@ -145,12 +145,17 @@ async def delete_testimonial(
     if not testi:
         raise HTTPException(status_code=404, detail="Testimonial not found")
 
+    old_avatar_key = testi.avatar_key
     if testi.status != "approved":
         await db.delete(testi)
     else:
         testi.is_active = False
 
     await db.commit()
+
+    if old_avatar_key:
+        base_url = settings.R2_PUBLIC_URL.rstrip("/")
+        await MediaService().delete_files_by_url([f"{base_url}/{old_avatar_key}"])
 
 
 @admin_router.post("/{id}/avatar")
@@ -189,10 +194,14 @@ async def get_avatar_presigned_url(
             status_code=500, detail=f"Could not generate presigned URL: {str(e)}"
         )
 
+    old_avatar_key = testi.avatar_key
     testi.avatar_key = new_key
     await db.commit()
 
     base_url = settings.R2_PUBLIC_URL.rstrip("/")
+    if old_avatar_key:
+        await service.delete_files_by_url([f"{base_url}/{old_avatar_key}"])
+
     return {
         "upload_url": url,
         "avatar_key": new_key,

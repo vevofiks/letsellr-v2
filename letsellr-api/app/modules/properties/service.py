@@ -11,7 +11,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import asc, desc
 
 from app.db.session import AsyncSession
-from app.modules.properties.models import Property, AGENCY_ALLOWED_CATEGORIES
+from app.modules.properties.models import Property, AGENCY_ALLOWED_CATEGORIES, OWNER_ALLOWED_CATEGORIES
 from app.modules.properties.repository import PropertyRepository
 from app.modules.properties.schemas import (
     PropertyBrowseResponse,
@@ -36,15 +36,23 @@ class PropertyService:
         return f"PROP-{random_str}"
 
     async def create_property(
-        self, data: PropertyCreate, current_user: User
+        self, data: PropertyCreate, current_user: User, owner_user: Optional[User] = None
     ) -> Property:
-        if current_user.role == "owner" and data.category not in ["pg", "hostel"]:
+        """
+        Creates a listing attributed to `owner_user` (defaults to `current_user`).
+        Admin-created listings pass a different `owner_user` — the one who'll own
+        the listing — so category restrictions are enforced against *their* role,
+        not the admin's.
+        """
+        owner_user = owner_user or current_user
+        # Only Owners can post PG/Hostels, Agencies can post everything else
+        if owner_user.role == "owner" and data.category not in OWNER_ALLOWED_CATEGORIES:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Individual owners can only list in PG or Hostel categories.",
+                detail=f"Individual owners cannot list in category: {data.category}",
             )
         if (
-            current_user.role == "agency"
+            owner_user.role == "agency"
             and data.category not in AGENCY_ALLOWED_CATEGORIES
         ):
             raise HTTPException(
@@ -53,16 +61,16 @@ class PropertyService:
             )
 
         enquiry_type = (
-            "whatsapp_bot" if data.category in ["pg", "hostel"] else "manual_chat"
+            "whatsapp_bot" if data.category in ["pg", "hostel", "pg_hostel"] else "manual_chat"
         )
         ref = self._generate_ref()
 
         location_data = data.location.model_dump()
-        property_dict = data.model_dump(exclude={"location"})
+        property_dict = data.model_dump(exclude={"location", "listing_party", "owner_id"})
         property_dict.update(
             {
-                "owner_id": current_user.id,
-                "owner_role": current_user.role,
+                "owner_id": owner_user.id,
+                "owner_role": owner_user.role,
                 "ref": ref,
                 "enquiry_type": enquiry_type,
                 "location_address": location_data.get("address"),
@@ -91,6 +99,7 @@ class PropertyService:
                 status_code=403, detail="Not authorized to edit this property"
             )
 
+        old_photos = list(prop.photos or [])
         update_data = data.model_dump(exclude_unset=True)
         if "location" in update_data:
             loc = update_data.pop("location")
@@ -109,7 +118,16 @@ class PropertyService:
             if "longitude" in loc:
                 update_data["longitude"] = loc["longitude"]
 
-        return await self.repo.update(prop, update_data)
+        updated = await self.repo.update(prop, update_data)
+
+        if "photos" in update_data:
+            removed = [url for url in old_photos if url not in set(update_data["photos"])]
+            if removed:
+                from app.modules.media.service import MediaService
+
+                await MediaService().delete_files_by_url(removed)
+
+        return updated
 
     async def delete_property(
         self, property_id: str | uuid.UUID, current_user: User
@@ -123,7 +141,13 @@ class PropertyService:
                 status_code=403, detail="Not authorized to delete this property"
             )
 
+        photos = list(prop.photos or [])
         await self.repo.delete(prop)
+
+        if photos:
+            from app.modules.media.service import MediaService
+
+            await MediaService().delete_files_by_url(photos)
 
     async def get_property(self, property_id: str | uuid.UUID) -> Property:
         prop = None
@@ -161,7 +185,7 @@ class PropertyService:
             raise HTTPException(status_code=404, detail="Property not found")
 
         category_lower = (prop.category or "").lower()
-        is_pg_or_hostel = category_lower in ["pg", "hostel"]
+        is_pg_or_hostel = category_lower in ["pg", "hostel", "pg_hostel"]
 
         bot_num = (
             getattr(settings, "WHATSAPP_BOT_NUMBER", "918137090018")

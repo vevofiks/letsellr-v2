@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import gsap from "gsap";
 import { getAppUrl } from "@/lib/utils";
+import { Icon } from "@iconify/react";
 
 const INTENT_TABS = [
   { id: "rent", label: "Rent", icon: FileText, description: "Find properties for rent" },
@@ -25,16 +26,32 @@ interface LocationSuggestion {
 }
 
 interface PropertyType {
-  id: string;
   slug: string;
   label: string;
 }
 
-function getCategoryIcon(slug: string) {
-  if (slug === "villa" || slug === "villas") return Home;
-  if (slug === "hostel" || slug === "pg") return Bed;
-  if (slug === "commercial" || slug === "land") return MapIcon;
-  return Building2;
+// Category values match `Property.category` exactly as stored by the backend
+// (see letsellr-api/app/modules/properties/schemas.py). "PGs & Hostel" covers
+// two backend categories at once — the comma-separated value is understood by
+// GET /api/properties?category=pg,hostel as an OR match.
+const PROPERTY_TYPES: PropertyType[] = [
+  { slug: "apartment", label: "Flat & Apartment" },
+  { slug: "villa_house", label: "House & Villa" },
+  { slug: "pg,hostel", label: "PGs & Hostel" },
+  { slug: "commercial", label: "Commercial" },
+  { slug: "land", label: "Land" },
+  { slug: "coworking_space", label: "Coworking Space" },
+];
+
+function getCategoryIconName(slug: string) {
+  if (slug === "villa_house") return "material-symbols:holiday-village-outline";
+  if (slug === "apartment") return "mingcute:building-2-fill";
+  if (slug === "pg,hostel") return "osmic:hostel-14";
+  if (slug === "commercial") return "hugeicons:office";
+  if (slug === "land") return "material-symbols-light:landscape";
+  if (slug === "coworking_space") return "streamline-ultimate:office-desk-2";
+  
+  return "mingcute:building-1-line";
 }
 
 // ── Trigger Button ────────────────────────────────────────────────────────────
@@ -60,7 +77,6 @@ export function SearchBarTrigger({ onClick }: { onClick: () => void }) {
 // ── Modal ─────────────────────────────────────────────────────────────────────
 export function SearchBarModal({ open, onClose, activeTab }: { open: boolean; onClose: () => void; activeTab: IntentId }) {
   const [activeCategory, setActiveCategory] = useState<string>("");
-  const [propertyTypes, setPropertyTypes] = useState<PropertyType[]>([]);
   const [popularLocations, setPopularLocations] = useState<LocationSuggestion[]>([]);
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<LocationSuggestion[]>([]);
@@ -69,15 +85,32 @@ export function SearchBarModal({ open, onClose, activeTab }: { open: boolean; on
   const inputRef = useRef<HTMLInputElement>(null);
   const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-  // Fetch property types and popular locations once on mount
-  useEffect(() => {
-    fetch(`${apiBase}/api/properties/config/types`)
-      .then((res) => res.ok ? res.json() : [])
-      .then((data) => {
-        if (Array.isArray(data)) setPropertyTypes(data);
-      })
-      .catch(() => { });
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+  const dragged = useRef(false);
 
+  const onMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    isDragging.current = true;
+    dragged.current = false;
+    startX.current = e.pageX - scrollRef.current.offsetLeft;
+    scrollLeft.current = scrollRef.current.scrollLeft;
+  };
+  const onMouseLeave = () => { isDragging.current = false; };
+  const onMouseUp = () => { isDragging.current = false; };
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging.current || !scrollRef.current) return;
+    e.preventDefault();
+    dragged.current = true;
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = (x - startX.current) * 2;
+    scrollRef.current.scrollLeft = scrollLeft.current - walk;
+  };
+
+  // Fetch popular locations once on mount
+  useEffect(() => {
     fetch(`${apiBase}/api/properties/config/locations`)
       .then((res) => res.ok ? res.json() : [])
       .then((data) => {
@@ -219,8 +252,15 @@ export function SearchBarModal({ open, onClose, activeTab }: { open: boolean; on
           </div>
 
           {/* ── Category Type Tabs (hidden for agents) ── */}
-          {activeTab !== "agent" && propertyTypes.length > 0 && (
-            <div className="flex items-center gap-0 overflow-x-auto scrollbar-none shrink-0 border-b border-zinc-100 px-4 pb-0">
+          {activeTab !== "agent" && (
+            <div 
+              ref={scrollRef}
+              onMouseDown={onMouseDown}
+              onMouseLeave={onMouseLeave}
+              onMouseUp={onMouseUp}
+              onMouseMove={onMouseMove}
+              className="flex items-center gap-0 overflow-x-auto scrollbar-none overscroll-none touch-pan-x shrink-0 border-b border-zinc-100 px-4 pb-0 cursor-grab active:cursor-grabbing select-none"
+            >
               {/* All
               <button
                 type="button"
@@ -234,19 +274,26 @@ export function SearchBarModal({ open, onClose, activeTab }: { open: boolean; on
                 All
               </button> */}
 
-              {propertyTypes.map((t) => {
-                const Icon = getCategoryIcon(t.slug);
+              {PROPERTY_TYPES.map((t) => {
+                const iconName = getCategoryIconName(t.slug);
                 return (
                   <button
                     key={t.slug}
                     type="button"
-                    onClick={() => setActiveCategory(t.slug)}
-                    className={`flex flex-col items-center gap-1 px-3 py-2.5 border-b-2 -mb-px text-[11px] font-bold whitespace-nowrap transition-all shrink-0 capitalize ${activeCategory === t.slug
+                    onClick={(e) => {
+                      if (dragged.current) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        return;
+                      }
+                      setActiveCategory(t.slug);
+                    }}
+                    className={`flex flex-col items-center gap-1.5 px-3 py-2.5 border-b-2 -mb-px text-[11px] font-bold whitespace-nowrap transition-all shrink-0 capitalize ${activeCategory === t.slug
                         ? "border-[#23D283] text-[#0F0F11]"
                         : "border-transparent text-zinc-400 hover:text-zinc-600"
                       }`}
                   >
-                    <Icon className="w-4 h-4" />
+                    <Icon icon={iconName} fontSize={26} />
                     {t.label}
                   </button>
                 );

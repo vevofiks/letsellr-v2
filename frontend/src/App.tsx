@@ -20,6 +20,7 @@ import { AdminLogin } from "@/pages/admin/AdminLogin";
 import { AdminLayout } from "@/pages/admin/AdminLayout";
 import { AdminDashboardPage } from "@/pages/admin/AdminDashboardPage";
 import { AdminPropertiesQueuePage } from "@/pages/admin/AdminPropertiesQueuePage";
+import { AdminAddPropertyPage } from "@/pages/admin/AdminAddPropertyPage";
 import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
 import { AdminReportsPage } from "@/pages/admin/AdminReportsPage";
 import { AdminCategoriesPage } from "@/pages/admin/AdminCategoriesPage";
@@ -164,6 +165,7 @@ function App() {
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboardPage />} />
               <Route path="properties" element={<AdminPropertiesQueuePage />} />
+              <Route path="properties/add" element={<AdminAddPropertyPage />} />
               <Route path="users" element={<AdminUsersPage />} />
               <Route path="reports" element={<AdminReportsPage />} />
               <Route path="categories" element={<AdminCategoriesPage />} />
