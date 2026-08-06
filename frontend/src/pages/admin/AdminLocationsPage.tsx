@@ -6,12 +6,13 @@ import {
 import { toast } from "sonner";
 import { adminService, type LocationData } from "@/services/adminService";
 import { Badge } from "@/components/ui/badge";
+import { ImageInput } from "@/components/admin/ImageInput";
 
 const fmt = (iso: string) =>
   new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 
-type FormState = { title: string; google_map_url: string; is_important: boolean; imageFile: File | null };
-const EMPTY: FormState = { title: "", google_map_url: "", is_important: false, imageFile: null };
+type FormState = { title: string; google_map_url: string; image_url: string; is_important: boolean; imageFile: File | null };
+const EMPTY: FormState = { title: "", google_map_url: "", image_url: "", is_important: false, imageFile: null };
 
 export const AdminLocationsPage: React.FC = () => {
   const [locations, setLocations] = useState<LocationData[]>([]);
@@ -45,7 +46,7 @@ export const AdminLocationsPage: React.FC = () => {
   const openCreate = () => { setEditTarget(null); setForm(EMPTY); setModalOpen(true); };
   const openEdit = (l: LocationData) => {
     setEditTarget(l);
-    setForm({ title: l.title, google_map_url: l.google_map_url || "", is_important: l.is_important, imageFile: null });
+    setForm({ title: l.title, google_map_url: l.google_map_url || "", image_url: l.image_url || "", is_important: l.is_important, imageFile: null });
     setModalOpen(true);
   };
 
@@ -53,8 +54,14 @@ export const AdminLocationsPage: React.FC = () => {
     if (!form.title.trim()) { toast.error("Title is required."); return; }
     try {
       setSaving(true);
-      const payload = { title: form.title.trim(), google_map_url: form.google_map_url.trim() || null, is_important: form.is_important };
-      
+      const payload = {
+        title: form.title.trim(),
+        google_map_url: form.google_map_url.trim() || null,
+        // Skipped when a file is queued — the upload below sets image_url instead.
+        image_url: form.imageFile ? undefined : (form.image_url.trim() || null),
+        is_important: form.is_important,
+      };
+
       let savedLocation: LocationData;
       if (editTarget) {
         savedLocation = await adminService.updateLocation(editTarget.id, payload);
@@ -304,23 +311,15 @@ export const AdminLocationsPage: React.FC = () => {
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-slate-400 block">Location Image</label>
-                <div className="flex items-center gap-3">
-                  {editTarget?.image_url && !form.imageFile && (
-                    <img src={editTarget.image_url} alt="" className="h-10 w-10 object-cover rounded-lg border border-slate-200" />
-                  )}
-                  {form.imageFile && (
-                    <div className="h-10 w-10 bg-slate-100 flex items-center justify-center rounded-lg border border-slate-200 text-[8px] font-bold text-slate-400">NEW</div>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={e => setForm(f => ({ ...f, imageFile: e.target.files?.[0] || null }))}
-                    className="flex-1 bg-slate-50 border border-slate-200/80 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#014645]"
-                  />
-                </div>
-              </div>
+              <ImageInput
+                label="Location Image"
+                imageUrl={form.image_url}
+                imageFile={form.imageFile}
+                existingUrl={editTarget?.image_url}
+                onUrlChange={url => setForm(f => ({ ...f, image_url: url }))}
+                onFileChange={file => setForm(f => ({ ...f, imageFile: file }))}
+                disabled={saving}
+              />
 
               <div className="flex items-center justify-between p-3 rounded-lg bg-slate-50 border border-slate-200/80">
                 <div>

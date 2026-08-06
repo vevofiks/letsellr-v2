@@ -62,11 +62,11 @@ export default function FeaturedLocations() {
   if (locations.length === 0) return null;
 
   // Duplicate once — animate -50% for seamless loop
-  const looped = [...locations, ...locations];
+  const looped = [...locations, ...locations, ...locations, ...locations];
   const speed = Math.max(18, locations.length * 3.5);
 
   return (
-    <section ref={sectionRef} className="w-full py-8 md:py-10 bg-[#FAF9F6] overflow-hidden mt-10">
+    <section ref={sectionRef} className="w-full py-8 md:py-10 bg-[#FAF9F6] overflow-hidden">
       <style>{`
         @keyframes loc-marquee {
           0%   { transform: translateX(0); }

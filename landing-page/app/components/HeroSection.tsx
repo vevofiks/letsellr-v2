@@ -51,9 +51,9 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
       className="bg-[#FAFAF8] text-[#0F0F11]"
     >
       {/* ─────────────────────────────────────────────
-          DESKTOP LAYOUT (md and up)
+          DESKTOP LAYOUT (lg and up)
       ───────────────────────────────────────────── */}
-      <div className="hidden md:block relative overflow-hidden" style={{ height: "100vh", minHeight: "640px" }}>
+      <div className="hidden lg:block relative overflow-hidden" style={{ height: "100vh", minHeight: "640px" }}>
 
         {/* Layer 0 — Brand name behind everything */}
         <div
@@ -78,7 +78,6 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
                 border: "1px solid rgba(35,210,131,0.4)",
               }}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-[#23D283]" />
               Direct Owners
             </span>
 
@@ -144,95 +143,118 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
       </div>
 
       {/* ─────────────────────────────────────────────
-          MOBILE LAYOUT (below md) — full 100svh
+          MOBILE + TABLET LAYOUT (below lg)
+
+          Everything flows in a single flex column instead of being
+          absolutely positioned, so the pieces divide up whatever height
+          the device actually has. The villa takes the leftover space
+          (flex-1), which keeps its distance to the title identical on a
+          650px phone and a 1024px tablet. The one hand-tuned number is
+          the title/villa overlap, expressed as a multiple of the title
+          size so it scales with the type.
       ───────────────────────────────────────────── */}
       <div
-        className="md:hidden relative bg-[#FAFAF8] overflow-hidden"
-        style={{ height: "100svh", minHeight: "580px" }}
+        className="lg:hidden relative bg-[#FAFAF8] overflow-hidden flex flex-col"
+        style={
+          {
+            height: "100svh",
+            minHeight: "560px",
+            "--hero-title-size": "clamp(2.75rem, 18vw, 7rem)",
+          } as React.CSSProperties
+        }
       >
-        {/* Top Row: Description left — anchored at top */}
-        <div className="absolute top-0 left-0 right-0 flex justify-between items-start px-5 pt-20 z-20">
-          {/* Left: desc */}
-          <div
-            className="hero-left flex flex-col gap-2"
-            style={{ maxWidth: "75%", opacity: 0 }}
+        {/* Top: badge + description — pt clears the fixed navbar */}
+        <div
+          className="hero-left shrink-0 px-5 sm:px-8 pt-24 flex flex-col gap-2"
+          style={{ maxWidth: "34rem", opacity: 0 }}
+        >
+          <span
+            className="inline-block text-[7px] sm:text-[9px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full w-fit"
+            style={{ border: "1px solid #23D283", color: "#23D283", background: "rgba(35,210,131,0.08)" }}
           >
-            <span
-              className="inline-block text-[7px] font-bold tracking-widest uppercase px-2 py-0.5 rounded-full w-fit"
-              style={{ border: "1px solid #23D283", color: "#23D283", background: "rgba(35,210,131,0.08)" }}
-            >
-              Direct Owners
-            </span>
-            <p className="text-[10px] text-zinc-600 leading-relaxed font-normal">
-              Verified homes, direct from owners. <span style={{ color: "#23D283", fontWeight: 600 }}>100% admin-checked</span> listings.
-            </p>
-          </div>
+            Direct Owners
+          </span>
+          <p className="text-[10px] sm:text-xs text-zinc-600 leading-relaxed font-normal">
+            Verified homes, direct from owners. <span style={{ color: "#23D283", fontWeight: 600 }}>100% admin-checked</span> listings.
+          </p>
         </div>
 
-        {/* LETSELLR text — fixed position below description, always above villa */}
+        {/* Pushes the wordmark+villa group down so the composition sits low,
+            like the desktop. Collapses to nothing when height is tight. */}
+        <div className="flex-1 min-h-[2vh]" />
+
+        {/* LETSELLR wordmark */}
         <div
-          className="hero-title absolute inset-x-0 pointer-events-none select-none flex justify-center"
-          style={{ top: "175px", zIndex: 5, opacity: 0 }}
+          className="hero-title shrink-0 px-3 pointer-events-none select-none"
+          style={{ zIndex: 5, opacity: 0 }}
         >
           <h1
-            className="font-extrabold uppercase tracking-tighter text-[#0F0F11] text-center leading-none w-full px-2"
-            style={{ fontSize: "clamp(3rem, 19vw, 5.5rem)", letterSpacing: "-0.02em" }}
+            className="font-extrabold uppercase tracking-tighter text-[#0F0F11] text-center leading-none"
+            style={{ fontSize: "var(--hero-title-size)", letterSpacing: "-0.02em" }}
           >
             LETSELLR
           </h1>
         </div>
 
-        {/* Villa centerpiece — starts below the LETSELLR text, overlaps it partially */}
+        {/* Villa — eats ALL remaining height (flex-1) and scales off that
+            height, so it always fills the space with no vertical gap. Width
+            follows the aspect ratio and is free to bleed past the screen
+            edges (clipped by the wrapper), which is what keeps it big and
+            identical in proportion on every device. The negative margin is a
+            fraction of the title size, so the roofline cuts through the
+            bottom of the letters by the same amount everywhere.
+            Uses the alpha-trimmed asset — the original PNG's ~19% transparent
+            padding is what forced the magic scale() values before. */}
         <div
-          className="hero-building absolute left-0 right-0 px-4"
-          style={{ top: "22%", bottom: "clamp(100px, 16vh, 140px)", zIndex: 10, opacity: 0 }}
+          className="hero-building relative mx-auto"
+          style={{
+            zIndex: 10,
+            opacity: 0,
+            width: "140%",
+            aspectRatio: "961 / 649",
+            flex: "0 1 auto",
+            minHeight: 0,
+            marginTop: "calc(var(--hero-title-size) * -0.34)",
+          }}
         >
-          <div className="relative w-full h-full">
-            <Image
-              src="/images/isolated-villa-wbg.png"
-              alt="Letsellr Premium Villa"
-              fill
-              sizes="100vw"
-              priority
-              className="object-contain object-bottom"
-              style={{
-                filter: "drop-shadow(0 12px 28px rgba(0,0,0,0.12))",
-                transform: "scale(1.15) translateY(0%)",
-                transformOrigin: "bottom center",
-              }}
-            />
-          </div>
+          <Image
+            src="/images/isolated-villa-trimmed.png"
+            alt="Letsellr Premium Villa"
+            fill
+            sizes="(max-width: 1024px) 140vw, 1050px"
+            priority
+            className="object-contain object-bottom"
+            style={{ filter: "drop-shadow(0 12px 28px rgba(0,0,0,0.12))" }}
+          />
         </div>
 
-        {/* Bottom Row: Left Tagline + Right Stats */}
+        {/* Bottom: tagline left + stats right */}
         <div
-          className="absolute bottom-5 left-5 right-5 flex justify-between items-end z-30 pointer-events-none"
+          className="shrink-0 px-5 sm:px-8 flex justify-between items-end gap-4 z-30"
+          style={{ paddingBottom: "calc(1.25rem + env(safe-area-inset-bottom))" }}
         >
-          {/* Bottom Tagline */}
-          <div
-            className="hero-tagline pointer-events-auto"
-            style={{ opacity: 0 }}
-          >
+          <div className="hero-tagline" style={{ opacity: 0 }}>
             <h2
               className="font-extrabold tracking-tight text-[#0F0F11] uppercase leading-tight"
-              style={{ fontSize: "7.5vw" }}
+              style={{ fontSize: "clamp(1.6rem, 7.5vw, 3rem)" }}
             >
               Choose <br />Your<br /><span style={{ color: "#23D283" }}>Next </span> Home
             </h2>
           </div>
 
-          {/* Right: stats (Mobile bottom-right) */}
-          <div
-            className="hero-right flex flex-col items-end gap-2 pointer-events-auto"
-            style={{ opacity: 0 }}
-          >
+          <div className="hero-right flex flex-col items-end gap-2" style={{ opacity: 0 }}>
             {[
               { val: "10K", label: "Clients" },
               { val: "15+", label: "Cities" },
               { val: "100%", label: "Verified" },
             ].map((s) => (
               <div key={s.label} className="text-right">
-                <div className="text-[21px] font-extrabold tracking-tighter text-[#0F0F11] leading-none">{s.val}</div>
+                <div
+                  className="font-extrabold tracking-tighter text-[#0F0F11] leading-none"
+                  style={{ fontSize: "clamp(1.15rem, 5.5vw, 2rem)" }}
+                >
+                  {s.val}
+                </div>
                 <div className="text-[9px] font-bold uppercase tracking-widest mt-0.5" style={{ color: "#23D283" }}>{s.label}</div>
               </div>
             ))}

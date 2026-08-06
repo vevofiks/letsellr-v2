@@ -198,7 +198,7 @@ export const AdminUsersPage: React.FC = () => {
       return <Badge className="bg-rose-50 text-rose-700 border border-rose-200 text-[9.5px] font-black uppercase">Suspended</Badge>;
     }
     if (isPendingUser(u)) {
-      return <Badge className="bg-amber-50 text-amber-800 border border-amber-200 text-[9.5px] font-black uppercase">Pending Review</Badge>;
+      return <Badge className="bg-amber-50 text-amber-800 border border-amber-200 text-[9.5px] font-black uppercase">Pending</Badge>;
     }
     return <Badge className="bg-emerald-50 text-[#014645] border border-emerald-200 text-[9.5px] font-black uppercase">Active</Badge>;
   };
@@ -406,7 +406,7 @@ export const AdminUsersPage: React.FC = () => {
             >
               <option value="all">All Roles</option>
               <option value="agency">Agency</option>
-              <option value="owner">Owner / Landlord</option>
+              <option value="owner">Owner</option>
               <option value="user">Seeker / Client</option>
             </select>
             <select

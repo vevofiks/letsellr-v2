@@ -10,12 +10,10 @@ import {
   PlusCircle,
   Eye,
   ShieldCheck,
-  UserCheck,
   MapPin,
   Tag,
   Check,
   Activity,
-  FileCheck,
   UserPlus
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -24,8 +22,7 @@ import {
   adminService,
   type AdminDashboardStats,
   type AdminProperty,
-  type AdminUser,
-  type VerificationRequest
+  type AdminUser
 } from "@/services/adminService";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +33,6 @@ export const AdminDashboardPage: React.FC = () => {
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [pendingProperties, setPendingProperties] = useState<AdminProperty[]>([]);
   const [recentUsers, setRecentUsers] = useState<AdminUser[]>([]);
-  const [pendingVerifications, setPendingVerifications] = useState<VerificationRequest[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
@@ -46,11 +42,10 @@ export const AdminDashboardPage: React.FC = () => {
       if (isManualRefresh) setRefreshing(true);
       else setLoading(true);
 
-      const [statsData, pendingData, usersData, verificationsData] = await Promise.all([
+      const [statsData, pendingData, usersData] = await Promise.all([
         adminService.getDashboardStats().catch(() => null),
         adminService.getPendingProperties().catch(() => []),
         adminService.getUsers().catch(() => []),
-        adminService.getVerificationRequests().catch(() => []),
       ]);
 
       setStats(statsData);
@@ -59,11 +54,6 @@ export const AdminDashboardPage: React.FC = () => {
       setRecentUsers(
         Array.isArray(usersData)
           ? usersData.filter((u) => u && u.role !== "admin").slice(0, 5)
-          : []
-      );
-      setPendingVerifications(
-        Array.isArray(verificationsData)
-          ? verificationsData.filter((v) => v && v.status === "pending").slice(0, 4)
           : []
       );
     } catch (err: any) {
@@ -126,7 +116,7 @@ export const AdminDashboardPage: React.FC = () => {
             
           </div>
           <p className="text-xs text-slate-500 font-medium -mt-4!">
-            Real-time platform activity, pending property moderation, KYC reviews, and user statistics.
+            Real-time platform activity, pending property moderation, and user statistics.
           </p>
         </div>
 
@@ -176,7 +166,7 @@ export const AdminDashboardPage: React.FC = () => {
         <Card className="py-0 rounded-lg shadow-2xs border-slate-200/80 bg-white">
           <CardContent className="p-3 sm:p-3.5 space-y-1.5">
             <div className="flex items-center justify-between gap-1">
-              <span className="text-[9.5px] sm:text-[10.5px] font-black uppercase tracking-wider text-slate-400 truncate">Pending Review</span>
+              <span className="text-[9.5px] sm:text-[10.5px] font-black uppercase tracking-wider text-slate-400 truncate">Pending Properties</span>
               <div className="size-7 sm:size-8 rounded-md bg-amber-50 text-amber-700 flex items-center justify-center shrink-0 border border-amber-200/60">
                 <Clock className="size-3.5 sm:size-4" />
               </div>
@@ -374,73 +364,8 @@ export const AdminDashboardPage: React.FC = () => {
         </Card>
       </div>
 
-      {/* Bottom Grid: 1 Row Desktop View (User KYC & Recent Registrations side-by-side) */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* User KYC Verification Requests Queue */}
-        <Card className="rounded-lg shadow-2xs border-slate-200/80 flex flex-col bg-white px-5 sm:px-6">
-          <CardHeader className="flex flex-row items-center justify-between px-0 py-4 border-b border-slate-100">
-            <div>
-              <CardTitle className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                <FileCheck className="size-4 text-blue-600" />
-                User KYC Verification Requests
-              </CardTitle>
-              <CardDescription className="text-xs mt-0.5">
-                Pending identity and agency license documentation reviews.
-              </CardDescription>
-            </div>
-            <Link to="/admin-platform/users">
-              <Button variant="ghost" size="sm" className="text-xs font-bold text-blue-700 hover:bg-blue-50 flex items-center gap-1 rounded-md h-7 px-2">
-                Manage Users <ArrowUpRight className="size-3.5" />
-              </Button>
-            </Link>
-          </CardHeader>
-
-          <CardContent className="p-0 flex-1">
-            {pendingVerifications.length === 0 ? (
-              <div className="py-6 text-center space-y-1">
-                <UserCheck className="size-7 text-blue-500 mx-auto opacity-80" />
-                <p className="text-xs font-bold text-slate-700">No Pending Verifications</p>
-                <p className="text-[11px] text-slate-400">All submitted documents have been reviewed.</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50/80">
-                    <TableHead className="text-[10px] font-black uppercase py-2.5 px-3">Document Type</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase py-2.5 px-3">Status</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase py-2.5 px-3">Submitted</TableHead>
-                    <TableHead className="text-[10px] font-black uppercase py-2.5 px-3 text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pendingVerifications.map((ver) => (
-                    <TableRow key={ver.id} className="hover:bg-slate-50/70">
-                      <TableCell className="font-extrabold text-slate-900 text-xs py-3 px-3">
-                        <span className="capitalize">{(ver.document_type || "document").replace(/_/g, " ")}</span>
-                      </TableCell>
-                      <TableCell className="py-3 px-3">
-                        <Badge variant="outline" className="text-[9.5px] font-black uppercase bg-amber-50 text-amber-700 border-amber-200 rounded-md">
-                          {ver.status || "pending"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-500 py-3 px-3 font-medium">
-                        {ver.created_at ? new Date(ver.created_at).toLocaleDateString() : "Recently"}
-                      </TableCell>
-                      <TableCell className="text-right py-3 px-3">
-                        <Link to="/admin-platform/users">
-                          <Button size="sm" variant="outline" className="h-7 text-[11px] font-bold px-2.5 py-0 rounded-md">
-                            Review Document
-                          </Button>
-                        </Link>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
-
+      {/* Bottom Row: Recent Registrations */}
+      <div className="grid grid-cols-1 gap-6">
         {/* Recent Registered Users List (Excludes Admin) */}
         <Card className="rounded-lg shadow-2xs border-slate-200/80 flex flex-col bg-white px-5 sm:px-6">
           <CardHeader className="flex flex-row items-center justify-between px-0 py-4 border-b border-slate-100">

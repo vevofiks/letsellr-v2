@@ -218,7 +218,6 @@ export default function PropertyShowcase() {
               {/* Pill Tag (Top Left) — Brand Verified Pill */}
               <div className="absolute top-4 left-4 z-10">
                 <span className="inline-flex items-center justify-center gap-1.5 bg-[#D9F7E9]/95 backdrop-blur-xs text-[#0B6E4F] text-xs font-bold px-3.5 py-1.5 rounded-full shadow-xs leading-none border border-[#23D283]/30">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#23D283]"></span>
                   {prop.intentTag || "For Sale"}
                 </span>
               </div>

@@ -9,8 +9,13 @@ from sqlalchemy import select, func
 from app.depends.auth import CurrentUser
 from app.depends.db import DbSession
 from app.modules.users.models import User
-from app.modules.admin.models import VerificationRequest
+from app.modules.admin.models import AdminSettings, VerificationRequest
+from app.modules.admin.service import AdminSettingsService, effective_recipients
 from app.modules.admin.schemas import (
+    AdminAccountResponse,
+    AdminCredentialsUpdate,
+    AdminNotificationSettingsResponse,
+    AdminNotificationSettingsUpdate,
     UserAdminResponse,
     VerificationRequestResponse,
     UpdateUserStatusRequest,
@@ -719,3 +724,68 @@ async def delete_property_review_admin(
         raise HTTPException(status_code=404, detail="Review not found")
     await db.delete(review)
     await db.commit()
+
+
+# ── Settings ─────────────────────────────────────────────────────────────────
+
+
+def _notification_response(
+    settings_row: AdminSettings,
+) -> AdminNotificationSettingsResponse:
+    return AdminNotificationSettingsResponse(
+        notify_pending_users=settings_row.notify_pending_users,
+        notify_pending_properties=settings_row.notify_pending_properties,
+        whatsapp_recipients=effective_recipients(settings_row),
+        using_server_default=not settings_row.whatsapp_recipients,
+    )
+
+
+@router.get(
+    "/settings/notifications",
+    response_model=AdminNotificationSettingsResponse,
+    tags=["Admin - Settings"],
+)
+async def get_notification_settings(current_user: CurrentUser, db: DbSession):
+    require_admin(current_user)
+    settings_row = await AdminSettingsService(db).get_settings()
+    await db.commit()
+    return _notification_response(settings_row)
+
+
+@router.patch(
+    "/settings/notifications",
+    response_model=AdminNotificationSettingsResponse,
+    tags=["Admin - Settings"],
+)
+async def update_notification_settings(
+    payload: AdminNotificationSettingsUpdate,
+    current_user: CurrentUser,
+    db: DbSession,
+):
+    require_admin(current_user)
+    settings_row = await AdminSettingsService(db).update_notifications(payload)
+    await db.commit()
+    return _notification_response(settings_row)
+
+
+@router.get(
+    "/settings/account", response_model=AdminAccountResponse, tags=["Admin - Settings"]
+)
+async def get_admin_account(current_user: CurrentUser):
+    require_admin(current_user)
+    return current_user
+
+
+@router.patch(
+    "/settings/account", response_model=AdminAccountResponse, tags=["Admin - Settings"]
+)
+async def update_admin_account(
+    payload: AdminCredentialsUpdate,
+    current_user: CurrentUser,
+    db: DbSession,
+):
+    """Change the signed-in admin's login email and/or password."""
+    require_admin(current_user)
+    admin = await AdminSettingsService(db).update_credentials(current_user, payload)
+    await db.commit()
+    return admin

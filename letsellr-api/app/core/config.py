@@ -82,6 +82,11 @@ class Settings(BaseSettings):
     OPENWA_API_KEY: str = ""
     FREE_CONTACT_LIMIT: int = 3
 
+    # ── Admin alerts ─────────────────────────────────────────────────────────
+    # Comma-separated WhatsApp numbers that receive pending-approval alerts.
+    ADMIN_WHATSAPP_NUMBERS: str = "+919895415718"
+    ADMIN_PANEL_URL: str = "https://app.letsellr.in/admin-platform"
+
     # ── Server-to-Server Auth (n8n) ───────────────────────────────────────────
     N8N_API_KEY: str = ""
 

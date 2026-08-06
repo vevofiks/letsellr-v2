@@ -1,5 +1,5 @@
 import uuid
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
 
 
@@ -110,12 +110,14 @@ class LocationDataResponse(BaseModel):
 class LocationDataCreate(BaseModel):
     title: str
     google_map_url: str | None = None
+    image_url: str | None = None
     is_important: bool = False
 
 
 class LocationDataUpdate(BaseModel):
     title: str | None = None
     google_map_url: str | None = None
+    image_url: str | None = None
     is_important: bool | None = None
 
 
@@ -134,3 +136,36 @@ class UserLimitUpdate(BaseModel):
     reset_usage: bool = False
     note: str = ""
     payment_ref: str | None = None
+
+
+# ── Admin Settings ───────────────────────────────────────────────────────────
+
+
+class AdminNotificationSettingsResponse(BaseModel):
+    notify_pending_users: bool
+    notify_pending_properties: bool
+    # The numbers alerts actually go to right now.
+    whatsapp_recipients: list[str] = []
+    # True while `whatsapp_recipients` comes from env rather than being saved here.
+    using_server_default: bool = False
+    model_config = {"from_attributes": True}
+
+
+class AdminNotificationSettingsUpdate(BaseModel):
+    notify_pending_users: bool | None = None
+    notify_pending_properties: bool | None = None
+    whatsapp_recipients: list[str] | None = None
+
+
+class AdminCredentialsUpdate(BaseModel):
+    current_password: str = Field(min_length=1)
+    new_email: EmailStr | None = None
+    new_password: str | None = Field(default=None, min_length=8)
+
+
+class AdminAccountResponse(BaseModel):
+    id: uuid.UUID
+    name: str
+    email: EmailStr | None = None
+    phone: str
+    model_config = {"from_attributes": True}
