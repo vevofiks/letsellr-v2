@@ -180,8 +180,11 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
           >
             Direct Owners
           </span>
+          {/* Break at the sentence boundary so it's always two tidy lines,
+              rather than wrapping mid-phrase at whatever width it runs out. */}
           <p className="text-[10px] sm:text-xs text-zinc-600 leading-relaxed font-normal">
-            Verified homes, direct from owners. <span style={{ color: "#23D283", fontWeight: 600 }}>100% admin-checked</span> listings.
+            Verified homes, direct from owners.<br />
+            <span style={{ color: "#23D283", fontWeight: 600 }}>100% admin-checked</span> listings.
           </p>
         </div>
 
