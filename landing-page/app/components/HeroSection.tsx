@@ -159,7 +159,13 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
           {
             height: "100svh",
             minHeight: "560px",
-            "--hero-title-size": "clamp(2.75rem, 18vw, 7rem)",
+            // Every element below is sized off this one number, so the whole
+            // composition is a single locked-proportion unit. It's the villa's
+            // width: the viewport normally, but capped against height so a
+            // short phone scales the group down instead of overflowing, and
+            // capped at 620px so tablets don't blow it up.
+            "--hero-w": "min(100vw, 58svh, 620px)",
+            "--hero-title-size": "calc(var(--hero-w) * 0.18)",
           } as React.CSSProperties
         }
       >
@@ -195,25 +201,15 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
             LETSELLR
           </h1>
         </div>
-
-        {/* Villa — eats ALL remaining height (flex-1) and scales off that
-            height, so it always fills the space with no vertical gap. Width
-            follows the aspect ratio and is free to bleed past the screen
-            edges (clipped by the wrapper), which is what keeps it big and
-            identical in proportion on every device. The negative margin is a
-            fraction of the title size, so the roofline cuts through the
-            bottom of the letters by the same amount everywhere.
-            Uses the alpha-trimmed asset — the original PNG's ~19% transparent
-            padding is what forced the magic scale() values before. */}
         <div
           className="hero-building relative mx-auto"
           style={{
             zIndex: 10,
             opacity: 0,
-            width: "140%",
+            width: "calc(var(--hero-w) * 1.03)",
+            left: "calc(var(--hero-w) * 0.015)",
             aspectRatio: "961 / 649",
-            flex: "0 1 auto",
-            minHeight: 0,
+            flex: "0 0 auto",
             marginTop: "calc(var(--hero-title-size) * -0.34)",
           }}
         >
@@ -221,7 +217,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
             src="/images/isolated-villa-trimmed.png"
             alt="Letsellr Premium Villa"
             fill
-            sizes="(max-width: 1024px) 140vw, 1050px"
+            sizes="(max-width: 1024px) 100vw, 1050px"
             priority
             className="object-contain object-bottom"
             style={{ filter: "drop-shadow(0 12px 28px rgba(0,0,0,0.12))" }}
@@ -236,7 +232,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
           <div className="hero-tagline" style={{ opacity: 0 }}>
             <h2
               className="font-extrabold tracking-tight text-[#0F0F11] uppercase leading-tight"
-              style={{ fontSize: "clamp(1.6rem, 7.5vw, 3rem)" }}
+              style={{ fontSize: "calc(var(--hero-w) * 0.075)" }}
             >
               Choose <br />Your<br /><span style={{ color: "#23D283" }}>Next </span> Home
             </h2>
@@ -251,7 +247,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
               <div key={s.label} className="text-right">
                 <div
                   className="font-extrabold tracking-tighter text-[#0F0F11] leading-none"
-                  style={{ fontSize: "clamp(1.15rem, 5.5vw, 2rem)" }}
+                  style={{ fontSize: "calc(var(--hero-w) * 0.055)" }}
                 >
                   {s.val}
                 </div>
