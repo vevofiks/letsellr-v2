@@ -3,7 +3,7 @@ import { Plus_Jakarta_Sans, Playfair_Display, Open_Sans } from "next/font/google
 import "./globals.css";
 
 const jakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-sans",
+  variable: "--font-jakarta",
   subsets: ["latin"],
   weight: ["300", "400", "500", "600", "700", "800"],
 });
@@ -15,7 +15,7 @@ const openSans = Open_Sans({
 });
 
 const playfairDisplay = Playfair_Display({
-  variable: "--font-serif",
+  variable: "--font-playfair",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   style: ["normal", "italic"],

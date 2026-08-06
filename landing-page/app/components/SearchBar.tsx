@@ -434,68 +434,72 @@ export default function SearchBar() {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<IntentId>("rent");
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const bubbleRef = useRef<HTMLDivElement>(null);
+  const underlineRef = useRef<HTMLDivElement>(null);
+  const hasPositioned = useRef(false);
 
+  // Tabs are equal-width, so the underline has to be re-measured on resize as
+  // well as on selection — hence the shared positioning helper.
   useEffect(() => {
-    const activeIndex = INTENT_TABS.findIndex((t) => t.id === activeTab);
-    const activeEl = tabRefs.current[activeIndex];
-    const bubbleEl = bubbleRef.current;
-    
-    if (activeEl && bubbleEl) {
-      gsap.to(bubbleEl, {
-        x: activeEl.offsetLeft,
-        width: activeEl.offsetWidth,
-        duration: 0.5,
-        ease: "power4.out",
-      });
-    }
+    const place = (animate: boolean) => {
+      const activeIndex = INTENT_TABS.findIndex((t) => t.id === activeTab);
+      const activeEl = tabRefs.current[activeIndex];
+      const underlineEl = underlineRef.current;
+      if (!activeEl || !underlineEl) return;
+
+      const to = { x: activeEl.offsetLeft, width: activeEl.offsetWidth };
+      // First paint jumps straight to position; only later changes slide.
+      if (animate) gsap.to(underlineEl, { ...to, duration: 0.4, ease: "power3.out" });
+      else gsap.set(underlineEl, to);
+    };
+
+    place(hasPositioned.current);
+    hasPositioned.current = true;
+
+    const onResize = () => place(false);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, [activeTab]);
 
   return (
     <div className="w-full max-w-3xl mx-auto flex flex-col items-start relative z-50">
-      <style>{`
-        .search-intent-bubble {
-          position: absolute;
-          top: 0;
-          left: 0;
-          height: 100%;
-          border-radius: 9999px;
-          background-color: rgba(35, 210, 131, 0.15);
-          backdrop-filter: blur(12px);
-          border: 1px solid rgba(35, 210, 131, 0.3);
-          pointer-events: none;
-          z-index: 0;
-          /* Setting initial x so it doesn't jump from 0 on first render if rent is not index 0 */
-        }
-        .search-intent-bubble::after {
-          content: "";
-          position: absolute;
-          bottom: -8px;
-          left: 50%;
-          
-        }
-      `}</style>
+      {/* ── Outer Intent Tabs ──
+          Equal-width columns sharing the trigger's gutter: the row can never
+          outgrow the viewport, so nothing gets clipped on narrow screens. */}
+      <div className="w-full px-2 sm:px-0 mb-3">
+        <div
+          role="tablist"
+          aria-label="What are you looking for"
+          className="relative flex items-stretch border-b border-black/10"
+        >
+          {INTENT_TABS.map((tab, idx) => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                ref={(el) => { tabRefs.current[idx] = el; }}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 flex items-center justify-center gap-1 sm:gap-1.5 px-1 pb-2.5 pt-1 text-xs sm:text-sm font-bold tracking-tight whitespace-nowrap transition-colors duration-300 cursor-pointer ${
+                  isActive
+                    ? "text-[#0B6E4F]"
+                    : "text-zinc-500 hover:text-zinc-900"
+                }`}
+              >
+                <tab.icon className="w-4 h-4 shrink-0" />
+                {tab.label}
+              </button>
+            );
+          })}
 
-      {/* ── Outer Intent Tabs ── */}
-      <div className="relative flex bg-white/20 backdrop-blur-md p-1 sm:p-1.5 rounded-full mb-2 shadow-none gap-1 ml-2 sm:ml-4 z-10">
-        <div ref={bubbleRef} className="search-intent-bubble" />
-        
-        {INTENT_TABS.map((tab, idx) => (
-          <button
-            key={tab.id}
-            ref={(el) => { tabRefs.current[idx] = el; }}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={`relative z-10 flex items-center gap-1.5 px-4 sm:px-5 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold transition-colors duration-300 cursor-pointer ${
-              activeTab === tab.id
-                ? "text-[#0B6E4F]"
-                : "text-zinc-600 hover:text-zinc-900"
-            }`}
-          >
-            <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-            {tab.label}
-          </button>
-        ))}
+          {/* Slides + resizes under the active tab (GSAP drives x / width) */}
+          <div
+            ref={underlineRef}
+            aria-hidden="true"
+            className="absolute bottom-0 left-0 h-0.75 rounded-full bg-[#23D283] pointer-events-none"
+          />
+        </div>
       </div>
 
       <div className="w-full px-2 sm:px-0">

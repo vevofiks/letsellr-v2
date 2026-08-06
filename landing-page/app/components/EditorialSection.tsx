@@ -202,14 +202,6 @@ export default function EditorialSection() {
       {/* ── Top Headline Block ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-end mb-12 md:mb-16">
         <div className="lg:col-span-7">
-          <div className="mb-5">
-            <div className="inline-flex items-center gap-2.5">
-              <span className="w-5 h-0.5 bg-[#23D283] rounded-full"></span>
-              <span className="text-xs font-extrabold uppercase tracking-[0.22em] text-[#014645]">
-                The Letsellr Philosophy
-              </span>
-            </div>
-          </div>
 
           <h2
             ref={textRef}
@@ -295,7 +287,7 @@ export default function EditorialSection() {
         </div>
 
         {/* CENTER — Info text card */}
-        <div className="editorial-card-drift lg:col-span-4 flex flex-col justify-between bg-white rounded-2xl border border-black/8 shadow-sm p-8 md:p-10">
+        <div className="editorial-card-drift lg:col-span-4 flex flex-col justify-between bg-white rounded-2xl border border-black/8 shadow-sm p-8 md:p-10 mt-4">
           <div>
             <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-zinc-400 block mb-4">
               Cabin &amp; Modular Homes

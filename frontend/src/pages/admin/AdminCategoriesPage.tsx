@@ -6,6 +6,7 @@ import {
 import { toast } from "sonner";
 import { adminService, type PropertyType } from "@/services/adminService";
 import { Badge } from "@/components/ui/badge";
+import { ImageInput } from "@/components/admin/ImageInput";
 
 const ROLE_OPTIONS = ["owner", "agency"];
 
@@ -20,10 +21,11 @@ type FormState = {
   label: string;
   description: string;
   image_url: string;
+  imageFile: File | null;
   is_active: boolean;
   allowed_roles: string[];
 };
-const EMPTY: FormState = { slug: "", label: "", description: "", image_url: "", is_active: true, allowed_roles: [] };
+const EMPTY: FormState = { slug: "", label: "", description: "", image_url: "", imageFile: null, is_active: true, allowed_roles: [] };
 
 export const AdminCategoriesPage: React.FC = () => {
   const [types, setTypes] = useState<PropertyType[]>([]);
@@ -62,6 +64,7 @@ export const AdminCategoriesPage: React.FC = () => {
       label: t.label,
       description: t.description,
       image_url: t.image_url || "",
+      imageFile: null,
       is_active: t.is_active,
       allowed_roles: t.allowed_roles ? t.allowed_roles.filter(r => ROLE_OPTIONS.includes(r)) : [],
     });
@@ -92,20 +95,30 @@ export const AdminCategoriesPage: React.FC = () => {
         slug: form.slug.trim(),
         label: form.label.trim(),
         description: form.description.trim(),
-        image_url: form.image_url.trim() || undefined,
+        // null (not undefined) so clearing the image actually clears it —
+        // the API patches with exclude_unset, and undefined is dropped by JSON.
+        image_url: form.imageFile ? undefined : (form.image_url.trim() || null),
         is_active: form.is_active,
         allowed_roles: form.allowed_roles,
       };
 
+      let saved: PropertyType;
       if (editTarget) {
-        const updated = await adminService.updatePropertyType(editTarget.id, payload);
-        setTypes(prev => prev.map(t => t.id === updated.id ? updated : t));
-        toast.success(`"${updated.label}" updated.`);
+        saved = await adminService.updatePropertyType(editTarget.id, payload);
       } else {
-        const created = await adminService.createPropertyType(payload);
-        setTypes(prev => [...prev, created]);
-        toast.success(`"${created.label}" created.`);
+        saved = await adminService.createPropertyType(payload);
       }
+
+      // The upload endpoint needs a record to attach to, so it runs second and
+      // overwrites image_url with the stored file's URL.
+      if (form.imageFile) {
+        saved = await adminService.uploadPropertyTypeImage(saved.id, form.imageFile);
+      }
+
+      setTypes(prev => prev.some(t => t.id === saved.id)
+        ? prev.map(t => t.id === saved.id ? saved : t)
+        : [...prev, saved]);
+      toast.success(`"${saved.label}" ${editTarget ? "updated" : "created"}.`);
 
       setModalOpen(false);
     } catch (e: any) {
@@ -314,26 +327,15 @@ export const AdminCategoriesPage: React.FC = () => {
                 />
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase text-slate-400 block">Category Image URL</label>
-                <div className="flex items-center gap-2">
-                  <input
-                    type="url"
-                    value={form.image_url}
-                    onChange={e => setForm(f => ({ ...f, image_url: e.target.value }))}
-                    placeholder="Paste image URL address (e.g. https://...)"
-                    className="w-full bg-slate-50 border border-slate-200/80 rounded-lg px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#014645]"
-                  />
-                  {form.image_url.trim() && (
-                    <img
-                      src={form.image_url.trim()}
-                      alt="Preview"
-                      className="h-9 w-9 object-cover rounded-lg border border-slate-200 shrink-0"
-                      onError={(e) => { (e.target as HTMLElement).style.display = 'none'; }}
-                    />
-                  )}
-                </div>
-              </div>
+              <ImageInput
+                label="Category Image"
+                imageUrl={form.image_url}
+                imageFile={form.imageFile}
+                existingUrl={editTarget?.image_url}
+                onUrlChange={url => setForm(f => ({ ...f, image_url: url }))}
+                onFileChange={file => setForm(f => ({ ...f, imageFile: file }))}
+                disabled={saving}
+              />
 
               <div className="space-y-1">
                 <label className="text-[10px] font-black uppercase text-slate-400 block">Allowed Roles (empty = all)</label>

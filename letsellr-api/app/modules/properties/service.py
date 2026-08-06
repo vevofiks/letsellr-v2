@@ -1,3 +1,4 @@
+import asyncio
 import math
 import uuid
 from typing import Any, Dict, List, Optional
@@ -6,6 +7,8 @@ import string
 import httpx
 
 from app.core.config import settings
+from app.core.whatsapp import notify_admin_pending_property
+from app.modules.admin.service import admin_alert_targets
 
 from fastapi import HTTPException, status
 from sqlalchemy import asc, desc
@@ -85,7 +88,26 @@ class PropertyService:
             }
         )
 
-        return await self.repo.create(property_dict)
+        created = await self.repo.create(property_dict)
+
+        # Alert admins on WhatsApp when a listing lands in the review queue.
+        # Admin-created listings are skipped — the admin is already in the panel.
+        if created.status == "pending_review" and current_user.role != "admin":
+            targets = await admin_alert_targets(self.repo.db, "properties")
+            if targets:
+                # Snapshot the fields now — the task outlives this DB session.
+                alert = {
+                    "title": created.title,
+                    "ref": created.ref,
+                    "category": created.category,
+                    "city": created.location_city,
+                    "owner_name": owner_user.name,
+                    "owner_role": owner_user.role,
+                    "recipients": targets,
+                }
+                asyncio.create_task(notify_admin_pending_property(**alert))
+
+        return created
 
     async def update_property(
         self, property_id: str | uuid.UUID, data: PropertyUpdate, current_user: User

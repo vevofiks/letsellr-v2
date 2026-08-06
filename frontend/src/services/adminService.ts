@@ -40,17 +40,6 @@ export interface AdminUser {
   agency_profile?: AgencyProfile | null;
 }
 
-export interface VerificationRequest {
-  id: string;
-  user_id: string;
-  document_type: string;
-  document_url: string;
-  status: string;
-  note?: string | null;
-  reviewed_by?: string | null;
-  created_at: string;
-}
-
 export interface AdminProperty {
   id: string;
   owner_id: string;
@@ -139,6 +128,28 @@ export interface PropertyReview {
   };
 }
 
+export interface AdminNotificationSettings {
+  notify_pending_users: boolean;
+  notify_pending_properties: boolean;
+  /** The numbers alerts are currently delivered to, in E.164. */
+  whatsapp_recipients: string[];
+  /** True while no numbers are saved and the server's env default is in use. */
+  using_server_default: boolean;
+}
+
+export interface AdminAccount {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string;
+}
+
+export interface AdminCredentialsUpdate {
+  current_password: string;
+  new_email?: string;
+  new_password?: string;
+}
+
 export const adminService = {
   // Get admin stats overview
   getDashboardStats: async (): Promise<AdminDashboardStats> => {
@@ -206,28 +217,6 @@ export const adminService = {
     return res.data;
   },
 
-  // Get verification / KYC requests list
-  getVerificationRequests: async (): Promise<VerificationRequest[]> => {
-    const res = await api.get<VerificationRequest[]>("/api/admin/verification-requests");
-    return res.data;
-  },
-
-  // Approve a user KYC verification request
-  approveVerification: async (requestId: string, note?: string): Promise<{ message: string }> => {
-    const res = await api.post<{ message: string }>(`/api/admin/verification-requests/${requestId}/approve`, {
-      note: note || "KYC details verified",
-    });
-    return res.data;
-  },
-
-  // Reject a user KYC verification request
-  rejectVerification: async (requestId: string, note: string): Promise<{ message: string }> => {
-    const res = await api.post<{ message: string }>(`/api/admin/verification-requests/${requestId}/reject`, {
-      note,
-    });
-    return res.data;
-  },
-
   // ── Property Types ──
   getPropertyTypes: async (): Promise<PropertyType[]> => {
     const res = await api.get<PropertyType[]>("/api/admin/property-types");
@@ -259,7 +248,7 @@ export const adminService = {
     const res = await api.get<LocationData[]>("/api/admin/locations");
     return res.data;
   },
-  createLocation: async (payload: Omit<LocationData, "id" | "created_at" | "updated_at" | "image_url">): Promise<LocationData> => {
+  createLocation: async (payload: Omit<LocationData, "id" | "created_at" | "updated_at">): Promise<LocationData> => {
     const res = await api.post<LocationData>("/api/admin/locations", payload);
     return res.data;
   },
@@ -318,6 +307,30 @@ export const adminService = {
 
   deletePropertyReview: async (reviewId: string): Promise<void> => {
     await api.delete(`/api/admin/reviews/${reviewId}`);
+  },
+
+  // ── SETTINGS ──────────────────────────────────────────
+
+  getNotificationSettings: async (): Promise<AdminNotificationSettings> => {
+    const res = await api.get<AdminNotificationSettings>("/api/admin/settings/notifications");
+    return res.data;
+  },
+
+  updateNotificationSettings: async (
+    payload: Partial<Pick<AdminNotificationSettings, "notify_pending_users" | "notify_pending_properties" | "whatsapp_recipients">>
+  ): Promise<AdminNotificationSettings> => {
+    const res = await api.patch<AdminNotificationSettings>("/api/admin/settings/notifications", payload);
+    return res.data;
+  },
+
+  getAdminAccount: async (): Promise<AdminAccount> => {
+    const res = await api.get<AdminAccount>("/api/admin/settings/account");
+    return res.data;
+  },
+
+  updateAdminAccount: async (payload: AdminCredentialsUpdate): Promise<AdminAccount> => {
+    const res = await api.patch<AdminAccount>("/api/admin/settings/account", payload);
+    return res.data;
   },
 };
 

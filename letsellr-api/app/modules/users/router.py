@@ -116,6 +116,27 @@ async def request_verification(
     current_user.verification_status = "review_request"
 
     await db.commit()
+
+    # Same admin queue as a fresh signup — alert on WhatsApp
+    if current_user.role in ("owner", "agency"):
+        import asyncio
+
+        from app.core.whatsapp import notify_admin_pending_user
+        from app.modules.admin.service import admin_alert_targets
+
+        targets = await admin_alert_targets(db, "users")
+        if targets:
+            asyncio.create_task(
+                notify_admin_pending_user(
+                    name=current_user.name,
+                    role=current_user.role,
+                    phone=current_user.phone,
+                    city=current_user.location_city,
+                    recipients=targets,
+                )
+            )
+        await db.commit()
+
     return {"message": "Verification request submitted successfully"}
 
 

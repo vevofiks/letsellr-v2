@@ -1,12 +1,12 @@
 """
 Module: Admin
-ORM Models — VerificationRequest
+ORM Models — VerificationRequest, AdminSettings
 """
 
 import uuid
 
-from sqlalchemy import ForeignKey, String, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Boolean, ForeignKey, String, Text
+from sqlalchemy.dialects.postgresql import ARRAY, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin, UUIDMixin
@@ -49,4 +49,35 @@ class VerificationRequest(UUIDMixin, TimestampMixin, Base):
         "User",
         back_populates="verification_requests",
         foreign_keys=[user_id],
+    )
+
+
+class AdminSettings(UUIDMixin, TimestampMixin, Base):
+    """
+    Platform-wide admin preferences. Single row — read/created lazily via
+    `AdminSettingsService.get_settings`, never inserted by a migration.
+    """
+
+    __tablename__ = "admin_settings"
+
+    notify_pending_users: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="true",
+        comment="WhatsApp the admin when an owner/agency awaits approval",
+    )
+    notify_pending_properties: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        server_default="true",
+        comment="WhatsApp the admin when a listing enters the review queue",
+    )
+    whatsapp_recipients: Mapped[list[str]] = mapped_column(
+        ARRAY(String),
+        nullable=False,
+        default=list,
+        server_default="{}",
+        comment="Alert recipients in E.164; empty falls back to ADMIN_WHATSAPP_NUMBERS",
     )
