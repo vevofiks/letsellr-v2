@@ -159,13 +159,10 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
           {
             height: "100svh",
             minHeight: "560px",
-            // Every element below is sized off this one number, so the whole
-            // composition is a single locked-proportion unit. It's the villa's
-            // width: the viewport normally, but capped against height so a
-            // short phone scales the group down instead of overflowing, and
-            // capped at 620px so tablets don't blow it up.
             "--hero-w": "min(100vw, 58svh, 620px)",
-            "--hero-title-size": "calc(var(--hero-w) * 0.18)",
+            // 0.20 is close to the ceiling: "LETSELLR" renders ~4.4x its font
+            // size, so much past this and the word runs into the px-3 gutter.
+            "--hero-title-size": "calc(var(--hero-w) * 0.20)",
           } as React.CSSProperties
         }
       >
@@ -213,7 +210,9 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
             left: "calc(var(--hero-w) * 0.015)",
             aspectRatio: "961 / 649",
             flex: "0 0 auto",
-            marginTop: "calc(var(--hero-title-size) * -0.34)",
+            // The villa is pinned from the bottom, so this only moves the
+            // wordmark: raising it sinks LETSELLR further behind the roofline.
+            marginTop: "calc(var(--hero-title-size) * -0.44)",
           }}
         >
           <Image
