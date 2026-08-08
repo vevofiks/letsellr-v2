@@ -195,7 +195,7 @@ export default function PropertyShowcase() {
         </p>
         </div>
 
-      {/* Property Grid — 3 per row (matching reference layout) */}
+      {/* Property Grid 3 per row (matching reference layout) */}
       <div ref={gridRef} className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
         {filteredProperties.map((prop) => (
           <a
@@ -215,7 +215,7 @@ export default function PropertyShowcase() {
                 className="object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
               />
 
-              {/* Pill Tag (Top Left) — Brand Verified Pill */}
+              {/* Pill Tag (Top Left) Brand Verified Pill */}
               <div className="absolute top-4 left-4 z-10">
                 <span className="inline-flex items-center justify-center gap-1.5 bg-[#D9F7E9]/95 backdrop-blur-xs text-[#0B6E4F] text-xs font-bold px-3.5 py-1.5 rounded-full shadow-xs leading-none border border-[#23D283]/30">
                   {prop.intentTag || "For Sale"}

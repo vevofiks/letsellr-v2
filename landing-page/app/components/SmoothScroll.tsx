@@ -9,7 +9,7 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
 
-    // lenis.dev config — lerp-based smooth scroll, same as their own site
+    // lenis.dev config lerp-based smooth scroll, same as their own site
     const lenis = new Lenis({
       lerp: 0.1,           // silky smooth linear interpolation (lenis.dev default)
       smoothWheel: true,
@@ -21,7 +21,7 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
     // Sync Lenis scroll position with GSAP ScrollTrigger on every frame
     lenis.on("scroll", ScrollTrigger.update);
 
-    // Use GSAP ticker as the RAF loop — most performant approach
+    // Use GSAP ticker as the RAF loop most performant approach
     const onRaf = (time: number) => lenis.raf(time * 1000);
     gsap.ticker.add(onRaf);
 
@@ -36,7 +36,7 @@ export default function SmoothScroll({ children }: { children: React.ReactNode }
       ScrollTrigger.refresh();
     }, 300);
 
-    // Second refresh pass — catches sections that rendered late (e.g. after
+    // Second refresh pass catches sections that rendered late (e.g. after
     // async data fetches like EditorialSection's property cards).
     const refreshTimer2 = setTimeout(() => {
       ScrollTrigger.refresh();

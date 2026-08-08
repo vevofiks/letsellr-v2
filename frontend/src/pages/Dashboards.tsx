@@ -125,6 +125,10 @@ export const ClientDashboard: React.FC = () => {
   );
   const [agencies, setAgencies] = useState<any[]>([]);
   const [propertyTypes, setPropertyTypes] = useState<any[]>([]);
+  const searchModeRef = useRef(searchMode);
+  useEffect(() => {
+    searchModeRef.current = searchMode;
+  }, [searchMode]);
 
   useEffect(() => {
     api.get("/api/properties/config/types").then((res) => {
@@ -171,13 +175,46 @@ export const ClientDashboard: React.FC = () => {
     }
   }, []);
 
-  // Persist filters to sessionStorage
+  // Persist filters to sessionStorage and update page title for SEO
   useEffect(() => {
     sessionStorage.setItem("dashboard_intent", intent);
     sessionStorage.setItem("dashboard_category", category);
     sessionStorage.setItem("dashboard_searchMode", searchMode);
     sessionStorage.setItem("dashboard_searchQuery", searchQuery);
-  }, [intent, category, searchMode, searchQuery]);
+
+    // Dynamic SEO Title
+    let title = "Properties";
+    if (searchMode === "agencies") {
+      title = "Find Verified Real Estate Agencies";
+      if (city) title += ` in ${city}`;
+    } else {
+      const intentLabel = intent === "buy" ? "for Sale" : intent === "rent" ? "for Rent" : intent === "lease" ? "for Lease" : "";
+      let categoryLabel = "Properties";
+      
+      if (category) {
+        const typeObj = propertyTypes.find((t: any) => t.slug === category);
+        if (typeObj) {
+           categoryLabel = typeObj.label;
+        } else {
+           categoryLabel = category.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+        }
+      }
+      
+      title = `${categoryLabel} ${intentLabel}`.trim();
+      if (city) {
+        title += ` in ${city}`;
+      }
+      if (searchQuery && !city) {
+        title += ` for "${searchQuery}"`;
+      }
+    }
+    
+    if (!title || title === "Properties") {
+      title = "Search Properties Direct from Owners";
+    }
+    
+    document.title = `${title} | Letsellr`;
+  }, [intent, category, searchMode, searchQuery, city, propertyTypes]);
 
   const popoverRef = useRef<HTMLDivElement>(null);
   const filterBtnRef = useRef<HTMLButtonElement>(null);
@@ -191,6 +228,15 @@ export const ClientDashboard: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setSearchQuery(inputQuery);
+      // Agencies are filtered purely by location, so keep the city filter
+      // in sync with whatever the user is typing — otherwise a stale city
+      // from an earlier suggestion pick/select would keep overriding new input.
+      // Only do this while already in agencies mode (searchModeRef), so simply
+      // switching modes with leftover text in the box doesn't force a bogus filter.
+      if (searchModeRef.current === "agencies") {
+        setCity(inputQuery);
+        setSearchCity(inputQuery);
+      }
     }, 250);
     return () => clearTimeout(timer);
   }, [inputQuery]);
@@ -204,13 +250,6 @@ export const ClientDashboard: React.FC = () => {
 
     if (searchMode === "agencies") {
       agencies.forEach((agency) => {
-        if (agency.display_name && agency.display_name.toLowerCase().includes(q)) {
-          const key = `agency-${agency.display_name}`;
-          if (!seen.has(key)) {
-            seen.add(key);
-            list.push({ type: "title", label: agency.display_name, subtext: `${agency.location_area || ""}, ${agency.location_city || ""}`.replace(/^, /, "") });
-          }
-        }
         if (agency.location_city && agency.location_city.toLowerCase().includes(q)) {
           const key = `city-${agency.location_city}`;
           if (!seen.has(key)) {
@@ -309,8 +348,6 @@ export const ClientDashboard: React.FC = () => {
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
-      (agency.display_name && agency.display_name.toLowerCase().includes(query)) ||
-      (agency.about && agency.about.toLowerCase().includes(query)) ||
       (agency.location_area && agency.location_area.toLowerCase().includes(query)) ||
       (agency.location_city && agency.location_city.toLowerCase().includes(query))
     );
@@ -348,14 +385,10 @@ export const ClientDashboard: React.FC = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Redirect non-client authenticated users to their respective dashboards
+  // Redirect admins to their dashboard; owner/agency can browse the seeker search page too
   useEffect(() => {
-    if (user) {
-      if (user.role === "owner" || user.role === "agency") {
-        navigate("/owner/dashboard", { replace: true });
-      } else if (user.role === "admin") {
-        navigate("/admin", { replace: true });
-      }
+    if (user && user.role === "admin") {
+      navigate("/admin", { replace: true });
     }
   }, [user, navigate]);
 
@@ -540,12 +573,11 @@ export const ClientDashboard: React.FC = () => {
           page,
         };
         if (city) params.city = city;
-        if (searchQuery) params.q = searchQuery;
 
         const res = await api.get("/api/agencies", { params });
         const newItems = res.data.results || res.data || [];
 
-        if (page === 1) {
+        if (page === 1 || viewMode === "list") {
           setAgencies(newItems);
         } else {
           setAgencies((prev) => {
@@ -599,7 +631,7 @@ export const ClientDashboard: React.FC = () => {
         const res = await api.get("/api/properties", { params });
         const newItems = res.data.results || res.data || [];
 
-        if (page === 1) {
+        if (page === 1 || viewMode === "list") {
           setProperties(newItems);
         } else {
           setProperties((prev) => {
@@ -831,7 +863,7 @@ export const ClientDashboard: React.FC = () => {
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 z-10" />
                   <input
                     type="text"
-                    placeholder={searchMode === "agencies" ? "Search agency name or location..." : "Search name, area, or city..."}
+                    placeholder={searchMode === "agencies" ? "Search by city or area..." : "Search name, area, or city..."}
                     value={inputQuery}
                     onFocus={() => setShowDrawerSuggestions(true)}
                     onChange={(e) => {
@@ -1316,7 +1348,7 @@ export const ClientDashboard: React.FC = () => {
                   {/* Find Specific Property Input */}
                   <div ref={topSearchRef} className="flex-1 min-w-0 lg:min-w-35 flex flex-col text-left relative">
                     <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">
-                      {searchMode === "agencies" ? "Find Specific Agency" : "Find Specific Property"}
+                      {searchMode === "agencies" ? "Find Agencies by Location" : "Find Specific Property"}
                     </label>
                     <div className={cn(
                       "flex items-center gap-1.5 bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 transition-all shadow-sm relative",
@@ -1324,7 +1356,7 @@ export const ClientDashboard: React.FC = () => {
                     )}>
                       <input
                         type="text"
-                        placeholder={searchMode === "agencies" ? "Ex. agency name" : "Ex. villa, apartment..."}
+                        placeholder={searchMode === "agencies" ? "Ex. city or area" : "Ex. villa, apartment..."}
                         value={inputQuery}
                         onFocus={() => setShowTopSuggestions(true)}
                         onChange={(e) => {

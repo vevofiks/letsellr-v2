@@ -11,7 +11,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   allowedRoles,
 }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -45,7 +45,6 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     ((user.role === "owner" || user.role === "agency") && user.verification_status !== "verified");
 
   if (isPendingOrUnverified) {
-    const { logout } = useAuth();
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 font-sans">
         <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center space-y-4 shadow-xl border border-slate-200 animate-in fade-in zoom-in-95 duration-300">

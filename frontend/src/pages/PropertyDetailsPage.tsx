@@ -303,13 +303,18 @@ export const PropertyDetailsPage: React.FC = () => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
 
-  // Fetch Property Details
+  // Fetch Property Details and set page title
   useEffect(() => {
     const fetchPropertyDetails = async () => {
       try {
         setLoading(true);
         const res = await api.get(`/api/properties/${propertyId}`);
         setProperty(res.data);
+        
+        // Dynamic SEO Title based on property details
+        const loc = res.data.location_area || res.data.location_city || "";
+        const locSuffix = loc ? ` in ${loc}` : "";
+        document.title = `${res.data.title}${locSuffix} | Letsellr`;
       } catch (err: any) {
         toast.error("Failed to load property details");
         navigate("/dashboard");
@@ -321,6 +326,13 @@ export const PropertyDetailsPage: React.FC = () => {
       fetchPropertyDetails();
     }
   }, [propertyId, navigate]);
+
+  // Clean up title on unmount
+  useEffect(() => {
+    return () => {
+      document.title = "Letsellr | Find Properties Direct from Owners";
+    };
+  }, []);
 
   // Fetch Related Properties
   useEffect(() => {
@@ -493,7 +505,41 @@ export const PropertyDetailsPage: React.FC = () => {
     property.furnishing.toLowerCase() !== "not specified"
   );
   const hasAnySpec = hasBed || hasBath || hasArea || hasFurnish;
-  
+
+  const isPgOrHostelCategory = ["pg", "hostel", "pg_hostel"].includes(property.category);
+  const roomSharingOptions: { sharing: number; price: number; vacancy: number }[] =
+    property.extra_details?.room_sharing || [];
+  const hasRoomSharing = isPgOrHostelCategory && roomSharingOptions.length > 0;
+
+  const RoomSharingVacancy: React.FC = () => (
+    <div className="space-y-2 pt-1">
+      <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
+        <Bed className="h-3.5 w-3.5 text-[#0B6E4F]" /> Room Sharing & Vacancy
+      </span>
+      <div className="grid grid-cols-2 gap-2">
+        {roomSharingOptions.map((opt, idx) => (
+          <div key={idx} className="bg-slate-50 border border-slate-200/60 rounded-xl p-2.5 space-y-0.5">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-xs font-black text-slate-900">{opt.sharing} Sharing</span>
+              <span
+                className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md shrink-0 ${
+                  opt.vacancy > 0
+                    ? "bg-emerald-50 text-emerald-700"
+                    : "bg-rose-50 text-rose-600"
+                }`}
+              >
+                {opt.vacancy > 0 ? `${opt.vacancy} Vacant` : "Full"}
+              </span>
+            </div>
+            <span className="text-[11px] font-bold text-slate-500 block">
+              ₹{opt.price?.toLocaleString()} / bed / mo
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
   const specCardClass = "space-y-1 w-full sm:w-auto pt-3 sm:pt-0 sm:pl-5 border-t sm:border-t-0 sm:border-l border-slate-100 first:border-0 first:pt-0 first:sm:pl-0";
 
   return (
@@ -719,6 +765,9 @@ export const PropertyDetailsPage: React.FC = () => {
                     </span>
                   </div>
                 </div>
+
+                {/* Room Sharing & Vacancy (PG/Hostel Only) */}
+                {hasRoomSharing && <RoomSharingVacancy />}
 
                 {/* Action Buttons */}
                 <div className="pt-1">
@@ -1097,6 +1146,9 @@ export const PropertyDetailsPage: React.FC = () => {
                   </span>
                 </div>
               </div>
+
+              {/* Room Sharing & Vacancy (PG/Hostel Only) */}
+              {hasRoomSharing && <RoomSharingVacancy />}
 
               {/* Action Buttons */}
               <div className="space-y-3 pt-2">

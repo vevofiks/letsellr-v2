@@ -232,7 +232,7 @@ export const AdminCategoriesPage: React.FC = () => {
                       </div>
                     </td>
                     <td className="py-3 px-4 sm:px-5 max-w-48 sm:max-w-64">
-                      <p className="text-xs text-slate-600 truncate my-0">{t.description || "—"}</p>
+                      <p className="text-xs text-slate-600 truncate my-0">{t.description || "No description"}</p>
                     </td>
                     <td className="py-3 px-4 sm:px-5 whitespace-nowrap">
                       <div className="flex flex-wrap gap-1">

@@ -24,7 +24,7 @@ const playfairDisplay = Playfair_Display({
 export const metadata: Metadata = {
   title: "Letsellr | Find Properties Direct from Owners",
   description:
-    "Browse admin-verified apartments, villas, PG & hostels across India. Connect directly with property owners — no middlemen, transparent pricing.",
+    "Browse admin-verified apartments, villas, PG & hostels across India. Connect directly with property owners no middlemen, transparent pricing.",
   keywords: [
     "property in India",
     "verified properties",
@@ -58,7 +58,7 @@ export const metadata: Metadata = {
         url: "/images/hero-villa.png",
         width: 1200,
         height: 630,
-        alt: "Letsellr — Premium Property Platform",
+        alt: "Letsellr Premium Property Platform",
       },
     ],
     locale: "en_IN",

@@ -13,21 +13,21 @@ if (typeof window !== "undefined") {
 
 const PRIMARY = "#23D283";
 
-// Gallery slides — main large image + thumbnails
+// Gallery slides main large image + thumbnails
 const GALLERY_SLIDES = [
   {
     src: "/images/calicut-villa.png",
-    alt: "Araamam Cliff Villa — Beachfront, Kozhikode",
+    alt: "Araamam Cliff Villa Beachfront, Kozhikode",
     thumb: "/images/calicut-villa.png",
   },
   {
     src: "/images/hero-villa.png",
-    alt: "The Horizon Coastal Villa — Kochi",
+    alt: "The Horizon Coastal Villa Kochi",
     thumb: "/images/hero-villa.png",
   },
   {
     src: "/images/modular-cabin.png",
-    alt: "Nordic Modular Forest House — Munnar",
+    alt: "Nordic Modular Forest House Munnar",
     thumb: "/images/modular-cabin.png",
   },
 ];
@@ -224,8 +224,8 @@ export default function EditorialSection() {
         </div>
 
         <div className="lg:col-span-5">
-          <p className="text-zinc-500 text-sm md:text-base leading-relaxed font-normal max-w-sm">
-            We eliminated the noise of traditional real estate. No middleman markups, no hidden charges — just genuine admin-checked properties directly connecting owners with seekers.
+          <p className="text-zinc-500 text-sm md:text-base leading-relaxed font-normal max-w-sm"> 
+            We eliminated the noise of traditional real estate. No middleman markups, no hidden charges just genuine admin-checked properties directly connecting owners with seekers.
           </p>
         </div>
       </div>
@@ -233,7 +233,7 @@ export default function EditorialSection() {
       {/* ── 3-Panel Layout ── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 md:gap-5 items-stretch">
 
-        {/* LEFT — Large Image with thumbnail carousel */}
+        {/* LEFT Large Image with thumbnail carousel */}
         <div className="lg:col-span-5 relative rounded-2xl overflow-hidden bg-zinc-900 min-h-95 md:min-h-120 group">
           {/* Main image */}
           <Image
@@ -286,7 +286,7 @@ export default function EditorialSection() {
           </div>
         </div>
 
-        {/* CENTER — Info text card */}
+        {/* CENTER Info text card */}
         <div className="editorial-card-drift lg:col-span-4 flex flex-col justify-between bg-white rounded-2xl border border-black/8 shadow-sm p-8 md:p-10 mt-4">
           <div>
             <span className="text-[9px] font-bold tracking-[0.2em] uppercase text-zinc-400 block mb-4">
@@ -310,7 +310,7 @@ export default function EditorialSection() {
 
           <div>
             <p className="text-zinc-500 text-xs leading-relaxed font-normal border-t border-zinc-100 pt-5">
-              Whether it&apos;s creating a cozy corner for relaxation or transforming a small area into a workspace — every listing connects you directly to the owner.
+              Whether it&apos;s creating a cozy corner for relaxation or transforming a small area into a workspace every listing connects you directly to the owner.
             </p>
 
             {/* Bottom link */}
@@ -330,7 +330,7 @@ export default function EditorialSection() {
           </div>
         </div>
 
-        {/* RIGHT — Property card + nav arrows */}
+        {/* RIGHT Property card + nav arrows */}
         <div className="lg:col-span-3 flex flex-col gap-4">
           {/* Property image card */}
           <div className="relative rounded-2xl overflow-hidden bg-zinc-900 flex-1 min-h-50 md:min-h-70 group">
