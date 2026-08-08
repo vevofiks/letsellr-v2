@@ -55,7 +55,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
       ───────────────────────────────────────────── */}
       <div className="hidden lg:block relative overflow-hidden" style={{ height: "100vh", minHeight: "640px" }}>
 
-        {/* Layer 0 — Brand name behind everything */}
+        {/* Layer 0 Brand name behind everything */}
         <div
           className="hero-title absolute left-0 right-0 flex justify-center pointer-events-none select-none"
           style={{ top: "88px", zIndex: 1, opacity: 0 }}
@@ -68,7 +68,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
           </h1>
         </div>
 
-        {/* Layer 1 — Left: tag + description */}
+        {/* Layer 1 Left: tag + description */}
         <div className="hero-left h-badge pt-24 flex px-10 flex-col gap-1.5" style={{ opacity: 0 }}>
           <span
             className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase w-fit"
@@ -90,7 +90,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
             <div className="w-8 h-0.5 mt-2 rounded-full bg-[#23D283]" />
           </div>
 
-        {/* Layer 1 — Right: stacked stats */}
+        {/* Layer 1 Right: stacked stats */}
         <div
           className="hero-right absolute flex flex-col items-end gap-4"
           style={{ top: "150px", right: "clamp(2rem, 4vw, 3.5rem)", zIndex: 20, opacity: 0 }}
@@ -107,7 +107,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
           ))}
         </div>
 
-        {/* Layer 2 — Building */}
+        {/* Layer 2 Building */}
         <div
           className="hero-building absolute left-1/2 -translate-x-1/2"
           style={{ top: "180px", bottom: "0", zIndex: 10, width: "min(1050px, 88vw)", opacity: 0 }}
@@ -128,7 +128,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
           />
         </div>
 
-        {/* Layer 3 — Bottom tagline */}
+        {/* Layer 3 Bottom tagline */}
         <div
           className="hero-tagline absolute mb-10"
           style={{ bottom: "2.5rem", left: "clamp(2rem, 4vw, 3.5rem)", zIndex: 30, opacity: 0 }}
@@ -166,7 +166,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
           } as React.CSSProperties
         }
       >
-        {/* Top: badge + description — pt clears the fixed navbar */}
+        {/* Top: badge + description pt clears the fixed navbar */}
         <div
           className="hero-left shrink-0 px-5 sm:px-8 pt-24 flex flex-col gap-2"
           style={{ maxWidth: "34rem", opacity: 0 }}
@@ -201,6 +201,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
             LETSELLR
           </h1>
         </div>
+
         <div
           className="hero-building relative mx-auto"
           style={{

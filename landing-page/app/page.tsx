@@ -25,7 +25,7 @@ export default function Home() {
         <Navbar />
         <HeroSection isLoading={isLoading} />
 
-        {/* Search Bar — sits directly below Hero, full width */}
+        {/* Search Bar sits directly below Hero, full width */}
         <div
           className="relative z-20 w-full px-4 pt-6 md:mt-5 pb-6 transition-opacity duration-700 ease-out flex justify-center pointer-events-auto"
           style={{
@@ -42,7 +42,7 @@ export default function Home() {
         <FeaturedCategories />
        
 
-        {/* Property Showcase (Featured Inventory) — directly under the search bar */}
+        {/* Property Showcase (Featured Inventory) directly under the search bar */}
         <PropertyShowcase />
 
         {/* Editorial Philosophy Section */}

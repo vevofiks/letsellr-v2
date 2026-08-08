@@ -32,7 +32,7 @@ interface PropertyType {
 
 // Category values match `Property.category` exactly as stored by the backend
 // (see letsellr-api/app/modules/properties/schemas.py). "PGs & Hostel" covers
-// two backend categories at once — the comma-separated value is understood by
+// two backend categories at once the comma-separated value is understood by
 // GET /api/properties?category=pg,hostel as an OR match.
 const PROPERTY_TYPES: PropertyType[] = [
   { slug: "apartment", label: "Flat & Apartment" },

@@ -61,7 +61,7 @@ export default function FeaturedLocations() {
 
   if (locations.length === 0) return null;
 
-  // Duplicate once — animate -50% for seamless loop
+  // Duplicate for seamless loop
   const looped = [...locations, ...locations, ...locations, ...locations];
   const speed = Math.max(18, locations.length * 3.5);
 

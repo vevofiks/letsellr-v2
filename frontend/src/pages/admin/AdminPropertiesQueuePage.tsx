@@ -1165,6 +1165,45 @@ export const AdminPropertiesQueuePage: React.FC = () => {
               </div>
             </div>
 
+            {/* Room Sharing Prices & Vacancy (PG/Hostel Only) */}
+            {["pg", "hostel", "pg_hostel"].includes(selectedProperty.category) && (
+              <div className="space-y-1.5">
+                <h4 className="text-[10px] font-black uppercase text-slate-400 tracking-wider my-0">
+                  Room Sharing & Vacancy ({selectedProperty.extra_details?.room_sharing?.length || 0})
+                </h4>
+                {selectedProperty.extra_details?.room_sharing && selectedProperty.extra_details.room_sharing.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {selectedProperty.extra_details.room_sharing.map((opt: { sharing: number; price: number; vacancy: number }, idx: number) => (
+                      <div
+                        key={idx}
+                        className="bg-slate-50 border border-slate-200/60 rounded-xl p-3 flex items-center justify-between"
+                      >
+                        <div>
+                          <span className="text-xs font-black text-slate-900 block">
+                            {opt.sharing} Sharing
+                          </span>
+                          <span className="text-[11px] font-bold text-slate-500">
+                            ₹{opt.price?.toLocaleString()} / bed / month
+                          </span>
+                        </div>
+                        <span
+                          className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border ${
+                            opt.vacancy > 0
+                              ? "bg-emerald-50 text-emerald-700 border-emerald-200/60"
+                              : "bg-rose-50 text-rose-600 border-rose-200/60"
+                          }`}
+                        >
+                          {opt.vacancy > 0 ? `${opt.vacancy} Vacant` : "Full"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-slate-400 italic my-0">No sharing options added by owner.</p>
+                )}
+              </div>
+            )}
+
             {/* Complete Location Details */}
             <div className="bg-slate-50/50 p-3.5 rounded-xl border border-slate-200/60 space-y-2">
               <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 flex items-center justify-between">
@@ -1191,7 +1230,7 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                 </div>
                 <div>
                   <span className="text-slate-400 text-[10px] font-bold block">State & Pincode:</span>
-                  <span>{selectedProperty.location_state || "Kerala"} — {selectedProperty.location_pincode || "682030"}</span>
+                  <span>{selectedProperty.location_state || "Kerala"}  {selectedProperty.location_pincode || "682030"}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 text-[10px] font-bold block">Map Coordinates:</span>
@@ -1619,16 +1658,21 @@ export const AdminPropertiesQueuePage: React.FC = () => {
               {/* Section 2.5: Room Sharing Options (PG/Hostel Only) */}
               { ["pg", "hostel", "pg_hostel"].includes(editCategory) && (
               <div className="bg-white border border-slate-100 rounded-xl p-5 shadow-2xs space-y-4">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-2 my-0">
-                    <Building2 className="h-4 w-4 text-[#014645]" /> Room Sharing Options
-                  </h4>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h4 className="text-xs font-black uppercase text-slate-800 tracking-wider flex items-center gap-2 my-0">
+                      <Building2 className="h-4 w-4 text-[#014645]" /> Room Sharing Options
+                    </h4>
+                    <p className="text-[11px] text-slate-500 font-medium mt-1 mb-0">
+                      One row per room type (Single, Double, Triple, etc.) with its own bed price and available beds.
+                    </p>
+                  </div>
                   <button
                     type="button"
                     onClick={addEditRoomSharingOption}
-                    className="bg-[#014645]/10 text-[#014645] font-bold text-xs px-3 py-1.5 rounded-md flex items-center gap-1 hover:bg-[#014645]/20 transition-colors border-0 cursor-pointer"
+                    className="bg-[#014645]/10 text-[#014645] font-bold text-xs px-3 py-1.5 rounded-md flex items-center gap-1 hover:bg-[#014645]/20 transition-colors border-0 cursor-pointer shrink-0"
                   >
-                    <Plus className="h-3 w-3" /> Add Option
+                    <Plus className="h-3 w-3" /> Add Room Type
                   </button>
                 </div>
 
@@ -1637,19 +1681,20 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                 ) : (
                   <div className="space-y-4">
                     {editRoomSharingOptions.map((option, index) => (
-                      <div key={index} className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end bg-slate-50 p-4 rounded-lg border border-slate-100">
+                      <div key={index} className="relative grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 px-4 py-4 pr-12 rounded-lg border border-slate-100 items-start">
                         <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-700">Sharing (e.g. 1, 2)</label>
+                          <label className="text-xs font-bold text-slate-700">Beds per Room *</label>
                           <input
                             type="number"
-                            placeholder="e.g. 2 for Double"
+                            placeholder="e.g. 2 for Double Sharing"
                             value={option.sharing}
                             onChange={(e) => updateEditRoomSharingOption(index, "sharing", e.target.value ? Number(e.target.value) : "")}
                             className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-[#014645]/20"
                           />
+                          <p className="text-[10px] text-slate-400 font-medium my-0">1 = Single, 2 = Double, 3 = Triple...</p>
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-700">Price per bed (₹)</label>
+                          <label className="text-xs font-bold text-slate-700">Rent per Bed (₹/month) *</label>
                           <input
                             type="number"
                             placeholder="e.g. 5000"
@@ -1657,9 +1702,10 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                             onChange={(e) => updateEditRoomSharingOption(index, "price", e.target.value ? Number(e.target.value) : "")}
                             className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-[#014645]/20"
                           />
+                          <p className="text-[10px] text-slate-400 font-medium my-0">Monthly rent per bed for this sharing type</p>
                         </div>
                         <div className="space-y-1.5">
-                          <label className="text-xs font-bold text-slate-700">Vacancy (Beds)</label>
+                          <label className="text-xs font-bold text-slate-700">Beds Available *</label>
                           <input
                             type="number"
                             placeholder="e.g. 5"
@@ -1667,17 +1713,16 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                             onChange={(e) => updateEditRoomSharingOption(index, "vacancy", e.target.value ? Number(e.target.value) : "")}
                             className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-[#014645]/20"
                           />
+                          <p className="text-[10px] text-slate-400 font-medium my-0">Current vacant beds (0 = fully booked)</p>
                         </div>
-                        <div className="pb-0.5">
-                          <button
-                            type="button"
-                            onClick={() => removeEditRoomSharingOption(index)}
-                            className="w-full sm:w-auto bg-rose-50 text-rose-600 hover:bg-rose-100 p-2 rounded-md transition-colors flex items-center justify-center border-0 cursor-pointer"
-                            title="Remove Option"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeEditRoomSharingOption(index)}
+                          className="absolute right-4 top-4 mt-[22px] bg-rose-50 text-rose-600 hover:bg-rose-100 p-2 rounded-md transition-colors flex items-center justify-center border-0 cursor-pointer h-[34px] w-[34px]"
+                          title="Remove this Room Sharing Option"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     ))}
                   </div>

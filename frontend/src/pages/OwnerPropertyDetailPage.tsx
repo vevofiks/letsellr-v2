@@ -483,7 +483,7 @@ export const OwnerPropertyDetailPage: React.FC = () => {
             )}
 
             {/* Room Sharing Prices & Vacancy Card (PG/Hostel Only) */}
-            {(property.category === "pg" || property.category === "hostel") &&
+            {["pg", "hostel", "pg_hostel"].includes(property.category) &&
               property.extra_details?.room_sharing && property.extra_details.room_sharing.length > 0 && (
               <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-2xs space-y-3">
                 <h3 className="text-sm font-black text-slate-900 uppercase tracking-wider my-0 flex items-center gap-2">

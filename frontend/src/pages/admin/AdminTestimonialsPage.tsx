@@ -544,7 +544,7 @@ export const AdminTestimonialsPage: React.FC = () => {
               <p className="text-xs text-slate-500 font-medium mt-1">
                 By <span className="font-bold text-slate-700">{deleteTarget.author_name}</span>.{" "}
                 {deleteTarget.status === "approved"
-                  ? "This is approved — it will be soft-deleted (hidden)."
+                  ? "This is approved - it will be soft-deleted (hidden)."
                   : "This will be permanently removed."}
               </p>
             </div>

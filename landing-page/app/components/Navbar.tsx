@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 
-// Smooth scroll helper — scrolls gradually so ScrollTrigger animations fire
+// Smooth scroll helper scrolls gradually so ScrollTrigger animations fire
 const smoothScrollTo = (id: string) => (e: React.MouseEvent) => {
   e.preventDefault();
   const el = document.getElementById(id);
@@ -32,7 +32,7 @@ export default function Navbar() {
             : "bg-transparent"
         }`}
       >
-        {/* Brand Logo — scrolls back to top */}
+        {/* Brand Logo scrolls back to top */}
         <a
           href="#"
           onClick={smoothScrollTo("__next")}

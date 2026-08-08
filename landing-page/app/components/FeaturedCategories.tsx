@@ -44,19 +44,19 @@ const DEFAULT_IMAGES: Record<string, string> = {
 const DEFAULT_CATEGORIES: CategoryItem[] = [
   {
     id: "1",
-    slug: "flat_apartment",
+    slug: "apartment",
     title: "FLAT & APARTMENT",
     subtitle: "For the luxury and semi furnished...",
-    image: DEFAULT_IMAGES.flat_apartment,
+    image: DEFAULT_IMAGES.apartment,
     spanClass: "col-span-1 md:col-span-2",
     hasButton: true,
   },
   {
     id: "2",
-    slug: "house_villa",
+    slug: "villa_house",
     title: "HOUSE & VILLA",
     subtitle: "Luxury villas",
-    image: DEFAULT_IMAGES.house_villa,
+    image: DEFAULT_IMAGES.villa,
     spanClass: "col-span-1 md:col-span-1",
     hasButton: false,
   },
@@ -71,10 +71,10 @@ const DEFAULT_CATEGORIES: CategoryItem[] = [
   },
   {
     id: "4",
-    slug: "comercial",
+    slug: "commercial",
     title: "COMMERCIAL",
     subtitle: "Office use",
-    image: DEFAULT_IMAGES.comercial,
+    image: DEFAULT_IMAGES.commercial,
     spanClass: "col-span-1 md:col-span-1",
     hasButton: false,
   },
@@ -110,7 +110,7 @@ export default function FeaturedCategories() {
         if (res.ok) {
           const data: DbPropertyType[] = await res.json();
           if (data && data.length > 0) {
-            const order = ["flat_apartment", "house_villa", "pg_hostel", "comercial", "land", "coworking_space"];
+            const order = ["apartment", "villa_house", "pg_hostel", "commercial", "land", "coworking_space"];
             data.sort((a, b) => {
               const indexA = order.indexOf(a.slug);
               const indexB = order.indexOf(b.slug);

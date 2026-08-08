@@ -137,7 +137,7 @@ export default function Footer() {
         <div>
           <p className="text-zinc-400 text-sm font-light mb-1">Ready to find your next property?</p>
           <p className="text-white text-xl font-bold tracking-tight">
-            Browse <span style={{ color: PRIMARY }}>verified listings</span> — direct from owners.
+            Browse <span style={{ color: PRIMARY }}>verified listings</span> direct from owners.
           </p>
         </div>
         <a
