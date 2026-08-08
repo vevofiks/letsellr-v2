@@ -348,7 +348,7 @@ export const OwnerPropertiesPage: React.FC = () => {
                 </div>
 
                 {/* Room Sharing Prices & Vacancy (PG/Hostel Only) */}
-                {(prop.category === "pg" || prop.category === "hostel") &&
+                {["pg", "hostel", "pg_hostel"].includes(prop.category) &&
                   prop.extra_details?.room_sharing && prop.extra_details.room_sharing.length > 0 && (
                   <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-slate-100">
                     {prop.extra_details.room_sharing.map((opt, idx) => (

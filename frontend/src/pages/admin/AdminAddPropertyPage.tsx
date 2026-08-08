@@ -603,7 +603,7 @@ export const AdminAddPropertyPage: React.FC = () => {
               </option>
               {filteredUsers.map((u) => (
                 <option key={u.id} value={u.id}>
-                  {u.agency_profile?.display_name || u.name} — {u.email}
+                  {u.agency_profile?.display_name || u.name} - {u.email}
                 </option>
               ))}
             </select>
@@ -727,47 +727,52 @@ export const AdminAddPropertyPage: React.FC = () => {
       {/* Section 2.5: Room Sharing Options (PG/Hostel Only) */}
       { ["pg", "hostel", "pg_hostel"].includes(category) && (
         <div className="bg-white border border-slate-200/80 rounded-xl p-6 shadow-2xs space-y-5">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
-              <Building2 className="h-5 w-5 text-[#014645]" /> Room Sharing Options
-            </h2>
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
+                <Building2 className="h-5 w-5 text-[#014645]" /> Room Sharing Options
+              </h2>
+              <p className="text-[11px] text-slate-500 font-medium mt-1 mb-0">
+                One row per room type (Single, Double, Triple, etc.) with its own bed price and available beds.
+              </p>
+            </div>
             <button
               type="button"
               onClick={addRoomSharingOption}
-              className="bg-emerald-50 text-[#014645] font-bold text-xs px-3 py-1.5 rounded-md flex items-center gap-1 hover:bg-emerald-100 transition-colors cursor-pointer"
+              className="bg-emerald-50 text-[#014645] font-bold text-xs px-3 py-1.5 rounded-md flex items-center gap-1 hover:bg-emerald-100 transition-colors cursor-pointer shrink-0"
             >
-              <Plus className="h-4 w-4" /> Add Option
+              <Plus className="h-4 w-4" /> Add Room Type
             </button>
           </div>
 
           {roomSharingOptions.length === 0 ? (
             <div className="text-center py-4 border-2 border-dashed border-slate-200 rounded-lg">
               <p className="text-xs text-slate-400 font-medium">No sharing options added yet.</p>
-              <p className="text-[10px] text-slate-400 mt-1">Click "Add Option" to define room types (e.g. Single, Double, Triple) with per-bed price and vacancy.</p>
+              <p className="text-[10px] text-slate-400 mt-1">Click "Add Room Type" to define room types (e.g. Single, Double, Triple) with per-bed price and vacancy.</p>
             </div>
           ) : (
             <div className="space-y-3">
               {/* Column headers */}
               <div className="hidden sm:grid grid-cols-4 gap-4 px-4">
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Sharing Type</span>
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Price / Bed (₹)</span>
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Vacancy (Beds)</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Beds per Room</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Rent / Bed (₹ per month)</span>
+                <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Beds Available</span>
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Remove</span>
               </div>
               {roomSharingOptions.map((option, index) => (
-                <div key={index} className="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end bg-slate-50 px-4 py-3 rounded-lg border border-slate-100">
+                <div key={index} className="relative grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 px-4 py-4 pr-12 rounded-lg border border-slate-100 items-start">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 sm:hidden">Sharing (e.g. 1, 2)</label>
+                    <label className="text-[10px] font-bold text-slate-500 sm:hidden">Beds per Room</label>
                     <input
                       type="number"
-                      placeholder="e.g. 2 for Double"
+                      placeholder="e.g. 2 for Double Sharing"
                       value={option.sharing}
                       onChange={(e) => updateRoomSharingOption(index, "sharing", e.target.value ? Number(e.target.value) : "")}
                       className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-[#014645]/20"
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 sm:hidden">Price per bed (₹)</label>
+                    <label className="text-[10px] font-bold text-slate-500 sm:hidden">Rent per Bed (₹/month)</label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 font-bold">₹</span>
                       <input
@@ -780,7 +785,7 @@ export const AdminAddPropertyPage: React.FC = () => {
                     </div>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold text-slate-500 sm:hidden">Vacancy (Beds)</label>
+                    <label className="text-[10px] font-bold text-slate-500 sm:hidden">Beds Available</label>
                     <input
                       type="number"
                       placeholder="e.g. 5"
@@ -789,16 +794,14 @@ export const AdminAddPropertyPage: React.FC = () => {
                       className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-[#014645]/20"
                     />
                   </div>
-                  <div>
-                    <button
-                      type="button"
-                      onClick={() => removeRoomSharingOption(index)}
-                      className="w-full sm:w-auto bg-rose-50 text-rose-600 hover:bg-rose-100 p-2 rounded-md transition-colors flex items-center justify-center border-0 cursor-pointer"
-                      title="Remove Option"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeRoomSharingOption(index)}
+                    className="absolute right-4 top-4 mt-[16px] sm:mt-0 bg-rose-50 text-rose-600 hover:bg-rose-100 p-2 rounded-md transition-colors flex items-center justify-center border-0 cursor-pointer h-[34px] w-[34px]"
+                    title="Remove this Room Sharing Option"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                 </div>
               ))}
             </div>

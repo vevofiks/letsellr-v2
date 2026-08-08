@@ -155,7 +155,7 @@ export const AdminDashboardPage: React.FC = () => {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pt-0.5">
-              <p className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-none">{stats?.total_properties ?? "—"}</p>
+              <p className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-none">{stats?.total_properties ?? "0"}</p>
               <span className="inline-flex items-center gap-1 text-[9.5px] sm:text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-md border border-emerald-100/80 w-fit">
                 <TrendingUp className="size-2.5" /> {stats?.active_properties ?? 0} Live
               </span>
@@ -172,7 +172,7 @@ export const AdminDashboardPage: React.FC = () => {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pt-0.5">
-              <p className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-none">{stats?.pending_property_reviews ?? "—"}</p>
+              <p className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-none">{stats?.pending_property_reviews ?? "0"}</p>
               <span className="inline-flex items-center gap-1 text-[9.5px] sm:text-[10px] font-extrabold text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-100/80 w-fit">
                 <Clock className="size-2.5" /> Action
               </span>
@@ -189,7 +189,7 @@ export const AdminDashboardPage: React.FC = () => {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pt-0.5">
-              <p className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-none">{stats?.total_users ?? "—"}</p>
+              <p className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-none">{stats?.total_users ?? "0"}</p>
               <span className="inline-flex items-center gap-1 text-[9.5px] sm:text-[10px] font-extrabold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded-md border border-blue-100/80 w-fit">
                 <Users className="size-2.5" /> Accounts
               </span>
@@ -206,7 +206,7 @@ export const AdminDashboardPage: React.FC = () => {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1 pt-0.5">
-              <p className="text-2xl font-black text-slate-900 tracking-tight leading-none">{stats?.agencies_count ?? "—"}</p>
+              <p className="text-2xl font-black text-slate-900 tracking-tight leading-none">{stats?.agencies_count ?? "0"}</p>
               <span className="inline-flex items-center gap-1 text-[9.5px] sm:text-[10px] font-extrabold text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded-md border border-purple-100/80 w-fit">
                 <CheckCircle2 className="size-2.5" /> Verified
               </span>

@@ -483,6 +483,15 @@ export const OwnerPropertyFormPage: React.FC = () => {
       toast.error("Valid price is required.");
       return;
     }
+    if (["pg", "hostel", "pg_hostel"].includes(category)) {
+      const hasValidSharingOption = roomSharingOptions.some(
+        (opt) => opt.sharing !== "" && Number(opt.sharing) > 0 && opt.price !== "" && Number(opt.price) > 0 && opt.vacancy !== ""
+      );
+      if (!hasValidSharingOption) {
+        toast.error("Add at least one Room Sharing Option with beds per room, rent per bed, and beds available.");
+        return;
+      }
+    }
     if (!locationArea.trim() || !city.trim()) {
       toast.error("Area and City location fields are required.");
       return;
@@ -612,7 +621,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
     );
   }
 
-  const showAvailability = isEdit && existingStatus === "live" && category !== "pg" && category !== "hostel";
+  const showAvailability = isEdit && existingStatus === "live" && !["pg", "hostel", "pg_hostel"].includes(category);
 
   return (
     <div className="min-h-screen bg-slate-50/70 flex flex-col font-sans pb-12 text-slate-900">
@@ -773,37 +782,43 @@ export const OwnerPropertyFormPage: React.FC = () => {
         {/* Section 2.5: Room Sharing Options (PG/Hostel Only) */}
         { ["pg", "hostel", "pg_hostel"].includes(category) && (
           <div className="bg-white border border-slate-100 rounded-xl p-6 shadow-xs space-y-5 text-left">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
-                <Building2 className="h-5 w-5 text-brand-green" /> Room Sharing Options
-              </h2>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-bold text-slate-900 flex items-center gap-2 my-0">
+                  <Building2 className="h-5 w-5 text-brand-green" /> Room Sharing Options
+                </h2>
+                <p className="text-[11px] text-slate-500 font-medium mt-1 mb-0">
+                  Add one row per room type you offer (e.g. Single, Double, Triple sharing) with its own bed price and available beds. Seekers will see each option separately on your listing.
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={addRoomSharingOption}
-                className="bg-emerald-50 text-brand-green font-bold text-xs px-3 py-1.5 rounded-md flex items-center gap-1 hover:bg-emerald-100 transition-colors"
+                className="bg-emerald-50 text-brand-green font-bold text-xs px-3 py-1.5 rounded-md flex items-center gap-1 hover:bg-emerald-100 transition-colors shrink-0"
               >
-                <Plus className="h-4 w-4" /> Add Option
+                <Plus className="h-4 w-4" /> Add Room Type
               </button>
             </div>
 
             {roomSharingOptions.length === 0 ? (
-              <p className="text-xs text-slate-500 font-medium">No sharing options added yet.</p>
+              <p className="text-xs text-slate-500 font-medium">No sharing options added yet. Click "Add Room Type" to list your first sharing option (e.g. Double Sharing).</p>
             ) : (
               <div className="space-y-4">
                 {roomSharingOptions.map((option, index) => (
-                  <div key={index} className="grid grid-cols-1 sm:grid-cols-4 gap-4 items-end bg-slate-50 p-4 rounded-lg border border-slate-100">
+                  <div key={index} className="relative grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 p-4 pr-12 rounded-lg border border-slate-100">
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Sharing (e.g. 1, 2)</label>
+                      <label className="text-xs font-bold text-slate-700">Beds per Room *</label>
                       <input
                         type="number"
-                        placeholder="e.g. 2 for Double"
+                        placeholder="e.g. 2 for Double Sharing"
                         value={option.sharing}
                         onChange={(e) => updateRoomSharingOption(index, "sharing", e.target.value ? Number(e.target.value) : "")}
                         className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-brand-green/20"
                       />
+                      <p className="text-[10px] text-slate-400 font-medium my-0">Number of people sharing this room (1 = Single, 2 = Double, 3 = Triple...)</p>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Price per bed (₹)</label>
+                      <label className="text-xs font-bold text-slate-700">Rent per Bed (₹/month) *</label>
                       <input
                         type="number"
                         placeholder="e.g. 5000"
@@ -811,9 +826,10 @@ export const OwnerPropertyFormPage: React.FC = () => {
                         onChange={(e) => updateRoomSharingOption(index, "price", e.target.value ? Number(e.target.value) : "")}
                         className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-brand-green/20"
                       />
+                      <p className="text-[10px] text-slate-400 font-medium my-0">Monthly rent charged per bed for this sharing type</p>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-xs font-bold text-slate-700">Vacancy (Beds)</label>
+                      <label className="text-xs font-bold text-slate-700">Beds Available *</label>
                       <input
                         type="number"
                         placeholder="e.g. 5"
@@ -821,17 +837,16 @@ export const OwnerPropertyFormPage: React.FC = () => {
                         onChange={(e) => updateRoomSharingOption(index, "vacancy", e.target.value ? Number(e.target.value) : "")}
                         className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900 focus:ring-2 focus:ring-brand-green/20"
                       />
+                      <p className="text-[10px] text-slate-400 font-medium my-0">Current vacant beds for this room type (0 = fully booked)</p>
                     </div>
-                    <div className="pb-0.5">
-                      <button
-                        type="button"
-                        onClick={() => removeRoomSharingOption(index)}
-                        className="w-full sm:w-auto bg-rose-50 text-rose-600 hover:bg-rose-100 p-2 rounded-md transition-colors flex items-center justify-center border-0 cursor-pointer"
-                        title="Remove Option"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeRoomSharingOption(index)}
+                      className="absolute right-4 top-4 mt-[22px] bg-rose-50 text-rose-600 hover:bg-rose-100 p-2 rounded-md transition-colors flex items-center justify-center border-0 cursor-pointer h-[34px] w-[34px]"
+                      title="Remove this Room Sharing Option"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 ))}
               </div>
