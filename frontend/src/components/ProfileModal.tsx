@@ -197,10 +197,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
   const handleBannerUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error("Banner image must be under 2MB.");
-      return;
-    }
     const reader = new FileReader();
     reader.onload = (event) => {
       const dataUrl = event.target?.result as string;
@@ -216,10 +212,6 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 1 * 1024 * 1024) {
-      toast.error("Avatar image must be under 1MB.");
-      return;
-    }
     const reader = new FileReader();
     reader.onload = (event) => {
       const dataUrl = event.target?.result as string;

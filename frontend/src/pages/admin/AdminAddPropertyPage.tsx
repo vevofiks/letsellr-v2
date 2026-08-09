@@ -100,7 +100,7 @@ export const AdminAddPropertyPage: React.FC = () => {
 
   const [ownerPhone, setOwnerPhone] = useState("");
   const [ownerWhatsapp, setOwnerWhatsapp] = useState("");
-  const [listingStatus, setListingStatus] = useState<"draft" | "pending_review" | "live">("pending_review");
+  const [listingStatus, setListingStatus] = useState<"draft" | "pending_review" | "live">("live");
 
   const addRoomSharingOption = () => {
     setRoomSharingOptions([...roomSharingOptions, { sharing: "", price: "", vacancy: "" }]);
@@ -351,12 +351,8 @@ export const AdminAddPropertyPage: React.FC = () => {
     const validFiles: File[] = [];
     const validPreviews: string[] = [];
     Array.from(files).forEach((file) => {
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error(`${file.name} is too large. Max size is 2MB.`);
-      } else {
-        validFiles.push(file);
-        validPreviews.push(URL.createObjectURL(file));
-      }
+      validFiles.push(file);
+      validPreviews.push(URL.createObjectURL(file));
     });
     if (validFiles.length > 0) {
       setNewFiles((prev) => [...prev, ...validFiles]);
@@ -753,11 +749,11 @@ export const AdminAddPropertyPage: React.FC = () => {
           ) : (
             <div className="space-y-3">
               {/* Column headers */}
-              <div className="hidden sm:grid grid-cols-4 gap-4 px-4">
+              <div className="hidden sm:grid grid-cols-3 gap-4 pl-4 pr-12 relative mb-2">
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Beds per Room</span>
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Rent / Bed (₹ per month)</span>
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Beds Available</span>
-                <span className="text-[10px] font-black uppercase tracking-wider text-slate-500">Remove</span>
+                <span className="absolute right-4 top-0 text-[10px] font-black uppercase tracking-wider text-slate-500 w-[34px] text-center">Remove</span>
               </div>
               {roomSharingOptions.map((option, index) => (
                 <div key={index} className="relative grid grid-cols-1 sm:grid-cols-3 gap-4 bg-slate-50 px-4 py-4 pr-12 rounded-lg border border-slate-100 items-start">
@@ -797,7 +793,7 @@ export const AdminAddPropertyPage: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => removeRoomSharingOption(index)}
-                    className="absolute right-4 top-4 mt-[16px] sm:mt-0 bg-rose-50 text-rose-600 hover:bg-rose-100 p-2 rounded-md transition-colors flex items-center justify-center border-0 cursor-pointer h-[34px] w-[34px]"
+                    className="absolute right-2 top-4 mt-[16px] sm:mt-0 bg-rose-50 text-rose-600 hover:bg-rose-100 p-2 rounded-md transition-colors flex items-center justify-center border-0 cursor-pointer h-[34px] w-[34px]"
                     title="Remove this Room Sharing Option"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -1161,20 +1157,22 @@ export const AdminAddPropertyPage: React.FC = () => {
 
       {/* Bottom Actions */}
       <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-slate-200">
-        <select
-          value={listingStatus}
-          onChange={(e) => setListingStatus(e.target.value as "draft" | "pending_review" | "live")}
-          className="w-full sm:w-auto bg-white border border-slate-200 rounded-md px-3 py-3 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-[#014645]/20 h-10"
-        >
-          <option value="pending_review">Send to Review Queue</option>
-          <option value="draft">Save as Draft</option>
-          <option value="live">Publish Live Immediately</option>
-        </select>
+        {listingParty !== "admin" && (
+          <select
+            value={listingStatus}
+            onChange={(e) => setListingStatus(e.target.value as "draft" | "pending_review" | "live")}
+            className="w-full sm:w-auto bg-white border border-slate-200 rounded-md px-3 py-3 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-[#014645]/20 h-10"
+          >
+            <option value="live">Publish Live Immediately</option>
+            <option value="pending_review">Send to Review Queue</option>
+            <option value="draft">Save as Draft</option>
+          </select>
+        )}
 
         <button
           type="button"
           disabled={submitting}
-          onClick={() => handleSubmitForm(listingStatus)}
+          onClick={() => handleSubmitForm(listingParty === "admin" ? "live" : listingStatus)}
           className="w-full sm:w-auto bg-[#014645] hover:bg-[#013534] text-white font-extrabold text-xs px-8 py-3 rounded-md flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer disabled:opacity-50 border-0 h-10"
         >
           {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
