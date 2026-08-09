@@ -46,7 +46,7 @@ class MediaService:
             )
 
     @staticmethod
-    def _to_webp(contents: bytes) -> bytes:
+    def _to_webp(contents: bytes, add_watermark: bool = False) -> bytes:
         """
         Re-encodes raster image bytes as WebP. Flattens transparency onto a
         white background only for modes WebP can't store directly.
@@ -56,6 +56,34 @@ class MediaService:
                 img = img.convert("RGBA" if "A" in img.getbands() else "RGB")
             if img.width > MAX_DIMENSION or img.height > MAX_DIMENSION:
                 img.thumbnail((MAX_DIMENSION, MAX_DIMENSION), Image.Resampling.LANCZOS)
+                
+            if add_watermark:
+                try:
+                    watermark_path = "/home/mhdasjad/Sandbox/letsellr-v2/frontend/public/images/logo.png"
+                    with Image.open(watermark_path) as wm:
+                        # Make the watermark size 25% of the image width
+                        wm_width = int(img.width * 0.25)
+                        wm_ratio = wm_width / wm.width
+                        wm_height = int(wm.height * wm_ratio)
+                        wm = wm.resize((wm_width, wm_height), Image.Resampling.LANCZOS)
+                        
+                        if wm.mode != "RGBA":
+                            wm = wm.convert("RGBA")
+                            
+                        # Padding of 2% from the edges
+                        padding = int(img.width * 0.02)
+                        pos_x = img.width - wm_width - padding
+                        pos_y = img.height - wm_height - padding
+                        
+                        # Create a transparent layer to paste the watermark
+                        transparent = Image.new("RGBA", img.size, (0,0,0,0))
+                        transparent.paste(img.convert("RGBA"), (0,0))
+                        transparent.paste(wm, (pos_x, pos_y), mask=wm)
+                        
+                        img = transparent.convert(img.mode)
+                except Exception as e:
+                    print(f"Failed to add watermark: {e}")
+
             buffer = io.BytesIO()
             img.save(buffer, format="WEBP", quality=WEBP_QUALITY, method=6)
             return buffer.getvalue()
@@ -82,8 +110,10 @@ class MediaService:
         if content_type in CONVERTIBLE_CONTENT_TYPES or ext in {"png", "jpg", "jpeg", "bmp", "tiff", "tif"}:
             try:
                 import asyncio
+                from functools import partial
                 loop = asyncio.get_running_loop()
-                contents = await loop.run_in_executor(None, self._to_webp, contents)
+                add_watermark = folder in ("uploads", "properties")
+                contents = await loop.run_in_executor(None, partial(self._to_webp, contents, add_watermark))
                 ext = "webp"
                 content_type = "image/webp"
             except UnidentifiedImageError:

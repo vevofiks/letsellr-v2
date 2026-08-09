@@ -434,12 +434,8 @@ export const OwnerPropertyFormPage: React.FC = () => {
     const validPreviews: string[] = [];
 
     Array.from(files).forEach(file => {
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error(`${file.name} is too large. Max size is 2MB.`);
-      } else {
-        validFiles.push(file);
-        validPreviews.push(URL.createObjectURL(file));
-      }
+      validFiles.push(file);
+      validPreviews.push(URL.createObjectURL(file));
     });
 
     if (validFiles.length > 0) {
@@ -842,7 +838,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => removeRoomSharingOption(index)}
-                      className="absolute right-4 top-4 mt-[22px] bg-rose-50 text-rose-600 hover:bg-rose-100 p-2 rounded-md transition-colors flex items-center justify-center border-0 cursor-pointer h-[34px] w-[34px]"
+                      className="absolute right-2 top-4 mt-[22px] bg-rose-50 text-rose-600 hover:bg-rose-100 p-2 rounded-md transition-colors flex items-center justify-center border-0 cursor-pointer h-[34px] w-[34px]"
                       title="Remove this Room Sharing Option"
                     >
                       <Trash2 className="h-4 w-4" />
