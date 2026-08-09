@@ -158,10 +158,7 @@ export function SearchBarModal({ open, onClose, activeTab }: { open: boolean; on
     }
     const id = setTimeout(async () => {
       try {
-        const endpoint =
-          activeTab === "agent"
-            ? `${apiBase}/api/agencies/autocomplete?q=${encodeURIComponent(query)}`
-            : `${apiBase}/api/properties/autocomplete/locations?q=${encodeURIComponent(query)}`;
+        const endpoint = `${apiBase}/api/properties/autocomplete/locations?q=${encodeURIComponent(query)}`;
         const res = await fetch(endpoint);
         if (res.ok) {
           const data = await res.json();

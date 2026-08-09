@@ -14,6 +14,8 @@ import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { AppNavbar } from "@/components/AppNavbar";
 import { AuthModal, type AuthModalMode } from "@/components/AuthModal";
+import { Seo } from "@/components/Seo";
+import { buildPropertyJsonLd, buildBreadcrumbJsonLd } from "@/lib/jsonLd";
 
 import {
   ArrowLeft,
@@ -305,18 +307,13 @@ export const PropertyDetailsPage: React.FC = () => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
 
-  // Fetch Property Details and set page title
+  // Fetch Property Details
   useEffect(() => {
     const fetchPropertyDetails = async () => {
       try {
         setLoading(true);
         const res = await api.get(`/api/properties/${propertyId}`);
         setProperty(res.data);
-        
-        // Dynamic SEO Title based on property details
-        const loc = res.data.location_area || res.data.location_city || "";
-        const locSuffix = loc ? ` in ${loc}` : "";
-        document.title = `${res.data.title}${locSuffix} | Letsellr`;
       } catch (err: any) {
         toast.error("Failed to load property details");
         navigate("/dashboard");
@@ -328,13 +325,6 @@ export const PropertyDetailsPage: React.FC = () => {
       fetchPropertyDetails();
     }
   }, [propertyId, navigate]);
-
-  // Clean up title on unmount
-  useEffect(() => {
-    return () => {
-      document.title = "Letsellr | Find Properties Direct from Owners";
-    };
-  }, []);
 
   // Fetch Related Properties
   useEffect(() => {
@@ -553,8 +543,26 @@ export const PropertyDetailsPage: React.FC = () => {
 
   const specCardClass = "space-y-1 w-full sm:w-auto pt-3 sm:pt-0 sm:pl-5 border-t sm:border-t-0 sm:border-l border-slate-100 first:border-0 first:pt-0 first:sm:pl-0";
 
+  const seoLocation = property.location_area || property.location_city || "";
+  const seoDescription = `${property.title}${seoLocation ? ` in ${seoLocation}` : ""} — ${formatPrice(property.price, property.price_unit)}. ${property.bedrooms ? `${property.bedrooms} BHK, ` : ""}verified listing direct from ${property.owner_role === "agency" ? "agency" : "owner"}, no brokerage on Letsellr.`;
+  const canonicalUrl = `https://app.letsellr.in/properties/${property.id}`;
+
   return (
     <div className="min-h-screen bg-[#f8faf9] text-left relative font-sans">
+      <Seo
+        title={`${property.title}${seoLocation ? ` in ${seoLocation}` : ""}`}
+        description={seoDescription}
+        image={property.photos?.[0]}
+        url={canonicalUrl}
+        jsonLd={[
+          buildPropertyJsonLd(property, canonicalUrl),
+          buildBreadcrumbJsonLd([
+            { name: "Home", url: "https://app.letsellr.in/dashboard" },
+            { name: "Properties", url: "https://app.letsellr.in/properties" },
+            { name: property.title, url: canonicalUrl },
+          ]),
+        ]}
+      />
 
       <AppNavbar logoHref="/dashboard" />
 

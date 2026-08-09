@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { AppNavbar } from "@/components/AppNavbar";
+import { Seo } from "@/components/Seo";
 import { 
   Building2, 
   MapPin, 
@@ -159,8 +160,14 @@ export const AgencyProfilePage: React.FC = () => {
 
   if (!agency) return null;
 
+  const agencyLocation = agency.location_area || agency.location_city || "";
+
   return (
     <div className="min-h-screen bg-[#f8fafc] pb-16 text-left">
+      <Seo
+        title={`${agency.display_name}${agencyLocation ? ` — ${agencyLocation}` : ""}`}
+        description={`${agency.display_name} is a verified real estate agency${agencyLocation ? ` in ${agencyLocation}` : ""} with ${agency.total_listings} listing${agency.total_listings === 1 ? "" : "s"} on Letsellr — no brokerage.`}
+      />
       <AppNavbar logoHref="/dashboard" />
       
       {/* Upper Banner */}
