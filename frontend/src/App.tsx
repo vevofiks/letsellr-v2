@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { HelmetProvider } from "react-helmet-async";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PublicRoute } from "@/components/PublicRoute";
@@ -31,8 +32,9 @@ import { Toaster } from "@/components/ui/sonner";
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
+    <HelmetProvider>
+      <AuthProvider>
+        <BrowserRouter>
         <div className="flex-1 w-full bg-slate-50 min-h-screen">
           <Routes>
             {/* Public Auth Routes */}
@@ -188,10 +190,11 @@ function App() {
             <Route path="*" element={<Navigate to="/register/type" replace />} />
           </Routes>
         </div>
-      </BrowserRouter>
-      {/* Toast provider */}
-      <Toaster richColors position="top-right" />
-    </AuthProvider>
+        </BrowserRouter>
+        {/* Toast provider */}
+        <Toaster richColors position="top-right" />
+      </AuthProvider>
+    </HelmetProvider>
   );
 }
 

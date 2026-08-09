@@ -14,6 +14,7 @@ import {
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { AppNavbar } from "@/components/AppNavbar";
+import { Seo } from "@/components/Seo";
 import {
   Pagination,
   PaginationContent,
@@ -175,31 +176,36 @@ export const ClientDashboard: React.FC = () => {
     }
   }, []);
 
-  // Persist filters to sessionStorage and update page title for SEO
+  // Persist filters to sessionStorage
   useEffect(() => {
     sessionStorage.setItem("dashboard_intent", intent);
     sessionStorage.setItem("dashboard_category", category);
     sessionStorage.setItem("dashboard_searchMode", searchMode);
     sessionStorage.setItem("dashboard_searchQuery", searchQuery);
+  }, [intent, category, searchMode, searchQuery]);
 
-    // Dynamic SEO Title
+  // Dynamic SEO title/description derived from active search filters
+  const { seoTitle, seoDescription } = useMemo(() => {
     let title = "Properties";
+    let description = "";
+
     if (searchMode === "agencies") {
       title = "Find Verified Real Estate Agencies";
       if (city) title += ` in ${city}`;
+      description = `Browse verified real estate agencies${city ? ` in ${city}` : ""} on Letsellr — no-brokerage listings direct from trusted agencies.`;
     } else {
       const intentLabel = intent === "buy" ? "for Sale" : intent === "rent" ? "for Rent" : intent === "lease" ? "for Lease" : "";
       let categoryLabel = "Properties";
-      
+
       if (category) {
         const typeObj = propertyTypes.find((t: any) => t.slug === category);
         if (typeObj) {
-           categoryLabel = typeObj.label;
+          categoryLabel = typeObj.label;
         } else {
-           categoryLabel = category.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+          categoryLabel = category.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
         }
       }
-      
+
       title = `${categoryLabel} ${intentLabel}`.trim();
       if (city) {
         title += ` in ${city}`;
@@ -207,13 +213,15 @@ export const ClientDashboard: React.FC = () => {
       if (searchQuery && !city) {
         title += ` for "${searchQuery}"`;
       }
+
+      description = `Find ${categoryLabel.toLowerCase()} ${intentLabel}${city ? ` in ${city}` : ""} directly from verified owners and agencies — no brokerage on Letsellr.`;
     }
-    
+
     if (!title || title === "Properties") {
       title = "Search Properties Direct from Owners";
     }
-    
-    document.title = `${title} | Letsellr`;
+
+    return { seoTitle: title, seoDescription: description || undefined };
   }, [intent, category, searchMode, searchQuery, city, propertyTypes]);
 
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -806,6 +814,7 @@ export const ClientDashboard: React.FC = () => {
       "bg-[#f4f6f5] text-left relative font-sans",
       viewMode === "map" ? "h-screen flex flex-col overflow-hidden" : "min-h-screen"
     )}>
+      <Seo title={seoTitle} description={seoDescription} />
 
       <AppNavbar logoHref="/dashboard" />
 
