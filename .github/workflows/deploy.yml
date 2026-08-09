@@ -86,7 +86,7 @@ jobs:
             while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
                 sleep 5
                 echo "==> Checking HTTP health status (Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)..."
-                if curl -f -s $HEALTH_CHECK_URL > /dev/null; then
+                if curl -f -s -H "Host: api.letsellr.in" $HEALTH_CHECK_URL > /dev/null; then
                     echo "SUCCESS: App is responding with 200 OK!"
                     exit 0
                 fi
