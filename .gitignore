@@ -55,3 +55,8 @@ letsellr-api/htmlcov/
 letsellr-api/dist/
 letsellr-api/build/
 letsellr-api/*.egg-info/
+
+# Private scripts
+deploy_vps.py
+ssh_check.py
+fix_db.py

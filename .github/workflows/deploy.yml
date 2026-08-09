@@ -79,7 +79,7 @@ jobs:
             echo "==> Waiting for service workers to initialize (up to 60 seconds)..."
 
             # Retry loop for health check
-            HEALTH_CHECK_URL="https://api.letsellr.in/health"
+            HEALTH_CHECK_URL="http://127.0.0.1:8000/health"
             MAX_RETRIES=12
             RETRY_COUNT=0
 

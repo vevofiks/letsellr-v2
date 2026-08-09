@@ -538,10 +538,6 @@ export const AdminPropertiesQueuePage: React.FC = () => {
     }
 
     Array.from(files).forEach((file) => {
-      if (file.size > 2 * 1024 * 1024) {
-        toast.error(`${file.name} is too large. Max size is 2MB.`);
-        return;
-      }
       const reader = new FileReader();
       reader.onload = (event) => {
         const dataUrl = event.target?.result as string;
@@ -926,34 +922,36 @@ export const AdminPropertiesQueuePage: React.FC = () => {
               </div>
 
               {/* Card Footer Actions */}
-              <div className="bg-slate-50/70 border-t border-slate-200/80 px-4 py-3 flex items-center justify-end gap-1.5 flex-wrap">
-                <button
-                  onClick={async () => {
-                    try {
-                      const updated = await adminService.toggleFeatureProperty(prop.id);
-                      toast.success(
-                        updated.is_featured
-                          ? `"${prop.title}" is now featured on landing page!`
-                          : `"${prop.title}" unfeatured.`
-                      );
-                      const updater = (list: AdminProperty[]) =>
-                        list.map((p) => (p.id === prop.id ? { ...p, is_featured: updated.is_featured } : p));
-                      setPendingProperties(updater);
-                      setLiveProperties(updater);
-                    } catch (err: any) {
-                      toast.error("Failed to update featured status.");
-                    }
-                  }}
-                  className={`font-extrabold text-xs px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 cursor-pointer border ${
-                    prop.is_featured
-                      ? "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100"
-                      : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
-                  }`}
-                  title={prop.is_featured ? "Featured on Landing Page (Click to unfeature)" : "Feature on Landing Page"}
-                >
-                  <Sparkles className={`h-3.5 w-3.5 ${prop.is_featured ? "fill-emerald-600 text-emerald-600" : "text-slate-400"}`} />
-                  <span>{prop.is_featured ? "Featured" : "Feature"}</span>
-                </button>
+              <div className="bg-slate-50/70 border-t border-slate-200/80 px-2 sm:px-4 py-3 flex items-center justify-between sm:justify-end gap-1.5">
+                {activeTab === "live" && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        const updated = await adminService.toggleFeatureProperty(prop.id);
+                        toast.success(
+                          updated.is_featured
+                            ? `"${prop.title}" is now featured on landing page!`
+                            : `"${prop.title}" unfeatured.`
+                        );
+                        const updater = (list: AdminProperty[]) =>
+                          list.map((p) => (p.id === prop.id ? { ...p, is_featured: updated.is_featured } : p));
+                        setPendingProperties(updater);
+                        setLiveProperties(updater);
+                      } catch (err: any) {
+                        toast.error("Failed to update featured status.");
+                      }
+                    }}
+                    className={`font-extrabold text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer border flex-1 sm:flex-none ${
+                      prop.is_featured
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100"
+                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                    }`}
+                    title={prop.is_featured ? "Featured on Landing Page (Click to unfeature)" : "Feature on Landing Page"}
+                  >
+                    <Sparkles className={`h-3.5 w-3.5 shrink-0 ${prop.is_featured ? "fill-emerald-600 text-emerald-600" : "text-slate-400"}`} />
+                    <span className="truncate">{prop.is_featured ? "Featured" : "Feature"}</span>
+                  </button>
+                )}
 
                 <button
                   onClick={() => {
@@ -961,23 +959,23 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                     fetchPropertyReviews(prop.id);
                     setInspectModalOpen(true);
                   }}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
+                  className="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer flex-1 sm:flex-none"
                   title="Inspect Listing"
                 >
-                  <Eye className="h-3.5 w-3.5" />
-                  <span>Inspect</span>
+                  <Eye className="h-3.5 w-3.5 shrink-0" />
+                  <span className="truncate">Inspect</span>
                 </button>
 
                 <button
                   onClick={() => openEditModal(prop)}
-                  className="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 font-bold text-xs px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
+                  className="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200/80 font-bold text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer flex-1 sm:flex-none"
                   title="Edit All Property Details"
                 >
-                  <Pencil className="h-3.5 w-3.5 text-amber-700" />
-                  <span>Edit</span>
+                  <Pencil className="h-3.5 w-3.5 shrink-0 text-amber-700" />
+                  <span className="truncate">Edit</span>
                 </button>
 
-                {activeTab === "pending" && (
+                {activeTab === "pending" ? (
                   <>
                     <button
                       onClick={() => {
@@ -985,10 +983,10 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                         setApproveReason("Meets all listing standards & verified");
                         setApproveModalOpen(true);
                       }}
-                      className="bg-[#014645] hover:bg-[#013534] text-white font-extrabold text-xs px-3 py-1.5 rounded-lg shadow-2xs transition-all flex items-center gap-1 cursor-pointer"
+                      className="bg-[#014645] hover:bg-[#013534] text-white font-extrabold text-[10px] sm:text-xs px-2 sm:px-3 py-1.5 rounded-lg shadow-2xs transition-all flex items-center justify-center gap-1 cursor-pointer flex-1 sm:flex-none"
                     >
-                      <Check className="h-3.5 w-3.5" />
-                      <span>Approve</span>
+                      <Check className="h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate">Approve</span>
                     </button>
 
                     <button
@@ -997,11 +995,24 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                         setRejectReason("");
                         setRejectModalOpen(true);
                       }}
-                      className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1 cursor-pointer"
+                      className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs px-2 sm:px-2.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0"
+                      title="Reject Listing"
                     >
                       <X className="h-3.5 w-3.5" />
                     </button>
                   </>
+                ) : (
+                  <button
+                    onClick={() => {
+                      setSelectedProperty(prop);
+                      setRejectReason("Taken down from live status by admin.");
+                      setRejectModalOpen(true);
+                    }}
+                    className="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold text-xs px-2 sm:px-2.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer shrink-0"
+                    title="Delete / Unpublish Listing"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
                 )}
               </div>
             </div>
@@ -1718,7 +1729,7 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => removeEditRoomSharingOption(index)}
-                          className="absolute right-4 top-4 mt-[22px] bg-rose-50 text-rose-600 hover:bg-rose-100 p-2 rounded-md transition-colors flex items-center justify-center border-0 cursor-pointer h-[34px] w-[34px]"
+                          className="absolute right-3 top-5 mt-[22px] bg-rose-50 text-rose-600 hover:bg-rose-100 p-2 rounded-md transition-colors flex items-center justify-center border-0 cursor-pointer h-[34px] w-[34px]"
                           title="Remove this Room Sharing Option"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -2178,22 +2189,26 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                   {activeTab === "pending" ? "Reject Property Listing" : "Unpublish Live Listing"}
                 </h3>
                 <p className="text-xs text-slate-500 font-medium my-0">
-                  Provide a reason for the listing owner.
+                  {activeTab === "pending" 
+                    ? "Provide a reason for the listing owner."
+                    : "Are you sure you want to unpublish this listing? It will immediately be removed from public view."}
                 </p>
               </div>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-slate-700">Reason *</label>
-              <textarea
-                rows={3}
-                placeholder="e.g. Incomplete details, invalid location, missing clear photos..."
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                className="w-full bg-slate-50 border border-slate-200/80 rounded-lg p-2.5 text-xs text-slate-900"
-                required
-              />
-            </div>
+            {activeTab === "pending" && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">Reason *</label>
+                <textarea
+                  rows={3}
+                  placeholder="e.g. Incomplete details, invalid location, missing clear photos..."
+                  value={rejectReason}
+                  onChange={(e) => setRejectReason(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200/80 rounded-lg p-2.5 text-xs text-slate-900"
+                  required
+                />
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-2.5 pt-2">
               <button
@@ -2205,8 +2220,8 @@ export const AdminPropertiesQueuePage: React.FC = () => {
 
               <button
                 onClick={handleReject}
-                disabled={actionLoading || !rejectReason.trim()}
-                className="bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs px-5 py-2 rounded-lg shadow-2xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+                disabled={actionLoading || (activeTab === "pending" && !rejectReason.trim())}
+                className="bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs px-5 py-2 rounded-lg shadow-2xs cursor-pointer flex items-center gap-1.5 disabled:opacity-50 border-0"
               >
                 <X className="h-3.5 w-3.5" />
                 {actionLoading ? "Processing..." : activeTab === "pending" ? "Reject Listing" : "Confirm Unpublish"}

@@ -35,6 +35,7 @@ import {
   ChevronRight,
   Share2,
   CheckCircle2,
+  X,
 } from "lucide-react";
 
 const getYoutubeEmbedUrl = (url: string | undefined): string | null => {
@@ -74,6 +75,7 @@ export const PropertyDetailsPage: React.FC = () => {
     open: false,
     mode: "login",
   });
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
 
   // Reviews State
   const [reviews, setReviews] = useState<any[]>([]);
@@ -511,6 +513,15 @@ export const PropertyDetailsPage: React.FC = () => {
     property.extra_details?.room_sharing || [];
   const hasRoomSharing = isPgOrHostelCategory && roomSharingOptions.length > 0;
 
+  const validVideoLinks = property.video_link 
+    ? property.video_link
+        .split(/[\n,\s]+/)
+        .map((s: string) => s.trim())
+        .filter(Boolean)
+        .map((vUrl: string) => getYoutubeEmbedUrl(vUrl))
+        .filter(Boolean)
+    : [];
+
   const RoomSharingVacancy: React.FC = () => (
     <div className="space-y-2 pt-1">
       <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
@@ -605,9 +616,10 @@ export const PropertyDetailsPage: React.FC = () => {
                   />
                 ) : (
                   <img
+                    onClick={() => setIsImageViewerOpen(true)}
                     src={mediaList[activePhotoIndex]?.url}
                     alt={`${property.title} - View ${activePhotoIndex + 1}`}
-                    className="h-full w-full object-cover transition-all duration-500 ease-out"
+                    className="h-full w-full object-cover transition-all duration-500 ease-out cursor-pointer hover:scale-105"
                   />
                 )}
 
@@ -635,21 +647,6 @@ export const PropertyDetailsPage: React.FC = () => {
                       <ChevronRight className="h-4.5 w-4.5" />
                     </button>
                   </>
-                )}
-
-                {/* Overlay Badge */}
-                {property.owner_role === "agency" ? (
-                  <div className="absolute top-3 left-3 z-10 pointer-events-none">
-                    <span className="bg-slate-900/90 backdrop-blur-md text-emerald-400 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider shadow-md border border-emerald-500/30 flex items-center gap-1.5">
-                      <Building2 className="h-3 w-3" /> Agency Partner
-                    </span>
-                  </div>
-                ) : (
-                  <div className="absolute top-3 left-3 z-10 pointer-events-none">
-                    <span className="bg-slate-900/90 backdrop-blur-md text-[#23D283] px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-wider shadow-md border border-[#23D283]/30 flex items-center gap-1.5">
-                      <Shield className="h-3 w-3" /> Direct Owner
-                    </span>
-                  </div>
                 )}
 
                 {/* Counter Pill */}
@@ -851,27 +848,23 @@ export const PropertyDetailsPage: React.FC = () => {
             </div>
 
             {/* Video Tours Section */}
-            {property.video_link && (
+            {validVideoLinks && validVideoLinks.length > 0 && (
               <div className="space-y-4 pt-6 border-t border-slate-200/80">
                 <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
                   <Play className="h-5 w-5 text-rose-600 fill-rose-600" /> Property Video Tours
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {property.video_link.split(/[\n,\s]+/).map((s: string) => s.trim()).filter(Boolean).map((vUrl: string, idx: number) => {
-                    const embedUrl = getYoutubeEmbedUrl(vUrl);
-                    if (!embedUrl) return null;
-                    return (
-                      <div key={idx} className="rounded-2xl overflow-hidden border border-slate-200 shadow-2xs aspect-video bg-slate-900">
-                        <iframe
-                          src={embedUrl}
-                          title={`Property Video Tour ${idx + 1}`}
-                          className="w-full h-full border-0"
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                          allowFullScreen
-                        />
-                      </div>
-                    );
-                  })}
+                  {validVideoLinks.map((embedUrl: string, idx: number) => (
+                    <div key={idx} className="rounded-2xl overflow-hidden border border-slate-200 shadow-2xs aspect-video bg-slate-900">
+                      <iframe
+                        src={embedUrl}
+                        title={`Property Video Tour ${idx + 1}`}
+                        className="w-full h-full border-0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -1297,6 +1290,63 @@ export const PropertyDetailsPage: React.FC = () => {
           initialMode={authModal.mode}
           onClose={() => setAuthModal({ open: false, mode: "login" })}
         />
+      )}
+
+      {/* Detailed Image Viewer Modal */}
+      {isImageViewerOpen && mediaList.length > 0 && (
+        <div className="fixed inset-0 z-[9999] bg-black/95 flex flex-col items-center justify-center p-4 sm:p-8 backdrop-blur-sm transition-all duration-300">
+          <button
+            onClick={() => setIsImageViewerOpen(false)}
+            className="absolute top-4 right-4 sm:top-6 sm:right-6 text-white/70 hover:text-white bg-black/50 hover:bg-black/80 rounded-full p-2 transition-colors cursor-pointer z-50 border border-white/10"
+          >
+            <X className="h-6 w-6" />
+          </button>
+
+          <div className="relative w-full h-full flex flex-col items-center justify-center">
+            {mediaList[activePhotoIndex]?.type === "video" ? (
+              <iframe
+                src={mediaList[activePhotoIndex].url}
+                title="Property Video Tour"
+                className="w-full h-full max-w-5xl max-h-[80vh] border-0 rounded-2xl shadow-2xl"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              <img
+                src={mediaList[activePhotoIndex]?.url}
+                alt={`${property.title} - View ${activePhotoIndex + 1}`}
+                className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl transition-transform duration-300"
+              />
+            )}
+
+            {mediaList.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePrevPhoto();
+                  }}
+                  className="absolute left-0 sm:left-4 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-black/50 hover:bg-black/80 text-white transition-all shadow-md cursor-pointer border border-white/10 hover:scale-110 active:scale-95"
+                >
+                  <ArrowLeft className="h-6 w-6" />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleNextPhoto();
+                  }}
+                  className="absolute right-0 sm:right-4 top-1/2 -translate-y-1/2 flex h-12 w-12 items-center justify-center rounded-full bg-black/50 hover:bg-black/80 text-white transition-all shadow-md cursor-pointer border border-white/10 hover:scale-110 active:scale-95"
+                >
+                  <ChevronRight className="h-6 w-6" />
+                </button>
+              </>
+            )}
+
+            <div className="absolute bottom-4 sm:bottom-8 text-white/90 text-sm font-extrabold bg-black/60 px-4 py-2 rounded-full border border-white/10 backdrop-blur-md">
+              {activePhotoIndex + 1} / {mediaList.length}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
