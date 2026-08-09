@@ -79,14 +79,14 @@ jobs:
             echo "==> Waiting for service workers to initialize (up to 60 seconds)..."
 
             # Retry loop for health check
-            HEALTH_CHECK_URL="https://api.letsellr.in/health"
+            HEALTH_CHECK_URL="http://127.0.0.1:8000/health"
             MAX_RETRIES=12
             RETRY_COUNT=0
 
             while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
                 sleep 5
                 echo "==> Checking HTTP health status (Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)..."
-                if curl -f -s $HEALTH_CHECK_URL > /dev/null; then
+                if curl -f -s -H "Host: api.letsellr.in" $HEALTH_CHECK_URL > /dev/null; then
                     echo "SUCCESS: App is responding with 200 OK!"
                     exit 0
                 fi
