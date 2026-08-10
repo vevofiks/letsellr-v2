@@ -29,7 +29,12 @@ async function fetchCategorySlugs(): Promise<string[]> {
   });
   if (!res.ok) return [];
   const types: PropertyType[] = await res.json();
-  return types.map((t) => t.slug);
+  return types.map((t) => {
+    let slug = t.slug;
+    if (slug === "pg_hostel") return "pg";
+    if (slug === "flat_appartment" || slug === "flat_apartment") return "apartment";
+    return slug;
+  });
 }
 
 export async function GET() {
