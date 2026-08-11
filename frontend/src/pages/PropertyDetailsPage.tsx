@@ -16,6 +16,7 @@ import { AppNavbar } from "@/components/AppNavbar";
 import { AuthModal, type AuthModalMode } from "@/components/AuthModal";
 import { Seo } from "@/components/Seo";
 import { buildPropertyJsonLd, buildBreadcrumbJsonLd } from "@/lib/jsonLd";
+import { useConfirm } from "@/components/ConfirmDialogProvider";
 
 import {
   ArrowLeft,
@@ -66,6 +67,7 @@ export const PropertyDetailsPage: React.FC = () => {
   const { propertyId } = useParams<{ propertyId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const confirm = useConfirm();
 
   const [property, setProperty] = useState<any | null>(null);
   const [agency, setAgency] = useState<any | null>(null);
@@ -191,7 +193,12 @@ export const PropertyDetailsPage: React.FC = () => {
   };
 
   const handleDeleteReview = async (reviewId: string) => {
-    if (!window.confirm("Are you sure you want to delete this review?")) return;
+    const isConfirmed = await confirm({
+      title: "Delete Review",
+      description: "Are you sure you want to delete this review? This action cannot be undone.",
+      variant: "destructive"
+    });
+    if (!isConfirmed) return;
 
     try {
       await api.delete(`/api/reviews/${reviewId}`);

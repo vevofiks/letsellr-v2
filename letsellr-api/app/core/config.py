@@ -96,7 +96,7 @@ class Settings(BaseSettings):
     # ── CORS ─────────────────────────────────────────────────────────────
     # Stored as a raw string in .env (comma-separated); parsed by validator.
     CORS_ORIGINS_STR: str = "http://localhost:3000,http://localhost:5173"
-    ALLOWED_HOSTS_STR: str = "letsellr.com,*.letsellr.com"
+    ALLOWED_HOSTS_STR: str = "letsellr.in,*.letsellr.in"
 
     @field_validator("CORS_ORIGINS_STR", mode="before")
     @classmethod

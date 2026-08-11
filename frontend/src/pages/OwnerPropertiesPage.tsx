@@ -23,6 +23,7 @@ import { api } from "@/lib/api";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useConfirm } from "@/components/ConfirmDialogProvider";
 
 interface RoomSharingOption {
   sharing: number;
@@ -61,6 +62,7 @@ export const OwnerPropertiesPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   const fetchOwnerProperties = async () => {
     try {
@@ -81,7 +83,12 @@ export const OwnerPropertiesPage: React.FC = () => {
   }, []);
 
   const handleDelete = async (id: string, title: string) => {
-    if (!window.confirm(`Are you sure you want to delete "${title}"?`)) return;
+    const isConfirmed = await confirm({
+      title: "Delete Listing",
+      description: `Are you sure you want to delete "${title}"?`,
+      variant: "destructive"
+    });
+    if (!isConfirmed) return;
 
     try {
       setDeletingId(id);
