@@ -1,15 +1,3 @@
-/**
- * AppNavbar — Single reusable navigation bar for all pages.
- *
- * Behaviour:
- *   • Logged OUT → profile icon shows auth dropdown (Register / Sign In / Owner-Agency)
- *   • Logged IN  → profile icon shows avatar with initials + dropdown (My Profile / Sign Out)
- *
- * Props:
- *   • title?        — optional page label shown next to logo (e.g. "Partner Dashboard")
- *   • logoHref?     — where the logo link goes (defaults to "/" which redirects by role)
- */
-
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { LogOut, UserPlus, User, LayoutDashboard } from "lucide-react";
@@ -86,6 +74,19 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
     };
   }, [user]);
 
+  const getLandingUrl = () => {
+    const envUrl = import.meta.env.VITE_LANDING_URL;
+    if (envUrl) return envUrl;
+    if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+      return "http://localhost:3000";
+    }
+    return "https://letsellr.in";
+  };
+
+  const landingUrl = getLandingUrl();
+  const effectiveLogoHref = (!logoHref || logoHref === "/" || logoHref === "/dashboard") ? landingUrl : logoHref;
+  const isExternalLogo = effectiveLogoHref.startsWith("http://") || effectiveLogoHref.startsWith("https://");
+
   return (
     <>
       <header className="sticky top-0 z-40 bg-white border-b border-slate-100 shadow-sm">
@@ -93,21 +94,39 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
 
           {/* ── Logo + optional title ─────────────────────────────────── */}
           <div className="flex items-center gap-8">
-            <Link to={logoHref} className="flex items-center gap-2 group">
-              <div className="flex items-center justify-center transition-transform group-hover:scale-105">
-                <img
-                  src="/logo.png"
-                  alt="Letsellr Logo"
-                  className="h-10 w-auto object-contain shrink-0 drop-shadow-sm"
-                />
-              </div>
-              <div className="flex flex-col text-left mt-1 gap-1">
-                <span className="text-xl font-black tracking-tight text-brand-green leading-none uppercase">LETSELLR</span>
-                <span className="text-[9px] font-extrabold text-black tracking-wider -mt-0.5 leading-none uppercase">
-                  choose your next home
-                </span>
-              </div>
-            </Link>
+            {isExternalLogo ? (
+              <a href={effectiveLogoHref} className="flex items-center gap-2 group">
+                <div className="flex items-center justify-center transition-transform group-hover:scale-105">
+                  <img
+                    src="/logo.png"
+                    alt="Letsellr Logo"
+                    className="h-10 w-auto object-contain shrink-0 drop-shadow-sm"
+                  />
+                </div>
+                <div className="flex flex-col text-left mt-1 gap-1">
+                  <span className="text-xl font-black tracking-tight text-brand-green leading-none uppercase">LETSELLR</span>
+                  <span className="text-[9px] font-extrabold text-black tracking-wider -mt-0.5 leading-none uppercase">
+                    choose your next home
+                  </span>
+                </div>
+              </a>
+            ) : (
+              <Link to={effectiveLogoHref} className="flex items-center gap-2 group">
+                <div className="flex items-center justify-center transition-transform group-hover:scale-105">
+                  <img
+                    src="/logo.png"
+                    alt="Letsellr Logo"
+                    className="h-10 w-auto object-contain shrink-0 drop-shadow-sm"
+                  />
+                </div>
+                <div className="flex flex-col text-left mt-1 gap-1">
+                  <span className="text-xl font-black tracking-tight text-brand-green leading-none uppercase">LETSELLR</span>
+                  <span className="text-[9px] font-extrabold text-black tracking-wider -mt-0.5 leading-none uppercase">
+                    choose your next home
+                  </span>
+                </div>
+              </Link>
+            )}
           </div>
 
           {/* ── Right: profile button + dropdown ─────────────────────── */}

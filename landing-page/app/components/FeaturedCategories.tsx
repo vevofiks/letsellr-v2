@@ -110,13 +110,6 @@ export default function FeaturedCategories() {
         if (res.ok) {
           const data: DbPropertyType[] = await res.json();
           if (data && data.length > 0) {
-            const order = ["apartment", "villa_house", "pg_hostel", "commercial", "land", "coworking_space"];
-            data.sort((a, b) => {
-              const indexA = order.indexOf(a.slug);
-              const indexB = order.indexOf(b.slug);
-              return (indexA === -1 ? 99 : indexA) - (indexB === -1 ? 99 : indexB);
-            });
-
             const formatted: CategoryItem[] = data.map((dbCat, index) => {
               const slugKey = dbCat.slug.toLowerCase();
               const isDesktopWide = index === 0 || index % 5 === 0;

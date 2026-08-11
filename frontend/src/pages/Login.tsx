@@ -6,6 +6,7 @@ import { loginSchema } from "@/lib/validation";
 import type { LoginInput } from "@/lib/validation";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 import { Lock, Phone, ArrowRight, ArrowLeft } from "lucide-react";
 
 export const Login: React.FC = () => {
@@ -48,7 +49,7 @@ export const Login: React.FC = () => {
     } catch (err: any) {
       console.error(err);
       toast.error(
-        err.response?.data?.detail || "Invalid phone number or 4-digit PIN. Please try again."
+        getErrorMessage(err, "Invalid phone number or 4-digit PIN. Please try again.")
       );
     }
   };

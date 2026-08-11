@@ -105,7 +105,7 @@ async function uploadMultipart(file: File, folder: UploadFolder, semaphore: Sema
         }
         if (!etag) {
           throw new Error(
-            `Missing ETag for part ${partNumber} — check R2 bucket CORS exposes the ETag header`
+            `Missing ETag for part ${partNumber} - check R2 bucket CORS exposes the ETag header`
           );
         }
         return { part_number: partNumber, etag };

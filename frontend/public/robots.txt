@@ -1,0 +1,21 @@
+User-agent: *
+Allow: /
+
+# Private / authenticated surfaces — no search value, and they leak internal
+# routes into the index if crawled.
+Disallow: /admin-platform
+Disallow: /admin-portal
+Disallow: /admin
+Disallow: /owner/
+Disallow: /login
+Disallow: /register/
+Disallow: /verify-otp
+
+# Filter permutations that produce near-duplicate result pages. The canonical
+# facets (intent, category, city) stay crawlable.
+Disallow: /*?*sort_by=
+Disallow: /*?*page=
+Disallow: /*?*radius=
+Disallow: /*?*lat=
+
+Sitemap: https://www.letsellr.in/sitemap.xml

@@ -6,6 +6,7 @@ import { clientRegisterSchema } from "@/lib/validation";
 import type { ClientRegisterInput } from "@/lib/validation";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 import { ArrowRight, ArrowLeft } from "lucide-react";
 
 export const RegisterClient: React.FC = () => {
@@ -33,7 +34,7 @@ export const RegisterClient: React.FC = () => {
       });
     } catch (err: any) {
       console.error(err);
-      toast.error(err.response?.data?.detail || "Registration failed. Check your inputs.");
+      toast.error(getErrorMessage(err, "Registration failed. Check your inputs."));
     }
   };
 

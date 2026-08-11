@@ -68,6 +68,11 @@ export function useScrollReveal<T extends HTMLElement = HTMLElement>(
             trigger: el,
             start,
             once: true,
+            onRefresh: (self) => {
+              if (self.progress > 0) {
+                gsap.set(targets, { opacity: 1, y: 0, clearProps: "opacity,y,transform" });
+              }
+            },
           },
           onComplete: () => {
             gsap.set(targets, { clearProps: "opacity,y,transform" });

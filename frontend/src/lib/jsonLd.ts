@@ -1,3 +1,5 @@
+import { APP_URL } from "@/components/Seo";
+
 interface PropertyForJsonLd {
   id: string;
   ref: string;
@@ -79,6 +81,68 @@ export function buildPropertyJsonLd(property: PropertyForJsonLd, canonicalUrl: s
       priceCurrency: "INR",
       availability: OFFER_AVAILABILITY[property.status] || "https://schema.org/InStock",
       url: canonicalUrl,
+    },
+  };
+}
+
+/**
+ * ItemList for a browse/search results page. Google uses this to understand a
+ * listing page as a collection rather than a wall of undifferentiated text,
+ * and it can surface as a carousel for category+city queries.
+ */
+export function buildItemListJsonLd(
+  items: { id: string; title: string }[],
+  canonicalUrl: string,
+  listName: string
+) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: listName,
+    url: canonicalUrl,
+    numberOfItems: items.length,
+    itemListElement: items.slice(0, 30).map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.title,
+      url: `${APP_URL}/properties/${item.id}`,
+    })),
+  };
+}
+
+interface AgencyForJsonLd {
+  id: string;
+  display_name: string;
+  about?: string | null;
+  location_area?: string | null;
+  location_city?: string | null;
+  areas_served?: string[];
+  logo_url?: string | null;
+}
+
+/** RealEstateAgent profile for an agency page. */
+export function buildAgencyJsonLd(agency: AgencyForJsonLd, canonicalUrl: string) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "RealEstateAgent",
+    "@id": canonicalUrl,
+    name: agency.display_name,
+    url: canonicalUrl,
+    description: agency.about || undefined,
+    image: agency.logo_url || undefined,
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: agency.location_area || agency.location_city || undefined,
+      addressRegion: agency.location_city || undefined,
+      addressCountry: "IN",
+    },
+    areaServed: agency.areas_served?.length
+      ? agency.areas_served.map((area) => ({ "@type": "Place", name: area }))
+      : undefined,
+    parentOrganization: {
+      "@type": "Organization",
+      name: "Letsellr",
+      url: "https://www.letsellr.in",
     },
   };
 }

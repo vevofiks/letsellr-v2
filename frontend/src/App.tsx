@@ -28,6 +28,7 @@ import { AdminCategoriesPage } from "@/pages/admin/AdminCategoriesPage";
 import { AdminLocationsPage } from "@/pages/admin/AdminLocationsPage";
 import { AdminLandingPageConfig } from "@/pages/admin/AdminLandingPageConfig";
 import { AdminSettingsPage } from "@/pages/admin/AdminSettingsPage";
+import { RouteSeo } from "@/components/RouteSeo";
 import { Toaster } from "@/components/ui/sonner";
 
 import { ConfirmDialogProvider } from "@/components/ConfirmDialogProvider";
@@ -39,6 +40,7 @@ function App() {
         <ConfirmDialogProvider>
           <BrowserRouter>
           <div className="flex-1 w-full bg-slate-50 min-h-screen">
+          <RouteSeo />
           <Routes>
             {/* Public Auth Routes */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

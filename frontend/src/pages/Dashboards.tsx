@@ -14,7 +14,8 @@ import {
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { AppNavbar } from "@/components/AppNavbar";
-import { Seo } from "@/components/Seo";
+import { Seo, APP_URL } from "@/components/Seo";
+import { buildItemListJsonLd } from "@/lib/jsonLd";
 import {
   Pagination,
   PaginationContent,
@@ -185,14 +186,14 @@ export const ClientDashboard: React.FC = () => {
   }, [intent, category, searchMode, searchQuery]);
 
   // Dynamic SEO title/description derived from active search filters
-  const { seoTitle, seoDescription } = useMemo(() => {
+  const { seoTitle, seoDescription, seoCanonical, seoNoindex } = useMemo(() => {
     let title = "Properties";
     let description = "";
 
     if (searchMode === "agencies") {
       title = "Find Verified Real Estate Agencies";
       if (city) title += ` in ${city}`;
-      description = `Browse verified real estate agencies${city ? ` in ${city}` : ""} on Letsellr — no-brokerage listings direct from trusted agencies.`;
+      description = `Browse verified real estate agencies${city ? ` in ${city}` : ""} on Letsellr - no-brokerage listings direct from trusted agencies.`;
     } else {
       const intentLabel = intent === "buy" ? "for Sale" : intent === "rent" ? "for Rent" : intent === "lease" ? "for Lease" : "";
       let categoryLabel = "Properties";
@@ -214,15 +215,49 @@ export const ClientDashboard: React.FC = () => {
         title += ` for "${searchQuery}"`;
       }
 
-      description = `Find ${categoryLabel.toLowerCase()} ${intentLabel}${city ? ` in ${city}` : ""} directly from verified owners and agencies — no brokerage on Letsellr.`;
+      description = `Find ${categoryLabel.toLowerCase()} ${intentLabel}${city ? ` in ${city}` : ""} directly from verified owners and agencies - no brokerage on Letsellr.`;
     }
 
     if (!title || title === "Properties") {
       title = "Search Properties Direct from Owners";
     }
 
-    return { seoTitle: title, seoDescription: description || undefined };
+    // Canonical keeps only the facets worth ranking separately (intent, category,
+    // city). Pagination, sort, radius and GPS coords are deliberately dropped —
+    // they generate near-infinite duplicate URLs with no unique search intent.
+    //
+    // Built by hand rather than with URLSearchParams so the key order and the
+    // encoding (%20, not +) match sitemap-locations.xml byte for byte. If they
+    // diverge, every sitemap URL canonicalises to a different string and Google
+    // drops it as "alternate page with proper canonical tag".
+    const parts: string[] = [];
+    if (intent) parts.push(`intent=${encodeURIComponent(intent)}`);
+    if (category) parts.push(`category=${encodeURIComponent(category)}`);
+    if (city) parts.push(`city=${encodeURIComponent(city)}`);
+    const query = parts.join("&");
+    // /dashboard, /dashboard/search, /search and /properties all render this
+    // exact component. Pointing them at one canonical path consolidates the
+    // ranking signal instead of splitting it four ways over identical content.
+    const canonicalUrl = `${APP_URL}/properties${query ? `?${query}` : ""}`;
+
+    return {
+      seoTitle: title,
+      seoDescription: description || undefined,
+      seoCanonical: canonicalUrl,
+      // A free-text query produces an unbounded URL space with no standalone
+      // search demand — index the facets, not every phrase someone typed.
+      seoNoindex: Boolean(searchQuery) && !city && !category,
+    };
   }, [intent, category, searchMode, searchQuery, city, propertyTypes]);
+
+  const seoJsonLd = useMemo(() => {
+    if (searchMode === "agencies" || !properties.length) return undefined;
+    return buildItemListJsonLd(
+      properties.map((p) => ({ id: p.id, title: p.title })),
+      seoCanonical,
+      seoTitle
+    );
+  }, [properties, searchMode, seoCanonical, seoTitle]);
 
   const popoverRef = useRef<HTMLDivElement>(null);
   const filterBtnRef = useRef<HTMLButtonElement>(null);
@@ -361,9 +396,19 @@ export const ClientDashboard: React.FC = () => {
     );
   });
 
-  // Persist viewMode preference
+  // Persist viewMode preference and manage body scroll locking in map mode
   useEffect(() => {
     localStorage.setItem("dashboard_view_mode", viewMode);
+    if (viewMode === "map") {
+      const origOverflow = document.body.style.overflow;
+      const origHeight = document.body.style.height;
+      document.body.style.overflow = "hidden";
+      document.body.style.height = "100%";
+      return () => {
+        document.body.style.overflow = origOverflow;
+        document.body.style.height = origHeight;
+      };
+    }
   }, [viewMode]);
 
   // Close popovers and search suggestions when clicking outside
@@ -451,18 +496,25 @@ export const ClientDashboard: React.FC = () => {
       mapInstanceRef.current = null;
     }
 
-    // Exactly match PropertyDetailsPage map config with max zoom limit
     const map = L.map(mapRef.current, {
       zoomControl: false,
       attributionControl: false,
+      minZoom: 5,
       maxZoom: 13,
+      worldCopyJump: true,
     });
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      minZoom: 5,
       maxZoom: 13,
     }).addTo(map);
 
     mapInstanceRef.current = map;
+
+    // Force map to re-evaluate dimensions to fill container completely
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 100);
 
     return () => {
       if (mapInstanceRef.current) {
@@ -471,6 +523,16 @@ export const ClientDashboard: React.FC = () => {
       }
     };
   }, [viewMode]);
+
+  // Recalculate map size whenever drawer opens/closes or layout shifts
+  useEffect(() => {
+    if (mapInstanceRef.current && viewMode === "map") {
+      const timer = setTimeout(() => {
+        mapInstanceRef.current?.invalidateSize();
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [drawerOpen, viewMode]);
 
   // Sync Markers when filtered properties or map updates
   useEffect(() => {
@@ -812,9 +874,15 @@ export const ClientDashboard: React.FC = () => {
   return (
     <div className={cn(
       "bg-[#f4f6f5] text-left relative font-sans",
-      viewMode === "map" ? "h-screen flex flex-col overflow-hidden" : "min-h-screen"
+      viewMode === "map" ? "fixed inset-0 h-[100dvh] w-full flex flex-col overflow-hidden z-30" : "min-h-screen"
     )}>
-      <Seo title={seoTitle} description={seoDescription} />
+      <Seo
+        title={seoTitle}
+        description={seoDescription}
+        url={seoCanonical}
+        noindex={seoNoindex}
+        jsonLd={seoJsonLd}
+      />
 
       <AppNavbar logoHref="/dashboard" />
 
@@ -824,7 +892,7 @@ export const ClientDashboard: React.FC = () => {
           {/* Background Map */}
           <div
             ref={mapRef}
-            className="absolute inset-0 w-full h-full z-0"
+            className="absolute inset-0 w-full h-full z-0 bg-[#aad3df] [&_.leaflet-container]:!bg-[#aad3df]"
           />
 
           {/* Floating Listings side drawer */}

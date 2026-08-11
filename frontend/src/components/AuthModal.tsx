@@ -7,7 +7,7 @@ import type { ClientRegisterInput, LoginInput } from "@/lib/validation";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
 import {
   X,
   Lock,
@@ -73,7 +73,7 @@ const OTPStep: React.FC<{
       toast.success("Authentication successful!");
       onSuccess();
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Invalid code. Please try again.");
+      toast.error(getErrorMessage(err, "Invalid code. Please try again."));
       setLoading(false);
     }
   };
@@ -88,7 +88,7 @@ const OTPStep: React.FC<{
       toast.success("New code sent to WhatsApp!");
       setCountdown(60);
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Failed to resend code.");
+      toast.error(getErrorMessage(err, "Failed to resend code."));
     } finally {
       setResending(false);
     }
@@ -207,7 +207,7 @@ const RegisterClientStep: React.FC<{
       toast.success("OTP sent to your WhatsApp!");
       onSent(data.phone);
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Registration failed. Please try again.");
+      toast.error(getErrorMessage(err, "Registration failed. Please try again."));
     }
   };
 
@@ -351,7 +351,7 @@ const LoginStep: React.FC<{
       toast.success("Successfully signed in!");
       onSuccess();
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Invalid phone number or 4-digit PIN.");
+      toast.error(getErrorMessage(err, "Invalid phone number or 4-digit PIN."));
     }
   };
 

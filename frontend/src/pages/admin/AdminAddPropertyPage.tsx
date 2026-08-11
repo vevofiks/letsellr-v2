@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 import { api } from "@/lib/api";
 import { uploadGalleryFiles } from "@/lib/directUpload";
 import { adminService, type AdminUser } from "@/services/adminService";
@@ -148,10 +149,15 @@ export const AdminAddPropertyPage: React.FC = () => {
     const map = L.map(mapRef.current, {
       zoomControl: true,
       attributionControl: false,
+      minZoom: 5,
       maxZoom: 18,
+      worldCopyJump: true,
     }).setView([initialLat, initialLng], latitude !== "" ? 15 : 12);
 
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18 }).addTo(map);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      minZoom: 5,
+      maxZoom: 18,
+    }).addTo(map);
 
     const marker = L.marker([initialLat, initialLng], { draggable: true }).addTo(map);
 
@@ -481,8 +487,7 @@ export const AdminAddPropertyPage: React.FC = () => {
         navigate("/admin-platform/properties");
       } catch (err: unknown) {
         console.error("Property creation failed", err);
-        const apiErr = err as { response?: { data?: { detail?: string } } };
-        toast.error(apiErr.response?.data?.detail || "Failed to create property listing.");
+        toast.error(getErrorMessage(err, "Failed to create property listing."));
       } finally {
         setSubmitting(false);
       }
@@ -992,7 +997,7 @@ export const AdminAddPropertyPage: React.FC = () => {
             )}
           </form>
 
-          <div ref={mapRef} className="h-75 w-full rounded-2xl border border-slate-200 shadow-inner overflow-hidden relative z-10" style={{ minHeight: "320px" }} />
+          <div ref={mapRef} className="h-75 w-full rounded-2xl border border-slate-200 shadow-inner overflow-hidden relative z-10 bg-[#aad3df] [&_.leaflet-container]:!bg-[#aad3df]" style={{ minHeight: "320px" }} />
         </div>
       </div>
 

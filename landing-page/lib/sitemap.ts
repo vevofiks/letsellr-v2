@@ -1,6 +1,8 @@
 import { getAppUrl } from "@/lib/utils";
 
-export const SITE_URL = "https://letsellr.in";
+// Canonical host. The apex (letsellr.in) 308-redirects here, so every emitted
+// URL must use www or Google follows a redirect chain out of the sitemap.
+export const SITE_URL = "https://www.letsellr.in";
 
 export function getApiUrl(): string {
   return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";

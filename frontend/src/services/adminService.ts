@@ -97,6 +97,7 @@ export interface PropertyType {
   image_url?: string | null;
   is_active: boolean;
   allowed_roles: string[];
+  display_order?: number;
   created_at: string;
   updated_at: string;
 }
@@ -232,6 +233,10 @@ export const adminService = {
   },
   deletePropertyType: async (id: string): Promise<{ message: string }> => {
     const res = await api.delete<{ message: string }>(`/api/admin/property-types/${id}`);
+    return res.data;
+  },
+  reorderPropertyTypes: async (items: { id: string; display_order: number }[]): Promise<PropertyType[]> => {
+    const res = await api.post<PropertyType[]>("/api/admin/property-types/reorder", { items });
     return res.data;
   },
   uploadPropertyTypeImage: async (id: string, file: File): Promise<PropertyType> => {

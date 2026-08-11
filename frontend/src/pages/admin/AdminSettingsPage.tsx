@@ -4,6 +4,7 @@ import {
   RefreshCw, Eye, EyeOff, ShieldCheck, MessageCircle, Phone, Plus, X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 import {
   adminService,
   type AdminNotificationSettings,
@@ -72,7 +73,7 @@ export const AdminSettingsPage: React.FC = () => {
       setAccount(a);
       setEmail(a.email || "");
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail || "Failed to load settings.");
+      toast.error(getErrorMessage(e, "Failed to load settings."));
     } finally { setLoading(false); setRefreshing(false); }
   };
 
@@ -91,7 +92,7 @@ export const AdminSettingsPage: React.FC = () => {
       toast.success(`${what} alerts turned ${next ? "on" : "off"}.`);
     } catch (e: any) {
       setNotif({ ...notif, [key]: !next });
-      toast.error(e?.response?.data?.detail || "Failed to update setting.");
+      toast.error(getErrorMessage(e, "Failed to update setting."));
     } finally { setSavingKey(null); }
   };
 
@@ -105,7 +106,7 @@ export const AdminSettingsPage: React.FC = () => {
       toast.success(successMsg);
       return true;
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail || "Failed to update recipients.");
+      toast.error(getErrorMessage(e, "Failed to update recipients."));
       return false;
     } finally { setSavingRecipients(false); }
   };
@@ -129,7 +130,7 @@ export const AdminSettingsPage: React.FC = () => {
       remaining,
       remaining.length
         ? `${number} removed.`
-        : `${number} removed — falling back to the server default.`
+        : `${number} removed - falling back to the server default.`
     );
   };
 
@@ -176,7 +177,7 @@ export const AdminSettingsPage: React.FC = () => {
           : "Login email updated."
       );
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail || "Failed to update credentials.");
+      toast.error(getErrorMessage(e, "Failed to update credentials."));
     } finally { setSavingAccount(false); }
   };
 
@@ -322,7 +323,7 @@ export const AdminSettingsPage: React.FC = () => {
               ))
             ) : (
               <span className="text-[11px] font-semibold text-rose-600">
-                No recipient configured — alerts cannot be delivered.
+                No recipient configured - alerts cannot be delivered.
               </span>
             )}
           </div>
@@ -347,7 +348,7 @@ export const AdminSettingsPage: React.FC = () => {
 
           <p className="text-[10px] text-slate-400 font-semibold my-0">
             Indian numbers can be entered without the country code. Removing every number
-            falls back to the server default — to stop alerts entirely, switch them off above.
+            falls back to the server default - to stop alerts entirely, switch them off above.
           </p>
         </div>
       </div>

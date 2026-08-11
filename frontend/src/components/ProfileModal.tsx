@@ -3,6 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import type { UserProfile } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 import { 
   X,
   Mail, 
@@ -176,7 +177,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ onClose }) => {
       setIsEditing(false);
     } catch (err: any) {
       console.error(err);
-      toast.error(err.response?.data?.detail || "Failed to update profile.");
+      toast.error(getErrorMessage(err, "Failed to update profile."));
     } finally {
       setSaving(false);
     }

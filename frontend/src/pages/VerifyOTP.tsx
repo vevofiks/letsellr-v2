@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/input-otp";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 import { Lock, Timer, ArrowLeft, RotateCw } from "lucide-react";
 
 export const VerifyOTP: React.FC = () => {
@@ -49,7 +50,7 @@ export const VerifyOTP: React.FC = () => {
       toast.success("Authentication successful!");
     } catch (err: any) {
       console.error(err);
-      toast.error(err.response?.data?.detail || "Invalid code. Please try again.");
+      toast.error(getErrorMessage(err, "Invalid code. Please try again."));
       setLoading(false);
     }
   };
@@ -89,7 +90,7 @@ export const VerifyOTP: React.FC = () => {
       setCountdown(60);
     } catch (err: any) {
       console.error(err);
-      toast.error(err.response?.data?.detail || "Failed to resend code.");
+      toast.error(getErrorMessage(err, "Failed to resend code."));
     } finally {
       setResending(false);
     }

@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Lock, Mail, Eye, EyeOff, AlertCircle, ArrowRight, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 
 export const AdminLogin: React.FC = () => {
   const navigate = useNavigate();
@@ -57,19 +58,7 @@ export const AdminLogin: React.FC = () => {
       }
     } catch (err: any) {
       console.error("Admin login error:", err);
-      let detail = "Invalid credentials or unauthorized access.";
-      if (err.response?.data?.detail) {
-        const rawDetail = err.response.data.detail;
-        if (typeof rawDetail === "string") {
-          detail = rawDetail;
-        } else if (Array.isArray(rawDetail)) {
-          detail = rawDetail
-            .map((item: any) => (typeof item === "string" ? item : item.msg || JSON.stringify(item)))
-            .join(", ");
-        } else if (typeof rawDetail === "object") {
-          detail = rawDetail.msg || JSON.stringify(rawDetail);
-        }
-      }
+      const detail = getErrorMessage(err, "Invalid credentials or unauthorized access.");
       setErrorMessage(detail);
       toast.error(detail);
     } finally {
@@ -131,7 +120,7 @@ export const AdminLogin: React.FC = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="admin@letsellr.com"
+                  placeholder="Admin Email Address"
                   required
                   autoFocus
                   className="w-full bg-white border border-slate-200 rounded-md pl-10 pr-3 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#086942] focus:ring-2 focus:ring-[#086942]/20 transition-all"
