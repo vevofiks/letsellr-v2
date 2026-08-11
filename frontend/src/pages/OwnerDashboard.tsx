@@ -30,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { useConfirm } from "@/components/ConfirmDialogProvider";
 
 interface Property {
   id: string;
@@ -54,6 +55,7 @@ interface Property {
 
 export const OwnerDashboard: React.FC = () => {
   const { user } = useAuth();
+  const confirm = useConfirm();
 
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
@@ -100,7 +102,12 @@ export const OwnerDashboard: React.FC = () => {
   }, []);
 
   const handleDeleteProperty = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this property listing?")) return;
+    const isConfirmed = await confirm({
+      title: "Delete Property",
+      description: "Are you sure you want to delete this property listing?",
+      variant: "destructive"
+    });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/api/properties/${id}`);
       toast.success("Property deleted successfully");

@@ -28,6 +28,7 @@ import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ConfirmDialogProvider";
 
 interface RoomSharingOption {
   sharing: number;
@@ -78,6 +79,7 @@ interface Property {
 export const OwnerPropertyDetailPage: React.FC = () => {
   const { propertyId } = useParams<{ propertyId: string }>();
   const navigate = useNavigate();
+  const confirm = useConfirm();
 
   const [property, setProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
@@ -106,7 +108,12 @@ export const OwnerPropertyDetailPage: React.FC = () => {
 
   const handleDelete = async () => {
     if (!property) return;
-    if (!window.confirm(`Are you sure you want to delete "${property.title}"?`)) return;
+    const isConfirmed = await confirm({
+      title: "Delete Listing",
+      description: `Are you sure you want to delete "${property.title}"?`,
+      variant: "destructive"
+    });
+    if (!isConfirmed) return;
 
     try {
       setDeleting(true);

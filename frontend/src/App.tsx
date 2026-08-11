@@ -30,12 +30,15 @@ import { AdminLandingPageConfig } from "@/pages/admin/AdminLandingPageConfig";
 import { AdminSettingsPage } from "@/pages/admin/AdminSettingsPage";
 import { Toaster } from "@/components/ui/sonner";
 
+import { ConfirmDialogProvider } from "@/components/ConfirmDialogProvider";
+
 function App() {
   return (
     <HelmetProvider>
       <AuthProvider>
-        <BrowserRouter>
-        <div className="flex-1 w-full bg-slate-50 min-h-screen">
+        <ConfirmDialogProvider>
+          <BrowserRouter>
+          <div className="flex-1 w-full bg-slate-50 min-h-screen">
           <Routes>
             {/* Public Auth Routes */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -193,6 +196,7 @@ function App() {
         </BrowserRouter>
         {/* Toast provider */}
         <Toaster richColors position="top-right" />
+        </ConfirmDialogProvider>
       </AuthProvider>
     </HelmetProvider>
   );

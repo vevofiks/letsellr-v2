@@ -31,6 +31,7 @@ import { toast } from "sonner";
 import { adminService, type AdminProperty, type PropertyReview } from "@/services/adminService";
 import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
+import { useConfirm } from "@/components/ConfirmDialogProvider";
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -90,6 +91,7 @@ const getCategoryFallbackImage = (cat: string) => {
 
 export const AdminPropertiesQueuePage: React.FC = () => {
   const navigate = useNavigate();
+  const confirm = useConfirm();
 
   // Tabs: "pending" | "live"
   const [activeTab, setActiveTab] = useState<"pending" | "live">("pending");
@@ -133,7 +135,12 @@ export const AdminPropertiesQueuePage: React.FC = () => {
   };
 
   const handleDeleteReview = async (reviewId: string) => {
-    if (!window.confirm("Are you sure you want to delete this user review?")) return;
+    const isConfirmed = await confirm({
+      title: "Delete Review",
+      description: "Are you sure you want to delete this user review?",
+      variant: "destructive"
+    });
+    if (!isConfirmed) return;
     try {
       setDeletingReviewId(reviewId);
       await adminService.deletePropertyReview(reviewId);
