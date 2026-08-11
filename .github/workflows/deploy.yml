@@ -76,20 +76,32 @@ jobs:
             # The dependency set (firebase-admin, google-cloud-firestore, supabase,
             # sentry-sdk) is import-heavy and lifespan startup blocks on a live DB
             # round-trip (see app/main.py), so give it real headroom instead of ~20s.
+            #
+            # Hits the real public URL through nginx rather than 127.0.0.1:8000
+            # with a spoofed Host header: production mode turns on
+            # TrustedHostMiddleware (app/main.py), so a direct port-8000 request
+            # needs its Host header to exactly match ALLOWED_HOSTS or it gets
+            # rejected before ever reaching the route — and that failure was
+            # invisible because `curl -f -s` discards the status code/body,
+            # making a middleware 4xx look identical to the app being down.
+            # Going through the real domain sidesteps the spoofing entirely and
+            # verifies the whole path (nginx -> gunicorn) a real client uses.
             echo "==> Waiting for service workers to initialize (up to 60 seconds)..."
 
-            # Retry loop for health check
-            HEALTH_CHECK_URL="http://127.0.0.1:8000/health"
+            HEALTH_CHECK_URL="${{ secrets.HEALTH_CHECK_URL }}"
             MAX_RETRIES=12
             RETRY_COUNT=0
 
             while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
                 sleep 5
                 echo "==> Checking HTTP health status (Attempt $((RETRY_COUNT + 1))/$MAX_RETRIES)..."
-                if curl -f -s -H "Host: api.letsellr.in" $HEALTH_CHECK_URL > /dev/null; then
+                HTTP_CODE=$(curl -s -o /tmp/health_response.txt -w "%{http_code}" --max-time 10 "$HEALTH_CHECK_URL" || echo "000")
+                if [ "$HTTP_CODE" = "200" ]; then
                     echo "SUCCESS: App is responding with 200 OK!"
                     exit 0
                 fi
+                echo "==> Got HTTP $HTTP_CODE, response body:"
+                cat /tmp/health_response.txt 2>/dev/null || true
                 RETRY_COUNT=$((RETRY_COUNT + 1))
             done
 

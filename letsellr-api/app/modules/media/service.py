@@ -3,8 +3,11 @@ Module: Media
 Service — Cloudflare R2 object storage upload/delete
 """
 
+import asyncio
 import io
 import uuid
+from functools import partial
+
 import boto3
 from botocore.config import Config
 from fastapi import UploadFile, HTTPException, status
@@ -25,6 +28,14 @@ WEBP_QUALITY = 82
 # uploads (often 12MP+) would otherwise re-encode losslessly-large into WebP,
 # multiplying storage/bandwidth for no visual benefit at listing/card sizes.
 MAX_DIMENSION = 2048
+
+# Presigned direct-to-R2 upload (property galleries): the client compresses,
+# watermarks, and converts to WebP itself, so these endpoints skip the
+# server-side Pillow pipeline entirely. Whitelisted since key/content-type
+# are now client-influenced.
+PRESIGN_ALLOWED_FOLDERS = {"properties", "uploads"}
+PRESIGN_ALLOWED_CONTENT_TYPES = {"image/webp", "image/jpeg"}
+PRESIGN_EXPIRES_IN = 3600
 
 
 class MediaService:
@@ -109,8 +120,6 @@ class MediaService:
 
         if content_type in CONVERTIBLE_CONTENT_TYPES or ext in {"png", "jpg", "jpeg", "bmp", "tiff", "tif"}:
             try:
-                import asyncio
-                from functools import partial
                 loop = asyncio.get_running_loop()
                 add_watermark = folder in ("uploads", "properties")
                 contents = await loop.run_in_executor(None, partial(self._to_webp, contents, add_watermark))
@@ -125,8 +134,6 @@ class MediaService:
 
         # Upload file contents
         try:
-            import asyncio
-            from functools import partial
             loop = asyncio.get_running_loop()
             await loop.run_in_executor(
                 None,
@@ -200,3 +207,127 @@ class MediaService:
             # We don't want to necessarily crash if deletion fails, but logging would be good
             print(f"Failed to delete {key} from R2: {str(e)}")
             return False
+
+    def _require_s3(self) -> None:
+        if not self.s3:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Cloudflare R2 is not configured on the server.",
+            )
+
+    @staticmethod
+    def _validate_presign(folder: str, content_type: str) -> None:
+        if folder not in PRESIGN_ALLOWED_FOLDERS:
+            raise HTTPException(status_code=400, detail=f"Unsupported folder: {folder}")
+        if content_type not in PRESIGN_ALLOWED_CONTENT_TYPES:
+            raise HTTPException(status_code=400, detail=f"Unsupported content type: {content_type}")
+
+    @staticmethod
+    def _build_key(filename: str, folder: str) -> str:
+        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else "webp"
+        return f"{folder}/{uuid.uuid4()}.{ext}"
+
+    def _public_url(self, key: str) -> str:
+        return f"{settings.R2_PUBLIC_URL.rstrip('/')}/{key}"
+
+    async def generate_presigned_put(
+        self, filename: str, content_type: str, folder: str
+    ) -> tuple[str, str, str]:
+        """Single-shot presigned PUT for files under the multipart threshold."""
+        self._require_s3()
+        self._validate_presign(folder, content_type)
+        key = self._build_key(filename, folder)
+        loop = asyncio.get_running_loop()
+        upload_url = await loop.run_in_executor(
+            None,
+            partial(
+                self.s3.generate_presigned_url,
+                ClientMethod="put_object",
+                Params={"Bucket": settings.R2_BUCKET_NAME, "Key": key, "ContentType": content_type},
+                ExpiresIn=PRESIGN_EXPIRES_IN,
+            ),
+        )
+        return upload_url, key, self._public_url(key)
+
+    async def initiate_multipart(
+        self, filename: str, content_type: str, folder: str
+    ) -> tuple[str, str, str]:
+        self._require_s3()
+        self._validate_presign(folder, content_type)
+        key = self._build_key(filename, folder)
+        loop = asyncio.get_running_loop()
+        try:
+            resp = await loop.run_in_executor(
+                None,
+                partial(
+                    self.s3.create_multipart_upload,
+                    Bucket=settings.R2_BUCKET_NAME,
+                    Key=key,
+                    ContentType=content_type,
+                ),
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to initiate multipart upload: {str(e)}")
+        return key, resp["UploadId"], self._public_url(key)
+
+    async def generate_part_urls(
+        self, key: str, upload_id: str, part_numbers: list[int]
+    ) -> dict[int, str]:
+        self._require_s3()
+        loop = asyncio.get_running_loop()
+
+        def _generate() -> dict[int, str]:
+            return {
+                n: self.s3.generate_presigned_url(
+                    ClientMethod="upload_part",
+                    Params={
+                        "Bucket": settings.R2_BUCKET_NAME,
+                        "Key": key,
+                        "UploadId": upload_id,
+                        "PartNumber": n,
+                    },
+                    ExpiresIn=PRESIGN_EXPIRES_IN,
+                )
+                for n in part_numbers
+            }
+
+        return await loop.run_in_executor(None, _generate)
+
+    async def complete_multipart(
+        self, key: str, upload_id: str, parts: list[dict]
+    ) -> str:
+        self._require_s3()
+        loop = asyncio.get_running_loop()
+        sorted_parts = sorted(parts, key=lambda p: p["PartNumber"])
+        try:
+            await loop.run_in_executor(
+                None,
+                partial(
+                    self.s3.complete_multipart_upload,
+                    Bucket=settings.R2_BUCKET_NAME,
+                    Key=key,
+                    UploadId=upload_id,
+                    MultipartUpload={"Parts": sorted_parts},
+                ),
+            )
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to complete multipart upload: {str(e)}")
+        return self._public_url(key)
+
+    async def abort_multipart(self, key: str, upload_id: str) -> None:
+        self._require_s3()
+        loop = asyncio.get_running_loop()
+        try:
+            await loop.run_in_executor(
+                None,
+                partial(
+                    self.s3.abort_multipart_upload,
+                    Bucket=settings.R2_BUCKET_NAME,
+                    Key=key,
+                    UploadId=upload_id,
+                ),
+            )
+        except Exception as e:
+            # Best-effort cleanup — an already-aborted/expired upload_id shouldn't
+            # surface as an error to a client that's already handling a failure.
+            print(f"Failed to abort multipart upload {upload_id} for {key}: {str(e)}")

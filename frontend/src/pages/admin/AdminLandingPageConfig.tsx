@@ -15,6 +15,7 @@ import {
   Eye,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useConfirm } from "@/components/ConfirmDialogProvider";
 
 interface Testimonial {
   id: string;
@@ -34,6 +35,7 @@ interface Testimonial {
 
 export const AdminLandingPageConfig: React.FC = () => {
   const [activeTab, setActiveTab] = useState<"featured" | "testimonials">("featured");
+  const confirm = useConfirm();
 
   // ── Featured Properties State ──
   const [liveProperties, setLiveProperties] = useState<AdminProperty[]>([]);
@@ -187,7 +189,12 @@ export const AdminLandingPageConfig: React.FC = () => {
   };
 
   const handleDeleteTestimonial = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this testimonial?")) return;
+    const isConfirmed = await confirm({
+      title: "Delete Testimonial",
+      description: "Are you sure you want to delete this testimonial?",
+      variant: "destructive"
+    });
+    if (!isConfirmed) return;
     try {
       await api.delete(`/api/admin/testimonials/${id}`);
       toast.success("Testimonial deleted.");

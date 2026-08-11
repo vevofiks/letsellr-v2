@@ -22,6 +22,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { uploadGalleryFiles } from "@/lib/directUpload";
 import { adminService, type AdminUser } from "@/services/adminService";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -416,23 +417,10 @@ export const AdminAddPropertyPage: React.FC = () => {
 
         let uploadedUrls: string[] = [];
         if (newFiles.length > 0) {
-          const uploadPromises = newFiles.map(async (file) => {
-            const formData = new FormData();
-            formData.append("file", file);
-            formData.append("folder", "uploads");
-            try {
-              const res = await api.post("/api/media/upload", formData, {
-                headers: { "Content-Type": "multipart/form-data" },
-              });
-              return res.data.url;
-            } catch (err) {
-              console.error("Upload failed for", file.name, err);
-              toast.error(`Failed to upload ${file.name}`);
-              return null;
-            }
+          uploadedUrls = await uploadGalleryFiles(newFiles, "uploads", (file, err) => {
+            console.error("Upload failed for", file.name, err);
+            toast.error(`Failed to upload ${file.name}`);
           });
-          const results = await Promise.all(uploadPromises);
-          uploadedUrls = results.filter((url): url is string => Boolean(url));
         }
 
         const finalPhotos = [...photos, ...uploadedUrls];
