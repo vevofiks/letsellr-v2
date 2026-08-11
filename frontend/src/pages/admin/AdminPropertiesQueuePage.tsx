@@ -28,6 +28,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 import { adminService, type AdminProperty, type PropertyReview } from "@/services/adminService";
 import { api } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
@@ -147,8 +148,7 @@ export const AdminPropertiesQueuePage: React.FC = () => {
       setPropertyReviews((prev) => prev.filter((r) => r.id !== reviewId));
       toast.success("Review deleted successfully!");
     } catch (err: any) {
-      console.error("Failed to delete review:", err);
-      toast.error(err.response?.data?.detail || "Failed to delete review.");
+      toast.error(getErrorMessage(err, "Failed to delete review."));
     } finally {
       setDeletingReviewId(null);
     }
@@ -239,8 +239,7 @@ export const AdminPropertiesQueuePage: React.FC = () => {
         setPropertyTypes(typesRes.data);
       }
     } catch (err: any) {
-      console.error("Failed to load properties:", err);
-      toast.error(err.response?.data?.detail || "Failed to load properties queue.");
+      toast.error(getErrorMessage(err, "Failed to load properties queue."));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -280,10 +279,13 @@ export const AdminPropertiesQueuePage: React.FC = () => {
     const map = L.map(mapRef.current, {
       zoomControl: true,
       attributionControl: false,
+      minZoom: 5,
       maxZoom: 18,
+      worldCopyJump: true,
     }).setView([initialLat, initialLng], editLatitude !== "" ? 15 : 12);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      minZoom: 5,
       maxZoom: 18,
     }).addTo(map);
 
@@ -424,8 +426,7 @@ export const AdminPropertiesQueuePage: React.FC = () => {
       setInspectModalOpen(false);
       setSelectedProperty(null);
     } catch (err: any) {
-      console.error("Approval error:", err);
-      toast.error(err.response?.data?.detail || "Failed to approve property.");
+      toast.error(getErrorMessage(err, "Failed to approve property."));
     } finally {
       setActionLoading(false);
     }
@@ -451,8 +452,7 @@ export const AdminPropertiesQueuePage: React.FC = () => {
       setSelectedProperty(null);
       setRejectReason("");
     } catch (err: any) {
-      console.error("Rejection error:", err);
-      toast.error(err.response?.data?.detail || "Failed to reject property.");
+      toast.error(getErrorMessage(err, "Failed to reject property."));
     } finally {
       setActionLoading(false);
     }
@@ -667,8 +667,7 @@ export const AdminPropertiesQueuePage: React.FC = () => {
       setEditModalOpen(false);
       setEditingProperty(null);
     } catch (err: any) {
-      console.error("Admin property update error:", err);
-      toast.error(err.response?.data?.detail || "Failed to update property details.");
+      toast.error(getErrorMessage(err, "Failed to update property details."));
     } finally {
       setEditSaving(false);
     }
@@ -1925,7 +1924,7 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                   {/* Leaflet Canvas */}
                   <div
                     ref={mapRef}
-                    className="h-60 w-full rounded-xl border border-slate-200 overflow-hidden relative z-10"
+                    className="h-60 w-full rounded-xl border border-slate-200 overflow-hidden relative z-10 bg-[#aad3df] [&_.leaflet-container]:!bg-[#aad3df]"
                     style={{ minHeight: "240px" }}
                   />
                 </div>

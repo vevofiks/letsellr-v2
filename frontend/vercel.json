@@ -1,6 +1,28 @@
 {
   "rewrites": [
     {
+      "source": "/properties/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|SkypeUriPreview|Googlebot|Google-InspectionTool|Storebot-Google|AdsBot-Google|bingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Applebot|redditbot|Pinterestbot|Embedly|Iframely|vkShare|W3C_Validator|Mastodon|nuzzel|Quora Link Preview).*"
+        }
+      ],
+      "destination": "/api/meta?type=property&id=:id"
+    },
+    {
+      "source": "/agencies/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(facebookexternalhit|Facebot|WhatsApp|Twitterbot|LinkedInBot|Slackbot|Slack-ImgProxy|TelegramBot|Discordbot|SkypeUriPreview|Googlebot|Google-InspectionTool|Storebot-Google|AdsBot-Google|bingbot|BingPreview|DuckDuckBot|YandexBot|Baiduspider|Applebot|redditbot|Pinterestbot|Embedly|Iframely|vkShare|W3C_Validator|Mastodon|nuzzel|Quora Link Preview).*"
+        }
+      ],
+      "destination": "/api/meta?type=agency&id=:id"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

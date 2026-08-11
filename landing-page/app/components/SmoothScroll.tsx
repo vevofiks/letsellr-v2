@@ -7,46 +7,59 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 export default function SmoothScroll({ children }: { children: React.ReactNode }) {
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     gsap.registerPlugin(ScrollTrigger);
 
-    // lenis.dev config lerp-based smooth scroll, same as their own site
     const lenis = new Lenis({
-      lerp: 0.1,           // silky smooth linear interpolation (lenis.dev default)
+      lerp: 0.1,
       smoothWheel: true,
       wheelMultiplier: 1,
-      touchMultiplier: 2,
+      touchMultiplier: 1.5,
       infinite: false,
     });
 
-    // Sync Lenis scroll position with GSAP ScrollTrigger on every frame
     lenis.on("scroll", ScrollTrigger.update);
 
-    // Use GSAP ticker as the RAF loop most performant approach
-    const onRaf = (time: number) => lenis.raf(time * 1000);
-    gsap.ticker.add(onRaf);
+    let rafId: number;
+    const raf = (time: number) => {
+      lenis.raf(time);
+      rafId = requestAnimationFrame(raf);
+    };
+    rafId = requestAnimationFrame(raf);
 
-    // Critical: disable GSAP's lag smoothing so Lenis RAF runs at full 60fps
-    gsap.ticker.lagSmoothing(0);
+    // Dynamic height observer to keep Lenis limit in sync when DOM resizes
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined" && document.body) {
+      resizeObserver = new ResizeObserver(() => {
+        lenis.resize();
+        ScrollTrigger.refresh();
+      });
+      resizeObserver.observe(document.body);
+    }
 
-    // Refresh ScrollTrigger after a short delay so all section positions
-    // are calculated correctly once the DOM has fully rendered.
-    // This prevents bottom sections from staying invisible when their
-    // ScrollTrigger never fires due to stale position calculations.
-    const refreshTimer = setTimeout(() => {
+    const handleResizeOrLoad = () => {
+      lenis.resize();
       ScrollTrigger.refresh();
-    }, 300);
+    };
 
-    // Second refresh pass catches sections that rendered late (e.g. after
-    // async data fetches like EditorialSection's property cards).
-    const refreshTimer2 = setTimeout(() => {
-      ScrollTrigger.refresh();
-    }, 1500);
+    window.addEventListener("resize", handleResizeOrLoad);
+    window.addEventListener("load", handleResizeOrLoad);
+
+    // Staggered refreshes for async data/images rendering late
+    const refreshTimer1 = setTimeout(handleResizeOrLoad, 300);
+    const refreshTimer2 = setTimeout(handleResizeOrLoad, 1000);
+    const refreshTimer3 = setTimeout(handleResizeOrLoad, 2500);
 
     return () => {
-      clearTimeout(refreshTimer);
+      cancelAnimationFrame(rafId);
+      clearTimeout(refreshTimer1);
       clearTimeout(refreshTimer2);
+      clearTimeout(refreshTimer3);
+      window.removeEventListener("resize", handleResizeOrLoad);
+      window.removeEventListener("load", handleResizeOrLoad);
+      if (resizeObserver) resizeObserver.disconnect();
       lenis.destroy();
-      gsap.ticker.remove(onRaf);
       ScrollTrigger.getAll().forEach((t) => t.kill());
     };
   }, []);

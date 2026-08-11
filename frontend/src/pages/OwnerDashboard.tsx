@@ -22,6 +22,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { OwnerNavbar } from "@/components/OwnerNavbar";
 import { api } from "@/lib/api";
+import { getErrorMessage } from "@/lib/utils";
 import { toast } from "sonner";
 
 // Import shadcn components
@@ -118,9 +119,8 @@ export const OwnerDashboard: React.FC = () => {
         setSelectedPropertyId(updated.length > 0 ? updated[0].id : null);
       }
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { detail?: string } } };
-      console.error("Failed to delete property", error);
-      toast.error(error.response?.data?.detail || "Failed to delete property");
+      console.error("Failed to delete property", err);
+      toast.error(getErrorMessage(err, "Failed to delete property"));
     }
   };
 

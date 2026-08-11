@@ -119,11 +119,11 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 88vw, 1050px"
             priority
             onError={() => setImgSrc("/images/isolated-villa-wbg.png")}
-            className="object-contain object-bottom animate-float"
+            className="object-contain object-bottom transform-gpu"
             style={{
-              filter: "drop-shadow(0 24px 50px rgba(0,0,0,0.13))",
+              filter: "drop-shadow(0 16px 30px rgba(0,0,0,0.12))",
               transform: "scale(1.54) translateY(14%)",
-              transformOrigin: "bottom center"
+              transformOrigin: "bottom center",
             }}
           />
         </div>
@@ -226,12 +226,6 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
             style={{ filter: "drop-shadow(0 12px 28px rgba(0,0,0,0.12))" }}
           />
         </div>
-
-        {/* Claims a fixed slice of the leftover height *below* the villa, which
-            forces the flex-1 spacer above to give the same amount back — so the
-            wordmark and villa both rise by exactly this height and their
-            alignment to each other is untouched. Shrinks away first on short
-            screens, before anything can overflow. Raise 0.10 to lift further. */}
         <div
           aria-hidden="true"
           style={{ height: "calc(var(--hero-w) * 0.10)", flex: "0 1 auto", minHeight: 0 }}

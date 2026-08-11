@@ -22,6 +22,7 @@ import {
   MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 import { adminService, type AdminUser } from "@/services/adminService";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -83,7 +84,7 @@ export const AdminUsersPage: React.FC = () => {
       toast.success("Limits updated successfully.");
       setLimitsModalOpen(false);
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Failed to update limits.");
+      toast.error(getErrorMessage(err, "Failed to update limits."));
     } finally {
       setActionLoading(false);
     }
@@ -99,7 +100,7 @@ export const AdminUsersPage: React.FC = () => {
       setUsers(usersData);
     } catch (err: any) {
       console.error("Failed to load user management data:", err);
-      toast.error(err.response?.data?.detail || "Failed to load user accounts.");
+      toast.error(getErrorMessage(err, "Failed to load user accounts."));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -128,7 +129,7 @@ export const AdminUsersPage: React.FC = () => {
       setSelectedUser(null);
     } catch (err: any) {
       console.error("Status update error:", err);
-      toast.error(err.response?.data?.detail || "Failed to update user status.");
+      toast.error(getErrorMessage(err, "Failed to update user status."));
     } finally {
       setActionLoading(false);
     }

@@ -21,7 +21,7 @@ export default function Home() {
     <SmoothScroll>
       {isLoading && <Preloader onComplete={() => setIsLoading(false)} />}
 
-      <main className="min-h-screen bg-[#FAF9F6] text-[#0F0F11] overflow-hidden selection:bg-black selection:text-white">
+      <main className="min-h-screen bg-[#FAF9F6] text-[#0F0F11] overflow-x-clip selection:bg-black selection:text-white">
         <Navbar />
         <HeroSection isLoading={isLoading} />
 

@@ -10,9 +10,9 @@ before parameterised routes (/{property_id}) to avoid collision.
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Header, Query, status
 
-from app.depends.auth import CurrentUser, require_owner_or_agency
+from app.depends.auth import CurrentUser, OptionalCurrentUser, require_owner_or_agency
 from app.depends.db import DbSession
 from app.modules.properties.schemas import (
     EnquiryLinkResponse,
@@ -107,15 +107,19 @@ async def list_properties(
 
 
 @router.get("/ref/{ref}/enquiry-link", response_model=EnquiryLinkResponse)
-async def get_enquiry_link(ref: str, db: DbSession, current_user: CurrentUser):
+async def get_enquiry_link(
+    ref: str,
+    db: DbSession,
+    current_user: OptionalCurrentUser = None,
+    x_visitor_token: Optional[str] = Header(None, alias="x-visitor-token"),
+):
     """
-    Generate a WhatsApp deep-link (wa.me URL) for a PG / Hostel listing.
-
-    Requires authentication via Bearer token.
-    Increments the property's `enquiries` and `views` stat counters on each call.
+    Generate a WhatsApp deep-link (wa.me URL) for a listing.
+    Increments the property's `enquiries` stat counter by 1 per unique user/visitor.
     """
     service = PropertyService(db)
-    return await service.get_enquiry_link(ref, current_user.id)
+    user_id = current_user.id if current_user else None
+    return await service.get_enquiry_link(ref, user_id, x_visitor_token)
 
 
 @router.get("/nearby-locations", response_model=NearbyLocationsResponse)
@@ -157,6 +161,22 @@ async def get_property(
     """
     service = PropertyService(db)
     return await service.get_property(property_id)
+
+
+@router.post("/{property_id}/view", response_model=PropertyResponse)
+async def record_property_view(
+    property_id: str,
+    db: DbSession,
+    current_user: OptionalCurrentUser = None,
+    x_visitor_token: Optional[str] = Header(None, alias="x-visitor-token"),
+):
+    """
+    Record a view for a property listing.
+    Deduplicates view count so each unique user / visitor token increments view count at most once.
+    """
+    service = PropertyService(db)
+    user_id = current_user.id if current_user else None
+    return await service.record_property_view(property_id, user_id, x_visitor_token)
 
 
 # ── Authenticated mutations ────────────────────────────────────────────────────
@@ -221,7 +241,7 @@ async def list_active_property_types(db: DbSession):
     result = await db.execute(
         select(PropertyType)
         .where(PropertyType.is_active == True)
-        .order_by(PropertyType.label.asc())
+        .order_by(PropertyType.display_order.asc(), PropertyType.label.asc())
     )
     types = result.scalars().all()
     return [PropertyTypeResponse.model_validate(t) for t in types]

@@ -9,7 +9,6 @@ import {
   MapPin, 
   Lock, 
   Image as ImageIcon, 
-  Info,
   ArrowLeft,
   Check,
   Calendar,
@@ -21,6 +20,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { OwnerNavbar } from "@/components/OwnerNavbar";
+import { getErrorMessage } from "@/lib/utils";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { uploadGalleryFiles } from "@/lib/directUpload";
@@ -162,10 +162,13 @@ export const OwnerPropertyFormPage: React.FC = () => {
     const map = L.map(mapRef.current, {
       zoomControl: true,
       attributionControl: false,
+      minZoom: 5,
       maxZoom: 18,
+      worldCopyJump: true,
     }).setView([initialLat, initialLng], latitude !== "" ? 15 : 12);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      minZoom: 5,
       maxZoom: 18,
     }).addTo(map);
 
@@ -574,8 +577,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
       navigate("/owner/properties");
     } catch (err: unknown) {
       console.error("Property submission failed", err);
-      const apiErr = err as { response?: { data?: { detail?: string } } };
-      toast.error(apiErr.response?.data?.detail || "Failed to save property listing.");
+      toast.error(getErrorMessage(err, "Failed to save property listing."));
     } finally {
       setSubmitting(false);
     }
@@ -674,12 +676,6 @@ export const OwnerPropertyFormPage: React.FC = () => {
                     <option value="">Loading categories...</option>
                   )}
                 </select>
-                {isOwner && (
-                  <p className="text-[10px] font-medium bg-emerald-50/70 text-emerald-800 p-2 rounded-lg border border-emerald-100">
-                    <Info className="h-3 w-3 inline mr-1" />
-                    Individual self-listing owners are restricted to specific property categories.
-                  </p>
-                )}
               </div>
             </div>
 
@@ -825,7 +821,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => removeRoomSharingOption(index)}
-                      className="absolute right-2 top-4 mt-[22px] bg-rose-50 text-rose-600 hover:bg-rose-100 p-2 rounded-md transition-colors flex items-center justify-center border-0 cursor-pointer h-[34px] w-[34px]"
+                      className="absolute right-2 top-4 mt-5.5 bg-rose-50 text-rose-600 hover:bg-rose-100 p-2 rounded-md transition-colors flex items-center justify-center border-0 cursor-pointer h-8.5 w-8.5"
                       title="Remove this Room Sharing Option"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -1060,7 +1056,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
             {/* Map Canvas */}
             <div 
               ref={mapRef} 
-              className="h-75 w-full rounded-2xl border border-slate-200 shadow-inner overflow-hidden relative z-10" 
+              className="h-75 w-full rounded-2xl border border-slate-200 shadow-inner overflow-hidden relative z-10 bg-[#aad3df] [&_.leaflet-container]:bg-[#aad3df]!" 
               style={{ minHeight: '320px' }}
             />
           </div>

@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getVisitorToken } from "./utils";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 
@@ -9,12 +10,16 @@ export const api = axios.create({
   },
 });
 
-// Helper to attach authorization header
+// Helper to attach authorization & visitor token headers
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("access_token");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    }
+    const visitorToken = getVisitorToken();
+    if (visitorToken) {
+      config.headers["x-visitor-token"] = visitorToken;
     }
     return config;
   },

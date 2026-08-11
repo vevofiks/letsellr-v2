@@ -194,13 +194,48 @@ class PropertyService:
 
         return prop
 
+    async def record_property_view(
+        self,
+        property_id: str | uuid.UUID,
+        current_user_id: Optional[uuid.UUID] = None,
+        visitor_token: Optional[str] = None,
+    ) -> Property:
+        """
+        Increments property view count by 1 for unique users / visitor tokens.
+        """
+        prop = await self.get_property(property_id)
+        viewer_key = None
+        if current_user_id:
+            viewer_key = f"usr_{current_user_id}"
+        elif visitor_token and visitor_token.strip():
+            viewer_key = f"vis_{visitor_token.strip()}"
+
+        current_stats = dict(prop.stats or {})
+        viewed_by = list(current_stats.get("viewed_by", []))
+        legacy_viewed = current_stats.get("viewed_by_users", [])
+
+        if (
+            viewer_key
+            and viewer_key not in viewed_by
+            and (not current_user_id or str(current_user_id) not in legacy_viewed)
+        ):
+            viewed_by.append(viewer_key)
+            current_stats["viewed_by"] = viewed_by
+            current_stats["views"] = current_stats.get("views", 0) + 1
+            await self.repo.update(prop, {"stats": current_stats})
+
+        return prop
+
     async def get_enquiry_link(
-        self, ref: str, current_user_id: uuid.UUID
+        self,
+        ref: str,
+        current_user_id: Optional[uuid.UUID] = None,
+        visitor_token: Optional[str] = None,
     ) -> EnquiryLinkResponse:
         """
         Resolve a property ref to a WhatsApp wa.me deep-link.
 
-        Increments the property's enquiry/leads stat counter by exactly 1 per unique user.
+        Increments the property's enquiry/leads stat counter by exactly 1 per unique user/visitor.
         """
         prop = await self.repo.get_by_ref(ref)
         if not prop:
@@ -224,23 +259,25 @@ class PropertyService:
 
         phone = bot_num if is_pg_or_hostel else sales_num
 
-        # Pre-filled message text
         message = (
             f"Hi, I found your listing on Letsellr (Ref: {ref}) "
             f"and I'm interested. Is it still available?"
         )
         wa_link = f"https://wa.me/{phone}?text={urllib.parse.quote(message)}"
 
-        # Increment enquiry & views stat by 1 only when Chat on WhatsApp is clicked by a unique user
-        current_stats = dict(prop.stats or {})
-        viewed_by_users = current_stats.get("viewed_by_users", [])
+        enquirer_key = None
+        if current_user_id:
+            enquirer_key = f"usr_{current_user_id}"
+        elif visitor_token and visitor_token.strip():
+            enquirer_key = f"vis_{visitor_token.strip()}"
 
-        user_id_str = str(current_user_id)
-        if user_id_str not in viewed_by_users:
-            viewed_by_users.append(user_id_str)
-            current_stats["viewed_by_users"] = viewed_by_users
+        current_stats = dict(prop.stats or {})
+        enquired_by = list(current_stats.get("enquired_by", []))
+
+        if enquirer_key and enquirer_key not in enquired_by:
+            enquired_by.append(enquirer_key)
+            current_stats["enquired_by"] = enquired_by
             current_stats["enquiries"] = current_stats.get("enquiries", 0) + 1
-            current_stats["views"] = current_stats.get("views", 0) + 1
             await self.repo.update(prop, {"stats": current_stats})
 
         enquiry_type = "whatsapp_bot" if is_pg_or_hostel else "manual_chat"

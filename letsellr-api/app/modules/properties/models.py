@@ -56,6 +56,7 @@ class PropertyType(UUIDMixin, TimestampMixin, Base):
     description: Mapped[str] = mapped_column(Text, default="")
     image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
     # Roles allowed to list in this category
     allowed_roles: Mapped[list[str]] = mapped_column(
         ARRAY(String), default=list, nullable=False

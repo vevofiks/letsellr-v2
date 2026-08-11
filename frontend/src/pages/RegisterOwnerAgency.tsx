@@ -7,7 +7,7 @@ import type { OwnerAgencyRegisterInput } from "@/lib/validation";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { Building2, User, Plus, X, ArrowRight, ArrowLeft } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
 
 export const RegisterOwnerAgency: React.FC = () => {
   const { registerOwnerAgency } = useAuth();
@@ -63,7 +63,7 @@ export const RegisterOwnerAgency: React.FC = () => {
       });
     } catch (err: any) {
       console.error(err);
-      toast.error(err.response?.data?.detail || "Registration failed. Check your inputs.");
+      toast.error(getErrorMessage(err, "Registration failed. Check your inputs."));
     }
   };
 

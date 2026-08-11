@@ -4,6 +4,7 @@ import {
   ToggleLeft, ToggleRight, ExternalLink, Star,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 import { adminService, type LocationData } from "@/services/adminService";
 import { Badge } from "@/components/ui/badge";
 import { ImageInput } from "@/components/admin/ImageInput";
@@ -33,7 +34,7 @@ export const AdminLocationsPage: React.FC = () => {
       if (manual) setRefreshing(true); else setLoading(true);
       setLocations(await adminService.getLocations());
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail || "Failed to load locations.");
+      toast.error(getErrorMessage(e, "Failed to load locations."));
     } finally { setLoading(false); setRefreshing(false); }
   };
 
@@ -84,7 +85,7 @@ export const AdminLocationsPage: React.FC = () => {
       
       setModalOpen(false);
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail || "Save failed.");
+      toast.error(getErrorMessage(e, "Save failed."));
     } finally { setSaving(false); }
   };
 
@@ -97,7 +98,7 @@ export const AdminLocationsPage: React.FC = () => {
       toast.success(`"${deleteTarget.title}" removed.`);
       setDeleteTarget(null);
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail || "Delete failed.");
+      toast.error(getErrorMessage(e, "Delete failed."));
     } finally { setDeleting(false); }
   };
 

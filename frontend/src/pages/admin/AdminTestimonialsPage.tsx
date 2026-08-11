@@ -4,6 +4,7 @@ import {
   MessageSquareQuote, Check, ToggleLeft, ToggleRight, User,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 import { api } from "@/lib/api";
 
 interface Testimonial {
@@ -88,7 +89,7 @@ export const AdminTestimonialsPage: React.FC = () => {
       const res = await api.get("/api/admin/testimonials", { params });
       setItems(res.data);
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail || "Failed to load testimonials.");
+      toast.error(getErrorMessage(e, "Failed to load testimonials."));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -144,7 +145,7 @@ export const AdminTestimonialsPage: React.FC = () => {
       }
       setModalOpen(false);
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail || "Save failed.");
+      toast.error(getErrorMessage(e, "Save failed."));
     } finally {
       setSaving(false);
     }
@@ -159,7 +160,7 @@ export const AdminTestimonialsPage: React.FC = () => {
       toast.success("Testimonial deleted.");
       setDeleteTarget(null);
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail || "Delete failed.");
+      toast.error(getErrorMessage(e, "Delete failed."));
     } finally {
       setDeleting(false);
     }

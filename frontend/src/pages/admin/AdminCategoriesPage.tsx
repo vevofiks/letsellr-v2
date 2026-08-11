@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import {
   Plus, Pencil, Trash2, Layers, RefreshCw, X, Check,
-  ToggleLeft, ToggleRight, Tag,
+  ToggleLeft, ToggleRight, Tag, ArrowUp, ArrowDown,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 import { adminService, type PropertyType } from "@/services/adminService";
 import { Badge } from "@/components/ui/badge";
 import { ImageInput } from "@/components/admin/ImageInput";
@@ -24,13 +25,15 @@ type FormState = {
   imageFile: File | null;
   is_active: boolean;
   allowed_roles: string[];
+  display_order: number;
 };
-const EMPTY: FormState = { slug: "", label: "", description: "", image_url: "", imageFile: null, is_active: true, allowed_roles: [] };
+const EMPTY: FormState = { slug: "", label: "", description: "", image_url: "", imageFile: null, is_active: true, allowed_roles: [], display_order: 0 };
 
 export const AdminCategoriesPage: React.FC = () => {
   const [types, setTypes] = useState<PropertyType[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [reordering, setReordering] = useState(false);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<PropertyType | null>(null);
@@ -45,7 +48,7 @@ export const AdminCategoriesPage: React.FC = () => {
       if (manual) setRefreshing(true); else setLoading(true);
       setTypes(await adminService.getPropertyTypes());
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail || "Failed to load property types.");
+      toast.error(getErrorMessage(e, "Failed to load property types."));
     } finally { setLoading(false); setRefreshing(false); }
   };
 
@@ -53,7 +56,7 @@ export const AdminCategoriesPage: React.FC = () => {
 
   const openCreate = () => {
     setEditTarget(null);
-    setForm(EMPTY);
+    setForm({ ...EMPTY, display_order: types.length + 1 });
     setModalOpen(true);
   };
 
@@ -67,6 +70,7 @@ export const AdminCategoriesPage: React.FC = () => {
       imageFile: null,
       is_active: t.is_active,
       allowed_roles: t.allowed_roles ? t.allowed_roles.filter(r => ROLE_OPTIONS.includes(r)) : [],
+      display_order: t.display_order ?? 0,
     });
     setModalOpen(true);
   };
@@ -82,6 +86,34 @@ export const AdminCategoriesPage: React.FC = () => {
         ? f.allowed_roles.filter(r => r !== role)
         : [...f.allowed_roles, role],
     }));
+  };
+
+  const handleMove = async (index: number, direction: "up" | "down") => {
+    const targetIndex = direction === "up" ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= types.length) return;
+
+    const newTypes = [...types];
+    const temp = newTypes[index];
+    newTypes[index] = newTypes[targetIndex];
+    newTypes[targetIndex] = temp;
+
+    const payload = newTypes.map((t, idx) => ({
+      id: t.id,
+      display_order: idx + 1,
+    }));
+
+    setTypes(newTypes.map((t, idx) => ({ ...t, display_order: idx + 1 })));
+    setReordering(true);
+    try {
+      const updated = await adminService.reorderPropertyTypes(payload);
+      setTypes(updated);
+      toast.success("Category order updated.");
+    } catch (e: any) {
+      toast.error("Failed to update order.");
+      load();
+    } finally {
+      setReordering(false);
+    }
   };
 
   const handleSave = async () => {
@@ -100,6 +132,7 @@ export const AdminCategoriesPage: React.FC = () => {
         image_url: form.imageFile ? undefined : (form.image_url.trim() || null),
         is_active: form.is_active,
         allowed_roles: form.allowed_roles,
+        display_order: form.display_order,
       };
 
       let saved: PropertyType;
@@ -122,7 +155,7 @@ export const AdminCategoriesPage: React.FC = () => {
 
       setModalOpen(false);
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail || "Save failed.");
+      toast.error(getErrorMessage(e, "Save failed."));
     } finally { setSaving(false); }
   };
 
@@ -135,7 +168,7 @@ export const AdminCategoriesPage: React.FC = () => {
       toast.success(`"${deleteTarget.label}" deleted.`);
       setDeleteTarget(null);
     } catch (e: any) {
-      toast.error(e?.response?.data?.detail || "Delete failed.");
+      toast.error(getErrorMessage(e, "Delete failed."));
     } finally { setDeleting(false); }
   };
 
@@ -208,14 +241,37 @@ export const AdminCategoriesPage: React.FC = () => {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200/80 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                  {["Category / Slug", "Description", "Allowed Roles", "Status", "Created", "Actions"].map(h => (
+                  {["Order", "Category / Slug", "Description", "Allowed Roles", "Status", "Created", "Actions"].map(h => (
                     <th key={h} className={`py-3 px-4 sm:px-5 whitespace-nowrap ${h === 'Actions' ? 'text-right' : ''}`}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
-                {types.map((t) => (
+                {types.map((t, idx) => (
                   <tr key={t.id} className="hover:bg-slate-50/70 transition-colors">
+                    <td className="py-3 px-4 sm:px-5 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-6 text-center font-extrabold text-xs text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200">{idx + 1}</span>
+                        <div className="flex flex-col gap-0.5">
+                          <button
+                            onClick={() => handleMove(idx, "up")}
+                            disabled={idx === 0 || reordering}
+                            className="p-1 rounded hover:bg-slate-200 text-slate-600 disabled:opacity-20 cursor-pointer transition-colors"
+                            title="Move Up"
+                          >
+                            <ArrowUp className="h-3 w-3" />
+                          </button>
+                          <button
+                            onClick={() => handleMove(idx, "down")}
+                            disabled={idx === types.length - 1 || reordering}
+                            className="p-1 rounded hover:bg-slate-200 text-slate-600 disabled:opacity-20 cursor-pointer transition-colors"
+                            title="Move Down"
+                          >
+                            <ArrowDown className="h-3 w-3" />
+                          </button>
+                        </div>
+                      </div>
+                    </td>
                     <td className="py-3 px-4 sm:px-5 whitespace-nowrap">
                       <div className="flex items-center gap-2.5">
                         {t.image_url ? (
@@ -312,6 +368,19 @@ export const AdminCategoriesPage: React.FC = () => {
                     onChange={e => setForm(f => ({ ...f, slug: slugify(e.target.value) }))}
                     placeholder="e.g. apartment"
                     className="w-full bg-slate-50 border border-slate-200/80 rounded-lg px-3 py-2 text-xs font-mono font-semibold text-slate-900 focus:outline-none focus:border-[#014645]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase text-slate-400 block">Display Order</label>
+                  <input
+                    type="number"
+                    value={form.display_order}
+                    onChange={e => setForm(f => ({ ...f, display_order: parseInt(e.target.value) || 0 }))}
+                    placeholder="1"
+                    className="w-full bg-slate-50 border border-slate-200/80 rounded-lg px-3 py-2 text-xs font-semibold text-slate-900 focus:outline-none focus:border-[#014645]"
                   />
                 </div>
               </div>

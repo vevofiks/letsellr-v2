@@ -6,22 +6,13 @@ const MAX_FILE_MB = 5;
 
 type Props = {
   label?: string;
-  /** URL typed/pasted by the admin. */
   imageUrl: string;
-  /** File chosen by the admin, uploaded after the record is saved. */
   imageFile: File | null;
-  /** Image already stored on the record (edit mode). */
   existingUrl?: string | null;
   onUrlChange: (url: string) => void;
   onFileChange: (file: File | null) => void;
   disabled?: boolean;
 };
-
-/**
- * Image picker offering both ways to set an image: paste a URL, or upload a
- * file. The two are mutually exclusive — choosing one clears the other, so
- * there is never a question of which will win once saved.
- */
 export const ImageInput: React.FC<Props> = ({
   label = "Image",
   imageUrl,
@@ -141,12 +132,12 @@ export const ImageInput: React.FC<Props> = ({
 
           {imageFile && (
             <p className="text-[10.5px] font-semibold text-[#014645] truncate my-0">
-              {imageFile.name} — uploads on save
+              {imageFile.name} - uploads on save
             </p>
           )}
           {urlBroken && !imageFile && (
             <p className="text-[10.5px] font-semibold text-amber-600 my-0">
-              Couldn't load that URL — it will still be saved as entered.
+              Couldn't load that URL - it will still be saved as entered.
             </p>
           )}
         </div>

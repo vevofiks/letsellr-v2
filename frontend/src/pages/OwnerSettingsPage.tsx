@@ -11,6 +11,7 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { OwnerNavbar } from "@/components/OwnerNavbar";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 import { api } from "@/lib/api";
 
 export const OwnerSettingsPage: React.FC = () => {
@@ -75,7 +76,7 @@ export const OwnerSettingsPage: React.FC = () => {
       await fetchFullProfile();
       toast.success("Banner uploaded successfully!");
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Failed to upload banner.");
+      toast.error(getErrorMessage(err, "Failed to upload banner."));
     }
     e.target.value = "";
   };
@@ -104,7 +105,7 @@ export const OwnerSettingsPage: React.FC = () => {
       window.dispatchEvent(new Event("profile-updated"));
       toast.success("Logo uploaded successfully!");
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Failed to upload logo.");
+      toast.error(getErrorMessage(err, "Failed to upload logo."));
     }
     e.target.value = "";
   };
@@ -121,7 +122,7 @@ export const OwnerSettingsPage: React.FC = () => {
       await fetchFullProfile();
       toast.success("Profile updated!");
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Failed to update profile.");
+      toast.error(getErrorMessage(err, "Failed to update profile."));
     } finally {
       setSavingProfile(false);
     }
@@ -152,7 +153,7 @@ export const OwnerSettingsPage: React.FC = () => {
       setNewPassword("");
       setConfirmPassword("");
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || "Failed to change PIN.");
+      toast.error(getErrorMessage(err, "Failed to change PIN."));
     } finally {
       setChangingPin(false);
     }

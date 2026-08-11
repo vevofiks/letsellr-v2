@@ -13,6 +13,7 @@ import {
   X,
 } from "lucide-react";
 import { toast } from "sonner";
+import { getErrorMessage } from "@/lib/utils";
 import { adminService, type AdminProperty } from "@/services/adminService";
 import { Badge } from "@/components/ui/badge";
 
@@ -45,7 +46,7 @@ export const AdminReportsPage: React.FC = () => {
       setRejectedProperties(rejectedData);
     } catch (err: any) {
       console.error("Failed to load reports data:", err);
-      toast.error(err.response?.data?.detail || "Failed to load reports.");
+      toast.error(getErrorMessage(err, "Failed to load reports."));
     } finally {
       setLoading(false);
       setRefreshing(false);

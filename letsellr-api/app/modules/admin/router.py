@@ -25,6 +25,7 @@ from app.modules.admin.schemas import (
     PropertyTypeResponse,
     PropertyTypeCreate,
     PropertyTypeUpdate,
+    PropertyTypeReorderRequest,
     LocationDataResponse,
     LocationDataCreate,
     LocationDataUpdate,
@@ -410,7 +411,34 @@ async def toggle_feature_property(
 async def list_property_types(current_user: CurrentUser, db: DbSession):
     require_admin(current_user)
     result = await db.execute(
-        select(PropertyType).order_by(PropertyType.created_at.asc())
+        select(PropertyType).order_by(
+            PropertyType.display_order.asc(), PropertyType.created_at.asc()
+        )
+    )
+    return result.scalars().all()
+
+
+@router.post(
+    "/property-types/reorder",
+    response_model=list[PropertyTypeResponse],
+    tags=["Admin - Property Types"],
+)
+async def reorder_property_types(
+    payload: PropertyTypeReorderRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+):
+    require_admin(current_user)
+    for item in payload.items:
+        pt = await db.get(PropertyType, item.id)
+        if pt:
+            pt.display_order = item.display_order
+    await db.commit()
+
+    result = await db.execute(
+        select(PropertyType).order_by(
+            PropertyType.display_order.asc(), PropertyType.created_at.asc()
+        )
     )
     return result.scalars().all()
 

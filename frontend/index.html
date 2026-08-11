@@ -6,8 +6,13 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Letsellr — Real Estate & Verified Properties</title>
-    <meta name="description" content="Search verified properties for sale, rent, and lease directly from owners and agencies — no brokerage on Letsellr." />
+    <meta name="theme-color" content="#0B6E4F" />
+    <!-- Every page immediately fetches listings from the API; warming the
+         connection early shaves a round trip off LCP, which Google measures. -->
+    <link rel="preconnect" href="https://api.letsellr.in" crossorigin />
+    <link rel="dns-prefetch" href="https://api.letsellr.in" />
+    <title>Letsellr - Real Estate & Verified Properties</title>
+    <meta name="description" content="Search verified properties for sale, rent, and lease directly from owners and agencies - no brokerage on Letsellr." />
   </head>
   <body>
     <div id="root"></div>

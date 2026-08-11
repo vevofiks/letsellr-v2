@@ -4,6 +4,7 @@ import { useNavigate, useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
+import { getErrorMessage } from "@/lib/utils";
 import { toast } from "sonner";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -14,7 +15,7 @@ import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { AppNavbar } from "@/components/AppNavbar";
 import { AuthModal, type AuthModalMode } from "@/components/AuthModal";
-import { Seo } from "@/components/Seo";
+import { Seo, APP_URL } from "@/components/Seo";
 import { buildPropertyJsonLd, buildBreadcrumbJsonLd } from "@/lib/jsonLd";
 import { useConfirm } from "@/components/ConfirmDialogProvider";
 
@@ -150,8 +151,7 @@ export const PropertyDetailsPage: React.FC = () => {
       setNewRating(5);
       setReviews((prev) => [res.data, ...prev]);
     } catch (error: any) {
-      const msg = error.response?.data?.detail || "Failed to submit review";
-      toast.error(msg);
+      toast.error(getErrorMessage(error, "Failed to submit review"));
     } finally {
       setSubmitting(false);
     }
@@ -187,8 +187,7 @@ export const PropertyDetailsPage: React.FC = () => {
       );
       setEditingReviewId(null);
     } catch (error: any) {
-      const msg = error.response?.data?.detail || "Failed to update review";
-      toast.error(msg);
+      toast.error(getErrorMessage(error, "Failed to update review"));
     }
   };
 
@@ -205,8 +204,7 @@ export const PropertyDetailsPage: React.FC = () => {
       toast.success("Review deleted successfully!");
       setReviews((prev) => prev.filter((r) => r.id !== reviewId));
     } catch (error: any) {
-      const msg = error.response?.data?.detail || "Failed to delete review";
-      toast.error(msg);
+      toast.error(getErrorMessage(error, "Failed to delete review"));
     }
   };
 
@@ -314,16 +312,23 @@ export const PropertyDetailsPage: React.FC = () => {
   const mapRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
 
-  // Fetch Property Details
+  // Fetch Property Details & Record Unique View
   useEffect(() => {
     const fetchPropertyDetails = async () => {
       try {
         setLoading(true);
-        const res = await api.get(`/api/properties/${propertyId}`);
+        // Call view endpoint to record unique view count and retrieve updated property details
+        const res = await api.post(`/api/properties/${propertyId}/view`);
         setProperty(res.data);
       } catch (err: any) {
-        toast.error("Failed to load property details");
-        navigate("/dashboard");
+        // Fallback to GET endpoint if POST fails
+        try {
+          const fallbackRes = await api.get(`/api/properties/${propertyId}`);
+          setProperty(fallbackRes.data);
+        } catch (fallbackErr: any) {
+          toast.error("Failed to load property details");
+          navigate("/dashboard");
+        }
       } finally {
         setLoading(false);
       }
@@ -387,10 +392,13 @@ export const PropertyDetailsPage: React.FC = () => {
       const map = L.map(mapRef.current, {
         zoomControl: false,
         attributionControl: false,
+        minZoom: 5,
         maxZoom: 13,
+        worldCopyJump: true,
       }).setView([property.latitude, property.longitude], 13);
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        minZoom: 5,
         maxZoom: 13,
       }).addTo(map);
 
@@ -417,10 +425,6 @@ export const PropertyDetailsPage: React.FC = () => {
 
   const handleWhatsAppContact = async () => {
     if (!property) return;
-    if (!user) {
-      setAuthModal({ open: true, mode: "register-client" });
-      return;
-    }
     let serverWaLink = "";
     try {
       const res = await api.get(`/api/properties/ref/${property.ref}/enquiry-link`);
@@ -551,8 +555,8 @@ export const PropertyDetailsPage: React.FC = () => {
   const specCardClass = "space-y-1 w-full sm:w-auto pt-3 sm:pt-0 sm:pl-5 border-t sm:border-t-0 sm:border-l border-slate-100 first:border-0 first:pt-0 first:sm:pl-0";
 
   const seoLocation = property.location_area || property.location_city || "";
-  const seoDescription = `${property.title}${seoLocation ? ` in ${seoLocation}` : ""} — ${formatPrice(property.price, property.price_unit)}. ${property.bedrooms ? `${property.bedrooms} BHK, ` : ""}verified listing direct from ${property.owner_role === "agency" ? "agency" : "owner"}, no brokerage on Letsellr.`;
-  const canonicalUrl = `https://app.letsellr.in/properties/${property.id}`;
+  const seoDescription = `${property.title}${seoLocation ? ` in ${seoLocation}` : ""} - ${formatPrice(property.price, property.price_unit)}. ${property.bedrooms ? `${property.bedrooms} BHK, ` : ""}verified listing direct from ${property.owner_role === "agency" ? "agency" : "owner"}, no brokerage on Letsellr.`;
+  const canonicalUrl = `${APP_URL}/properties/${property.id}`;
 
   return (
     <div className="min-h-screen bg-[#f8faf9] text-left relative font-sans">
@@ -561,11 +565,21 @@ export const PropertyDetailsPage: React.FC = () => {
         description={seoDescription}
         image={property.photos?.[0]}
         url={canonicalUrl}
+        type="article"
+        noindex={property.status !== "live"}
         jsonLd={[
           buildPropertyJsonLd(property, canonicalUrl),
           buildBreadcrumbJsonLd([
-            { name: "Home", url: "https://app.letsellr.in/dashboard" },
-            { name: "Properties", url: "https://app.letsellr.in/properties" },
+            { name: "Home", url: `${APP_URL}/dashboard` },
+            { name: "Properties", url: `${APP_URL}/properties` },
+            ...(property.location_city
+              ? [
+                  {
+                    name: property.location_city,
+                    url: `${APP_URL}/properties?city=${encodeURIComponent(property.location_city)}`,
+                  },
+                ]
+              : []),
             { name: property.title, url: canonicalUrl },
           ]),
         ]}
@@ -912,7 +926,7 @@ export const PropertyDetailsPage: React.FC = () => {
               {property.latitude && property.longitude ? (
                 <div
                   ref={mapRef}
-                  className="h-96 w-full rounded-2xl border border-slate-200/80 shadow-inner overflow-hidden relative z-10"
+                  className="h-96 w-full rounded-2xl border border-slate-200/80 shadow-inner overflow-hidden relative z-10 bg-[#aad3df] [&_.leaflet-container]:bg-[#aad3df]!"
                   style={{ minHeight: '380px' }}
                 />
               ) : (
@@ -1309,7 +1323,7 @@ export const PropertyDetailsPage: React.FC = () => {
 
       {/* Detailed Image Viewer Modal */}
       {isImageViewerOpen && mediaList.length > 0 && (
-        <div className="fixed inset-0 z-[9999] bg-black/95 flex flex-col items-center justify-center p-4 sm:p-8 backdrop-blur-sm transition-all duration-300">
+        <div className="fixed inset-0 z-9999 bg-black/95 flex flex-col items-center justify-center p-4 sm:p-8 backdrop-blur-sm transition-all duration-300">
           <button
             onClick={() => setIsImageViewerOpen(false)}
             className="absolute top-4 right-4 sm:top-6 sm:right-6 text-white/70 hover:text-white bg-black/50 hover:bg-black/80 rounded-full p-2 transition-colors cursor-pointer z-50 border border-white/10"

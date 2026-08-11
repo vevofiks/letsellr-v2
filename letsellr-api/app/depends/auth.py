@@ -124,6 +124,24 @@ async def get_current_user(
 # ── Reusable type alias ────────────────────────────────────────────────────────
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
+security_optional = HTTPBearer(auto_error=False)
+
+
+async def get_optional_current_user(
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security_optional)],
+    db: DbSession,
+) -> User | None:
+    """Extract Bearer token if present and valid; returns None if missing or invalid."""
+    if not credentials or not credentials.credentials:
+        return None
+    try:
+        return await get_current_user(credentials, db)
+    except HTTPException:
+        return None
+
+
+OptionalCurrentUser = Annotated[User | None, Depends(get_optional_current_user)]
+
 
 # ── Role Guard ─────────────────────────────────────────────────────────────────
 def require_role(*roles: str):
