@@ -811,7 +811,7 @@ export const AdminAddPropertyPage: React.FC = () => {
 
         {specsOpen && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-5">
-            <div className="space-y-1.5">
+            <div className="flex flex-col justify-end gap-1.5">
               <label className="text-xs font-bold text-slate-700">Area (sq ft) (Optional)</label>
               <input
                 type="number"
@@ -821,7 +821,7 @@ export const AdminAddPropertyPage: React.FC = () => {
                 className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="flex flex-col justify-end gap-1.5">
               <label className="text-xs font-bold text-slate-700">Bedrooms</label>
               <input
                 type="number"
@@ -831,7 +831,7 @@ export const AdminAddPropertyPage: React.FC = () => {
                 className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="flex flex-col justify-end gap-1.5">
               <label className="text-xs font-bold text-slate-700">Bathrooms</label>
               <input
                 type="number"
@@ -841,7 +841,7 @@ export const AdminAddPropertyPage: React.FC = () => {
                 className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs text-slate-900"
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="flex flex-col justify-end gap-1.5">
               <label className="text-xs font-bold text-slate-700">Furnishing</label>
               <select
                 value={furnishing}
