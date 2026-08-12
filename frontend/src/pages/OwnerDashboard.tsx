@@ -112,12 +112,16 @@ export const OwnerDashboard: React.FC = () => {
     try {
       await api.delete(`/api/properties/${id}`);
       toast.success("Property deleted successfully");
-      const updated = properties.filter((p) => p.id !== id);
-      setProperties(updated);
+      
+      setProperties((prev) => {
+        const updated = prev.filter((p) => p.id !== id);
+        if (selectedPropertyId === id) {
+          setSelectedPropertyId(updated.length > 0 ? updated[0].id : null);
+        }
+        return updated;
+      });
+      
       setSheetOpen(false);
-      if (selectedPropertyId === id) {
-        setSelectedPropertyId(updated.length > 0 ? updated[0].id : null);
-      }
     } catch (err: unknown) {
       console.error("Failed to delete property", err);
       toast.error(getErrorMessage(err, "Failed to delete property"));

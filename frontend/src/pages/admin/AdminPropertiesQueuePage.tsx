@@ -5,6 +5,7 @@ import {
   Search,
   RefreshCw,
   Eye,
+  EyeOff,
   Check,
   X,
   AlertTriangle,
@@ -862,6 +863,11 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                         <YoutubeIcon className="h-3 w-3 text-rose-600" /> Video
                       </Badge>
                     )}
+                    {prop.status === "inactive" && (
+                      <Badge className="bg-slate-100 text-slate-600 border-slate-300 font-extrabold text-[9px] px-1.5 py-0 flex items-center gap-1">
+                        <EyeOff className="h-3 w-3" /> Unlisted
+                      </Badge>
+                    )}
                   </div>
                   <span className="text-[10px] font-extrabold text-slate-400 tracking-wider">
                     {prop.ref || prop.ref_code || "REF-CODE"}
@@ -930,33 +936,60 @@ export const AdminPropertiesQueuePage: React.FC = () => {
               {/* Card Footer Actions */}
               <div className="bg-slate-50/70 border-t border-slate-200/80 px-2 sm:px-4 py-3 flex items-center justify-between sm:justify-end gap-1.5">
                 {activeTab === "live" && (
-                  <button
-                    onClick={async () => {
-                      try {
-                        const updated = await adminService.toggleFeatureProperty(prop.id);
-                        toast.success(
-                          updated.is_featured
-                            ? `"${prop.title}" is now featured on landing page!`
-                            : `"${prop.title}" unfeatured.`
-                        );
-                        const updater = (list: AdminProperty[]) =>
-                          list.map((p) => (p.id === prop.id ? { ...p, is_featured: updated.is_featured } : p));
-                        setPendingProperties(updater);
-                        setLiveProperties(updater);
-                      } catch (err: any) {
-                        toast.error("Failed to update featured status.");
-                      }
-                    }}
-                    className={`font-extrabold text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer border flex-1 sm:flex-none ${
-                      prop.is_featured
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100"
-                        : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
-                    }`}
-                    title={prop.is_featured ? "Featured on Landing Page (Click to unfeature)" : "Feature on Landing Page"}
-                  >
-                    <Sparkles className={`h-3.5 w-3.5 shrink-0 ${prop.is_featured ? "fill-emerald-600 text-emerald-600" : "text-slate-400"}`} />
-                    <span className="truncate">{prop.is_featured ? "Featured" : "Feature"}</span>
-                  </button>
+                  <>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const updated = await adminService.toggleFeatureProperty(prop.id);
+                          toast.success(
+                            updated.is_featured
+                              ? `"${prop.title}" is now featured on landing page!`
+                              : `"${prop.title}" unfeatured.`
+                          );
+                          const updater = (list: AdminProperty[]) =>
+                            list.map((p) => (p.id === prop.id ? { ...p, is_featured: updated.is_featured } : p));
+                          setPendingProperties(updater);
+                          setLiveProperties(updater);
+                        } catch (err: any) {
+                          toast.error("Failed to update featured status.");
+                        }
+                      }}
+                      className={`font-extrabold text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer border flex-1 sm:flex-none ${
+                        prop.is_featured
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100"
+                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                      }`}
+                      title={prop.is_featured ? "Featured on Landing Page (Click to unfeature)" : "Feature on Landing Page"}
+                    >
+                      <Sparkles className={`h-3.5 w-3.5 shrink-0 ${prop.is_featured ? "fill-emerald-600 text-emerald-600" : "text-slate-400"}`} />
+                      <span className="truncate">{prop.is_featured ? "Featured" : "Feature"}</span>
+                    </button>
+
+                    <button
+                      onClick={async () => {
+                        try {
+                          const newStatus = prop.status === "live" ? "inactive" : "live";
+                          await adminService.updateProperty(prop.id, { status: newStatus });
+                          toast.success(`Property is now ${newStatus === "live" ? "listed (live)" : "unlisted (inactive)"}.`);
+                          const updater = (list: AdminProperty[]) =>
+                            list.map((p) => (p.id === prop.id ? { ...p, status: newStatus } : p));
+                          setPendingProperties(updater);
+                          setLiveProperties(updater);
+                        } catch (err: any) {
+                          toast.error(getErrorMessage(err, "Failed to change listing status."));
+                        }
+                      }}
+                      className={`font-extrabold text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer border flex-1 sm:flex-none ${
+                        prop.status === "live"
+                          ? "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                          : "bg-rose-50 text-rose-700 border-rose-300 hover:bg-rose-100"
+                      }`}
+                      title={prop.status === "live" ? "Unlist from website (hide)" : "List on website (show)"}
+                    >
+                      {prop.status === "live" ? <EyeOff className="h-3.5 w-3.5 shrink-0 text-slate-400" /> : <Eye className="h-3.5 w-3.5 shrink-0 text-rose-600" />}
+                      <span className="truncate">{prop.status === "live" ? "Unlist" : "List"}</span>
+                    </button>
+                  </>
                 )}
 
                 <button

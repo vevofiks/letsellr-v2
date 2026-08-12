@@ -319,12 +319,23 @@ export const PropertyDetailsPage: React.FC = () => {
   // canonical. When someone arrives on an older id-based link, rewrite the
   // address bar in place so anything they copy or share from here is the good
   // URL. replace() keeps it out of history so Back still leaves the page.
+  const skipNextFetchRef = useRef(false);
+
   const swapUrlToSlug = (loaded: { id: string; slug?: string | null }) => {
     if (!loaded?.slug || propertyId === loaded.slug) return;
+    skipNextFetchRef.current = true;
     navigate(propertyPath(loaded), { replace: true });
   };
 
   useEffect(() => {
+    // The slug rewrite in swapUrlToSlug() changes propertyId and would
+    // otherwise retrigger this effect, causing a second fetch/loading
+    // cycle (and a second Seo title flip) right after the first load.
+    if (skipNextFetchRef.current) {
+      skipNextFetchRef.current = false;
+      return;
+    }
+
     const fetchPropertyDetails = async () => {
       try {
         setLoading(true);
@@ -565,7 +576,7 @@ export const PropertyDetailsPage: React.FC = () => {
     </div>
   );
 
-  const specCardClass = "space-y-1 w-full sm:w-auto pt-3 sm:pt-0 sm:pl-5 border-t sm:border-t-0 sm:border-l border-slate-100 first:border-0 first:pt-0 first:sm:pl-0";
+  const specCardClass = "space-y-1 w-full sm:w-auto pt-3 sm:pt-0 sm:px-6 border-t sm:border-t-0 sm:border-l border-slate-100 first:border-0 first:pt-0 first:sm:pl-0 last:sm:pr-0";
 
   const seoLocation = property.location_area || property.location_city || "";
   const seoDescription = `${property.title}${seoLocation ? ` in ${seoLocation}` : ""} - ${formatPrice(property.price, property.price_unit)}. ${property.bedrooms ? `${property.bedrooms} BHK, ` : ""}verified listing direct from ${property.owner_role === "agency" ? "agency" : "owner"}, no brokerage on Letsellr.`;
