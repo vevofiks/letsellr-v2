@@ -34,6 +34,7 @@ from app.modules.properties.models import Property, PropertyType, LocationData
 from app.modules.properties.schemas import PropertyResponse, AdminPropertyCreate
 from app.modules.properties.service import PropertyService
 from app.modules.reviews.models import Review
+from app.modules.webhooks.revucrm import dispatch_revucrm_property_webhook
 
 router = APIRouter()
 
@@ -345,6 +346,12 @@ async def approve_property(
     property_obj.admin_review_reason = payload.reason
 
     await db.commit()
+
+    # Owner/agency listing accepted out of review — push to revucrm now
+    # (admin direct listings are pushed at creation time instead; see
+    # PropertyService.create_property).
+    dispatch_revucrm_property_webhook(property_obj)
+
     return {"message": "Property approved successfully"}
 
 

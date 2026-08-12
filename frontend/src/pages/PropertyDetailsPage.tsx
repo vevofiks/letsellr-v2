@@ -319,12 +319,23 @@ export const PropertyDetailsPage: React.FC = () => {
   // canonical. When someone arrives on an older id-based link, rewrite the
   // address bar in place so anything they copy or share from here is the good
   // URL. replace() keeps it out of history so Back still leaves the page.
+  const skipNextFetchRef = useRef(false);
+
   const swapUrlToSlug = (loaded: { id: string; slug?: string | null }) => {
     if (!loaded?.slug || propertyId === loaded.slug) return;
+    skipNextFetchRef.current = true;
     navigate(propertyPath(loaded), { replace: true });
   };
 
   useEffect(() => {
+    // The slug rewrite in swapUrlToSlug() changes propertyId and would
+    // otherwise retrigger this effect, causing a second fetch/loading
+    // cycle (and a second Seo title flip) right after the first load.
+    if (skipNextFetchRef.current) {
+      skipNextFetchRef.current = false;
+      return;
+    }
+
     const fetchPropertyDetails = async () => {
       try {
         setLoading(true);
