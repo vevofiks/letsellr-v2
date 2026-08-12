@@ -15,8 +15,10 @@ import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
 import { AppNavbar } from "@/components/AppNavbar";
 import { AuthModal, type AuthModalMode } from "@/components/AuthModal";
-import { Seo, APP_URL } from "@/components/Seo";
+import { Seo } from "@/components/Seo";
+import { APP_URL } from "@/lib/site";
 import { buildPropertyJsonLd, buildBreadcrumbJsonLd } from "@/lib/jsonLd";
+import { propertyPath, propertyUrl } from "@/lib/urls";
 import { useConfirm } from "@/components/ConfirmDialogProvider";
 
 import {
@@ -313,6 +315,15 @@ export const PropertyDetailsPage: React.FC = () => {
   const mapInstanceRef = useRef<L.Map | null>(null);
 
   // Fetch Property Details & Record Unique View
+  // A listing is reachable by slug, UUID or ref code, but only the slug is
+  // canonical. When someone arrives on an older id-based link, rewrite the
+  // address bar in place so anything they copy or share from here is the good
+  // URL. replace() keeps it out of history so Back still leaves the page.
+  const swapUrlToSlug = (loaded: { id: string; slug?: string | null }) => {
+    if (!loaded?.slug || propertyId === loaded.slug) return;
+    navigate(propertyPath(loaded), { replace: true });
+  };
+
   useEffect(() => {
     const fetchPropertyDetails = async () => {
       try {
@@ -320,11 +331,13 @@ export const PropertyDetailsPage: React.FC = () => {
         // Call view endpoint to record unique view count and retrieve updated property details
         const res = await api.post(`/api/properties/${propertyId}/view`);
         setProperty(res.data);
+        swapUrlToSlug(res.data);
       } catch (err: any) {
         // Fallback to GET endpoint if POST fails
         try {
           const fallbackRes = await api.get(`/api/properties/${propertyId}`);
           setProperty(fallbackRes.data);
+          swapUrlToSlug(fallbackRes.data);
         } catch (fallbackErr: any) {
           toast.error("Failed to load property details");
           navigate("/dashboard");
@@ -556,7 +569,7 @@ export const PropertyDetailsPage: React.FC = () => {
 
   const seoLocation = property.location_area || property.location_city || "";
   const seoDescription = `${property.title}${seoLocation ? ` in ${seoLocation}` : ""} - ${formatPrice(property.price, property.price_unit)}. ${property.bedrooms ? `${property.bedrooms} BHK, ` : ""}verified listing direct from ${property.owner_role === "agency" ? "agency" : "owner"}, no brokerage on Letsellr.`;
-  const canonicalUrl = `${APP_URL}/properties/${property.id}`;
+  const canonicalUrl = propertyUrl(property);
 
   return (
     <div className="min-h-screen bg-[#f8faf9] text-left relative font-sans">
@@ -1259,7 +1272,7 @@ export const PropertyDetailsPage: React.FC = () => {
                   <Card
                     key={related.id}
                     onClick={() => {
-                      navigate(`/properties/${related.id}`);
+                      navigate(propertyPath(related));
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     className="border border-slate-200/80 bg-white hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 overflow-hidden flex flex-col group p-3.5 rounded-2xl cursor-pointer text-left"

@@ -12,6 +12,7 @@ from app.modules.users.models import User, AgencyProfile  # noqa: F401
 from app.modules.properties.models import (
     Property,
     PropertyType,
+    PropertyRefCounter,
     LocationData,
     PropertyReport,
 )  # noqa: F401

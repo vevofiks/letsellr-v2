@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { HelmetProvider } from "react-helmet-async";
+import { SeoProvider } from "@/components/Seo";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { PublicRoute } from "@/components/PublicRoute";
@@ -35,7 +35,7 @@ import { ConfirmDialogProvider } from "@/components/ConfirmDialogProvider";
 
 function App() {
   return (
-    <HelmetProvider>
+    <SeoProvider>
       <AuthProvider>
         <ConfirmDialogProvider>
           <BrowserRouter>
@@ -200,7 +200,7 @@ function App() {
         <Toaster richColors position="top-right" />
         </ConfirmDialogProvider>
       </AuthProvider>
-    </HelmetProvider>
+    </SeoProvider>
   );
 }
 

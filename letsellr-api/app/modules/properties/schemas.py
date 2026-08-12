@@ -103,6 +103,9 @@ class OwnerMinimal(BaseModel):
 class PropertyResponse(BaseModel):
     id: UUID
     ref: str
+    # Canonical URL segment for this listing. Optional so rows predating the
+    # slug backfill still serialise; callers fall back to the id.
+    slug: Optional[str] = None
     owner_id: UUID
     owner_role: str
     category: str

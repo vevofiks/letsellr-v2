@@ -90,6 +90,17 @@ class Settings(BaseSettings):
     # ── Server-to-Server Auth (n8n) ───────────────────────────────────────────
     N8N_API_KEY: str = ""
 
+    # ── CRM integration ───────────────────────────────────────────────────────
+    # Shared secret the CRM sends as X-CRM-Secret on inbound property webhooks.
+    # Empty means the integration is disabled: the webhook rejects everything
+    # rather than falling back to a default, because those endpoints can create
+    # and delete listings.
+    CRM_WEBHOOK_SECRET: str = ""
+    # Where to POST listing changes made on the website. Empty disables outbound
+    # delivery, which is the correct behaviour in local and test environments.
+    CRM_WEBHOOK_URL: str = ""
+    CRM_WEBHOOK_TIMEOUT_SECONDS: float = 10.0
+
     # ── Map / Places API ──────────────────────────────────────────────────────
     PLACES_API_KEY: str = ""
 

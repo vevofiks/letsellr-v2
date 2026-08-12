@@ -2,8 +2,6 @@ import asyncio
 import math
 import uuid
 from typing import Any, Dict, List, Optional
-import random
-import string
 import httpx
 
 from app.core.config import settings
@@ -14,7 +12,14 @@ from fastapi import HTTPException, status
 from sqlalchemy import asc, desc
 
 from app.db.session import AsyncSession
-from app.modules.properties.models import Property, AGENCY_ALLOWED_CATEGORIES, OWNER_ALLOWED_CATEGORIES
+from app.modules.properties.refs import current_period, format_ref, period_key
+from app.modules.webhooks.outbound import build_property_payload, dispatch_to_crm
+from app.modules.properties.slugs import build_property_slug, looks_like_slug
+from app.modules.properties.models import (
+    Property,
+    AGENCY_ALLOWED_CATEGORIES,
+    OWNER_ALLOWED_CATEGORIES,
+)
 from app.modules.properties.repository import PropertyRepository
 from app.modules.properties.schemas import (
     PropertyBrowseResponse,
@@ -33,13 +38,24 @@ class PropertyService:
     def __init__(self, db: AsyncSession):
         self.repo = PropertyRepository(db)
 
-    def _generate_ref(self) -> str:
-        chars = string.ascii_uppercase + string.digits
-        random_str = "".join(random.choices(chars, k=6))
-        return f"PROP-{random_str}"
+    async def _generate_ref(self) -> str:
+        """Next reference code for the current month, e.g. LSR26-080001.
+
+        The month is taken in the business timezone rather than the server's,
+        and the sequence is claimed atomically, so two listings submitted at the
+        same instant cannot receive the same code.
+        """
+        year, month = current_period()
+        sequence = await self.repo.claim_ref_sequence(period_key(year, month))
+        return format_ref(year, month, sequence)
 
     async def create_property(
-        self, data: PropertyCreate, current_user: User, owner_user: Optional[User] = None
+        self,
+        data: PropertyCreate,
+        current_user: User,
+        owner_user: Optional[User] = None,
+        source: str = "web",
+        external_id: Optional[str] = None,
     ) -> Property:
         """
         Creates a listing attributed to `owner_user` (defaults to `current_user`).
@@ -64,17 +80,27 @@ class PropertyService:
             )
 
         enquiry_type = (
-            "whatsapp_bot" if data.category in ["pg", "hostel", "pg_hostel"] else "manual_chat"
+            "whatsapp_bot"
+            if data.category in ["pg", "hostel", "pg_hostel"]
+            else "manual_chat"
         )
-        ref = self._generate_ref()
+        ref = await self._generate_ref()
 
         location_data = data.location.model_dump()
-        property_dict = data.model_dump(exclude={"location", "listing_party", "owner_id"})
+        property_dict = data.model_dump(
+            exclude={"location", "listing_party", "owner_id"}
+        )
         property_dict.update(
             {
                 "owner_id": owner_user.id,
                 "owner_role": owner_user.role,
                 "ref": ref,
+                "slug": build_property_slug(
+                    title=property_dict.get("title", ""),
+                    location_area=location_data.get("area"),
+                    location_city=location_data.get("city"),
+                    ref=ref,
+                ),
                 "enquiry_type": enquiry_type,
                 "location_address": location_data.get("address"),
                 "location_area": location_data.get("area"),
@@ -85,10 +111,18 @@ class PropertyService:
                 "longitude": location_data.get("longitude"),
                 "status": data.status or "pending_review",
                 "stats": {"views": 0, "enquiries": 0, "saves": 0},
+                "source": source,
+                "external_id": external_id,
             }
         )
 
         created = await self.repo.create(property_dict)
+
+        # Mirror the new listing into the CRM. Skipped for listings the CRM
+        # itself just sent us, otherwise the two systems bounce it forever.
+        dispatch_to_crm(
+            "property.created", build_property_payload(created), created.source
+        )
 
         # Alert admins on WhatsApp when a listing lands in the review queue.
         # Admin-created listings are skipped — the admin is already in the panel.
@@ -142,8 +176,14 @@ class PropertyService:
 
         updated = await self.repo.update(prop, update_data)
 
+        dispatch_to_crm(
+            "property.updated", build_property_payload(updated), updated.source
+        )
+
         if "photos" in update_data:
-            removed = [url for url in old_photos if url not in set(update_data["photos"])]
+            removed = [
+                url for url in old_photos if url not in set(update_data["photos"])
+            ]
             if removed:
                 from app.modules.media.service import MediaService
 
@@ -164,7 +204,13 @@ class PropertyService:
             )
 
         photos = list(prop.photos or [])
+        # Snapshot before deletion — the payload cannot be built from a row
+        # that no longer exists.
+        deleted_payload = build_property_payload(prop)
+        deleted_source = prop.source
         await self.repo.delete(prop)
+
+        dispatch_to_crm("property.deleted", deleted_payload, deleted_source)
 
         if photos:
             from app.modules.media.service import MediaService
@@ -178,12 +224,21 @@ class PropertyService:
             prop = await self.repo.get_by_id(property_id)
         else:
             str_val = str(property_id).strip()
-            try:
-                parsed_uuid = uuid.UUID(str_val)
-                prop = await self.repo.get_by_id(parsed_uuid)
-            except ValueError:
-                # Not a UUID, look up by property reference code (e.g. PROP-AB12CD, PG1042)
-                prop = await self.repo.get_by_ref(str_val)
+
+            # Slugs are the canonical public identifier, so they are tried
+            # first. looks_like_slug rules out UUIDs and PROP- refs, so those
+            # paths still resolve in a single query.
+            if looks_like_slug(str_val):
+                prop = await self.repo.get_by_slug(str_val)
+
+            if not prop:
+                try:
+                    parsed_uuid = uuid.UUID(str_val)
+                    prop = await self.repo.get_by_id(parsed_uuid)
+                except ValueError:
+                    # Not a UUID, look up by property reference code
+                    # (e.g. PROP-AB12CD, PG1042)
+                    prop = await self.repo.get_by_ref(str_val)
 
             if not prop:
                 # Fallback: if search by UUID yielded nothing, try search by ref code

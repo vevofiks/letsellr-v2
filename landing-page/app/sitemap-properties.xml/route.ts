@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic"; // always reflect current live listings,
 
 interface PropertyListItem {
   id: string;
+  slug?: string | null;
   updated_at: string;
 }
 
@@ -51,8 +52,10 @@ export async function GET() {
     properties = [];
   }
 
+  // Slug is the canonical URL; the id is only a fallback for rows created
+  // before the slug backfill, which the app redirects to the slug anyway.
   const entries: SitemapUrlEntry[] = properties.map((property) => ({
-    loc: `${appUrl}/properties/${property.id}`,
+    loc: `${appUrl}/properties/${property.slug || property.id}`,
     lastmod: property.updated_at?.split("T")[0],
     changefreq: "daily",
     priority: 0.7,

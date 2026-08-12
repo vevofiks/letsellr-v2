@@ -1,4 +1,4 @@
-import { APP_URL } from "@/components/Seo";
+import { propertyUrl } from "@/lib/urls";
 
 interface PropertyForJsonLd {
   id: string;
@@ -91,7 +91,7 @@ export function buildPropertyJsonLd(property: PropertyForJsonLd, canonicalUrl: s
  * and it can surface as a carousel for category+city queries.
  */
 export function buildItemListJsonLd(
-  items: { id: string; title: string }[],
+  items: { id: string; slug?: string | null; title: string }[],
   canonicalUrl: string,
   listName: string
 ) {
@@ -105,7 +105,7 @@ export function buildItemListJsonLd(
       "@type": "ListItem",
       position: index + 1,
       name: item.title,
-      url: `${APP_URL}/properties/${item.id}`,
+      url: propertyUrl(item),
     })),
   };
 }

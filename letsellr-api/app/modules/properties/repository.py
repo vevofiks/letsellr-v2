@@ -3,10 +3,11 @@ import math
 from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select, func
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import selectinload
 
 from app.db.session import AsyncSession
-from app.modules.properties.models import Property
+from app.modules.properties.models import Property, PropertyRefCounter
 from app.modules.users.models import User
 
 
@@ -41,6 +42,45 @@ class PropertyRepository:
             select(Property)
             .options(selectinload(Property.owner).selectinload(User.agency_profile))
             .where(Property.ref == ref)
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def claim_ref_sequence(self, period: str) -> int:
+        """Atomically claims and returns the next sequence number for a month.
+
+        A single INSERT ... ON CONFLICT DO UPDATE ... RETURNING statement does
+        the read, the increment and the write while holding the row lock, so
+        concurrent submissions are handed distinct numbers. Doing this as a
+        SELECT followed by an UPDATE would let two requests read the same value
+        and then collide on the unique ref index.
+        """
+        stmt = (
+            pg_insert(PropertyRefCounter)
+            .values(period=period, last_value=1)
+            .on_conflict_do_update(
+                index_elements=[PropertyRefCounter.period],
+                set_={"last_value": PropertyRefCounter.last_value + 1},
+            )
+            .returning(PropertyRefCounter.last_value)
+        )
+        result = await self.db.execute(stmt)
+        return int(result.scalar_one())
+
+    async def get_by_external_id(self, external_id: str) -> Optional[Property]:
+        stmt = (
+            select(Property)
+            .options(selectinload(Property.owner).selectinload(User.agency_profile))
+            .where(Property.external_id == external_id)
+        )
+        result = await self.db.execute(stmt)
+        return result.scalar_one_or_none()
+
+    async def get_by_slug(self, slug: str) -> Optional[Property]:
+        stmt = (
+            select(Property)
+            .options(selectinload(Property.owner).selectinload(User.agency_profile))
+            .where(Property.slug == slug)
         )
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
