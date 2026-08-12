@@ -934,7 +934,7 @@ export const AdminPropertiesQueuePage: React.FC = () => {
               </div>
 
               {/* Card Footer Actions */}
-              <div className="bg-slate-50/70 border-t border-slate-200/80 px-2 sm:px-4 py-3 flex items-center justify-between sm:justify-end gap-1.5">
+              <div className="bg-slate-50/70 border-t border-slate-200/80 px-2 sm:px-4 py-3 flex flex-wrap items-center justify-start sm:justify-end gap-1.5">
                 {activeTab === "live" && (
                   <>
                     <button
@@ -1793,7 +1793,7 @@ export const AdminPropertiesQueuePage: React.FC = () => {
 
                 {specsOpen && (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
-                    <div className="space-y-1">
+                    <div className="flex flex-col justify-end gap-1">
                       <label className="text-xs font-bold text-slate-700">Area (sq ft)</label>
                       <input
                         type="number"
@@ -1804,7 +1804,7 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                       />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="flex flex-col justify-end gap-1">
                       <label className="text-xs font-bold text-slate-700">Bedrooms</label>
                       <input
                         type="number"
@@ -1815,7 +1815,7 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                       />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="flex flex-col justify-end gap-1">
                       <label className="text-xs font-bold text-slate-700">Bathrooms</label>
                       <input
                         type="number"
@@ -1826,7 +1826,7 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                       />
                     </div>
 
-                    <div className="space-y-1">
+                    <div className="flex flex-col justify-end gap-1">
                       <label className="text-xs font-bold text-slate-700">Furnishing</label>
                       <select
                         value={editFurnishing}

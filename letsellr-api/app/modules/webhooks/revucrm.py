@@ -27,18 +27,34 @@ REVUCRM_PROPERTY_CREATE_URL = (
 )
 REVUCRM_SECRET_KEY = "scUEb4nfgOecT8YmtvfKaXRCYRCHNoAZ"
 
-# revucrm's fixed property-type catalog (confirmed with the client).
-# Our `land` and `coworking_space` categories have no counterpart there, so
-# listings in those categories are skipped rather than pushed with a made-up
-# id — see build_revucrm_property_payload.
+# revucrm's fixed property-type catalog, per their API field reference.
+# Our `land` and `coworking_space` categories have no counterpart there
+# (land is a valid `category` value on their side but has no numeric type
+# id at all, and coworking_space has neither) — listings in those categories
+# are skipped rather than pushed with a made-up id; see
+# build_revucrm_property_payload.
 CATEGORY_TO_PROPERTY_TYPE_ID = {
     "apartment": 8,
-    "flat_apartment": 8,  # legacy alias for "apartment"; no UI produces this
+    "flat_apartment": 6,  # "flat" is its own type on their side, not "apartment"
     "villa_house": 9,
     "hostel": 11,
     "pg": 10,
     "pg_hostel": 10,  # legacy alias for "pg"; no UI produces this
     "commercial": 12,
+}
+
+# revucrm's `category` field is validated against its own fixed enum, which
+# doesn't include our legacy aliases (flat_apartment, pg_hostel) — translate
+# to the nearest value it accepts. Categories absent from
+# CATEGORY_TO_PROPERTY_TYPE_ID (land, coworking_space) never reach here.
+CATEGORY_TO_REVUCRM_CATEGORY = {
+    "apartment": "apartment",
+    "flat_apartment": "apartment",
+    "villa_house": "villa_house",
+    "hostel": "hostel",
+    "pg": "pg",
+    "pg_hostel": "pg",
+    "commercial": "commercial",
 }
 
 # revucrm's `furnishing` field is a fixed enum (confirmed by probing the live
@@ -107,7 +123,7 @@ def build_revucrm_property_payload(prop: Any) -> dict | None:
         "state": prop.location_state,
         "location_area": prop.location_area,
         "pincode": prop.location_pincode,
-        "category": prop.category,
+        "category": CATEGORY_TO_REVUCRM_CATEGORY.get(prop.category, prop.category),
         "intent": prop.intent,
         "furnishing": (
             [FURNISHING_TO_REVUCRM[prop.furnishing]]
@@ -140,11 +156,23 @@ async def _post_to_revucrm(payload: dict, ref: str) -> None:
             resp = await client.post(
                 REVUCRM_PROPERTY_CREATE_URL, json=payload, headers=headers, timeout=10.0
             )
-            logger.info(
-                "revucrm property-create webhook fired for %s, status: %s",
-                ref,
-                resp.status_code,
-            )
+            if resp.status_code >= 400:
+                # revucrm returns the specific field(s) it rejected in the body
+                # (e.g. {"errors": {"furnishing.0": [...]}}) — log it, not just
+                # the status code, or a rejection is undiagnosable after the fact.
+                logger.error(
+                    "revucrm property-create webhook rejected for %s: %s %s | payload=%s",
+                    ref,
+                    resp.status_code,
+                    resp.text[:1000],
+                    payload,
+                )
+            else:
+                logger.info(
+                    "revucrm property-create webhook fired for %s, status: %s",
+                    ref,
+                    resp.status_code,
+                )
     except Exception as e:
         logger.error("Failed to fire revucrm property-create webhook for %s: %s", ref, e)
 
