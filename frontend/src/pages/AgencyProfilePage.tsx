@@ -3,8 +3,10 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { AppNavbar } from "@/components/AppNavbar";
-import { Seo, APP_URL } from "@/components/Seo";
+import { Seo } from "@/components/Seo";
+import { APP_URL } from "@/lib/site";
 import { buildAgencyJsonLd, buildBreadcrumbJsonLd } from "@/lib/jsonLd";
+import { propertyPath } from "@/lib/urls";
 import { 
   Building2, 
   MapPin, 
@@ -36,6 +38,7 @@ interface AgencyProfile {
 interface Property {
   id: string;
   ref: string;
+  slug?: string | null;
   title: string;
   description: string;
   category: string;
@@ -315,7 +318,7 @@ export const AgencyProfilePage: React.FC = () => {
               {properties.map((prop) => (
                 <Link
                   key={prop.id}
-                  to={`/properties/${prop.id}`}
+                  to={propertyPath(prop)}
                   className="relative border border-slate-200/70 bg-white hover:shadow-lg hover:border-slate-300 transition-all duration-300 overflow-hidden flex flex-col rounded-xl cursor-pointer group animate-in fade-in max-w-85 w-full mx-auto sm:mx-0"
                 >
                   {/* Thumbnail */}

@@ -14,10 +14,8 @@ interface RouteSeoEntry {
  * reflects the current page instead of the static index.html title.
  *
  * Pages that need data-derived metadata (a property title, an agency name, the
- * active search filters) still render their own <Seo>. Because those render
- * deeper in the tree they mount after this one, and react-helmet-async lets the
- * later declaration win — so this acts purely as a fallback, including during
- * the loading state before that page's data arrives.
+ * active search filters) publish their own, which outranks these on priority.
+ * This is what shows while that page's data is still loading.
  */
 const ROUTE_SEO: RouteSeoEntry[] = [
   // Public, indexable
@@ -71,11 +69,19 @@ export function RouteSeo() {
   const { pathname } = useLocation();
   const match = ROUTE_SEO.find((entry) => matchPath(entry.path, pathname));
 
+  // priority 0 marks these as fallbacks: any page that publishes its own,
+  // data-derived metadata outranks them without a second set of tags being
+  // emitted (see the store in Seo.tsx).
   if (!match) {
-    return <Seo title="Verified Properties, Direct from Owners" />;
+    return <Seo title="Verified Properties, Direct from Owners" priority={0} />;
   }
 
   return (
-    <Seo title={match.title} description={match.description} noindex={match.noindex} />
+    <Seo
+      title={match.title}
+      description={match.description}
+      noindex={match.noindex}
+      priority={0}
+    />
   );
 }

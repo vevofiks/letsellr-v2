@@ -140,6 +140,28 @@ class Property(UUIDMixin, TimestampMixin, Base):
         String(50), unique=True, nullable=False, index=True
     )
 
+    # Which system created this listing: "web" | "crm".
+    # Outbound sync reads this to avoid echoing a listing back to the CRM that
+    # the CRM itself just sent us, which would otherwise loop indefinitely.
+    source: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="web", server_default="web", index=True
+    )
+
+    # The CRM's own identifier for this listing, when it originated there.
+    # Unique so a retried or replayed webhook updates the existing row instead
+    # of inserting a second copy of the same property under a new ref.
+    external_id: Mapped[str | None] = mapped_column(
+        String(100), unique=True, nullable=True, index=True
+    )
+
+    # URL slug, e.g. "luxury-4-bhk-villa-near-lulu-mall-edappally-kochi-prop9o77z6".
+    # Written once at creation and deliberately not regenerated when the title
+    # changes: a listing's URL is what gets indexed and shared, so it has to
+    # stay put. Nullable so rows created before the backfill still load.
+    slug: Mapped[str | None] = mapped_column(
+        String(255), unique=True, nullable=True, index=True
+    )
+
     title: Mapped[str] = mapped_column(String(300), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -243,3 +265,22 @@ class Property(UUIDMixin, TimestampMixin, Base):
         return (
             f"<Property ref={self.ref} category={self.category} status={self.status}>"
         )
+
+
+class PropertyRefCounter(Base):
+    """Per-month counter behind the LSR26-080001 reference codes.
+
+    One row per year+month. Kept in its own table rather than derived from
+    MAX(properties.ref) so the next value can be claimed atomically: reading the
+    highest existing code and adding one lets two concurrent submissions read
+    the same number and collide on the unique ref index.
+    """
+
+    __tablename__ = "property_ref_counters"
+
+    # "YYYYMM" — see refs.period_key.
+    period: Mapped[str] = mapped_column(String(6), primary_key=True)
+    last_value: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
+    def __repr__(self) -> str:
+        return f"<PropertyRefCounter period={self.period} last_value={self.last_value}>"

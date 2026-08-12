@@ -2,8 +2,9 @@
  * Crawler meta injection for the client-rendered SPA.
  *
  * WhatsApp, Facebook, LinkedIn, Twitter/X and Slack never execute JavaScript,
- * so the react-helmet tags on /properties/:id and /agencies/:id are invisible
- * to them — every shared listing previewed as a bare, imageless card. This
+ * so the client-rendered tags on /properties/:slug and /agencies/:id are
+ * invisible to them — every shared listing previewed as a bare, imageless
+ * card. This
  * function serves the *same* index.html with the <title>, description, OG tags
  * and JSON-LD already filled in from the API.
  *
@@ -71,7 +72,9 @@ async function fetchJson(url) {
 
 function buildPropertyMeta(property) {
   const location = property.location_area || property.location_city || "";
-  const canonical = `${APP_URL}/properties/${property.id}`;
+  // Canonical is always the slug URL, even when the crawler followed an
+  // id-based link — otherwise the two forms compete as duplicates.
+  const canonical = `${APP_URL}/properties/${property.slug || property.id}`;
   const title = `${property.title}${location ? ` in ${location}` : ""}`;
   const price = formatPrice(property.price, property.price_unit);
   const description = truncate(
@@ -230,9 +233,13 @@ function renderTags(meta) {
 
 /** Swaps the build's placeholder title/description out and appends the real tags. */
 function injectIntoHtml(html, meta) {
+  // These must tolerate attributes on the tag: index.html marks its
+  // placeholders with data-static-seo, so anchoring on `<title>` or on
+  // `<meta name=` as the first attribute would silently match nothing and
+  // leave the crawler looking at two titles.
   const stripped = html
-    .replace(/<title>[\s\S]*?<\/title>/i, "")
-    .replace(/<meta\s+name=["']description["'][^>]*>/i, "");
+    .replace(/<title\b[^>]*>[\s\S]*?<\/title>/gi, "")
+    .replace(/<meta\b[^>]*\bname=["']description["'][^>]*>/gi, "");
 
   const injected = stripped.replace(/<\/head>/i, `    ${renderTags(meta)}\n  </head>`);
   // If index.html somehow had no </head>, fall back to the untouched document

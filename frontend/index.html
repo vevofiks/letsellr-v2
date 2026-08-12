@@ -11,8 +11,13 @@
          connection early shaves a round trip off LCP, which Google measures. -->
     <link rel="preconnect" href="https://api.letsellr.in" crossorigin />
     <link rel="dns-prefetch" href="https://api.letsellr.in" />
-    <title>Letsellr - Real Estate & Verified Properties</title>
-    <meta name="description" content="Search verified properties for sale, rent, and lease directly from owners and agencies - no brokerage on Letsellr." />
+    <!-- Placeholder shown before React mounts. Tagged data-static-seo so the
+         app can remove them once it owns the real metadata; React 19 hoists
+         its own <title>/<meta> but will not remove these, and leaving them
+         would mean two titles in <head>. The crawler function in api/meta.js
+         replaces them outright before a bot ever sees the page. -->
+    <title data-static-seo>Letsellr - Real Estate & Verified Properties</title>
+    <meta data-static-seo name="description" content="Search verified properties for sale, rent, and lease directly from owners and agencies - no brokerage on Letsellr." />
   </head>
   <body>
     <div id="root"></div>

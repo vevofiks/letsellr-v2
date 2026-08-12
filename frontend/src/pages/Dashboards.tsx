@@ -14,8 +14,10 @@ import {
 import { api } from "@/lib/api";
 import { toast } from "sonner";
 import { AppNavbar } from "@/components/AppNavbar";
-import { Seo, APP_URL } from "@/components/Seo";
+import { Seo } from "@/components/Seo";
+import { APP_URL } from "@/lib/site";
 import { buildItemListJsonLd } from "@/lib/jsonLd";
+import { propertyPath } from "@/lib/urls";
 import {
   Pagination,
   PaginationContent,
@@ -253,7 +255,7 @@ export const ClientDashboard: React.FC = () => {
   const seoJsonLd = useMemo(() => {
     if (searchMode === "agencies" || !properties.length) return undefined;
     return buildItemListJsonLd(
-      properties.map((p) => ({ id: p.id, title: p.title })),
+      properties.map((p) => ({ id: p.id, slug: p.slug, title: p.title })),
       seoCanonical,
       seoTitle
     );
@@ -846,7 +848,7 @@ export const ClientDashboard: React.FC = () => {
 
 
   const handleOpenDetails = (prop: any) => {
-    navigate(`/properties/${prop.id}`);
+    navigate(propertyPath(prop));
   };
 
   const SkeletonCard = () => (
