@@ -14,6 +14,7 @@ from sqlalchemy import asc, desc
 from app.db.session import AsyncSession
 from app.modules.properties.refs import current_period, format_ref, period_key
 from app.modules.webhooks.outbound import build_property_payload, dispatch_to_crm
+from app.modules.webhooks.revucrm import dispatch_revucrm_property_webhook
 from app.modules.properties.slugs import build_property_slug, looks_like_slug
 from app.modules.properties.models import (
     Property,
@@ -123,6 +124,13 @@ class PropertyService:
         dispatch_to_crm(
             "property.created", build_property_payload(created), created.source
         )
+
+        # Owner/agency listings can never be created as "live" (see
+        # PropertyCreate.status), so this only fires for admin direct
+        # listings published immediately — review-queued listings are
+        # pushed later, once approved (see admin_router.approve_property).
+        if created.status == "live":
+            dispatch_revucrm_property_webhook(created)
 
         # Alert admins on WhatsApp when a listing lands in the review queue.
         # Admin-created listings are skipped — the admin is already in the panel.

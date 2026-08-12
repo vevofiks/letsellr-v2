@@ -184,22 +184,44 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
                       </div>
                     </div>
 
-                    {/* My Profile */}
-                    <button
-                      onClick={() => {
-                        setDropdownOpen(false);
-                        setProfileModalOpen(true);
-                      }}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors text-left"
-                    >
-                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-700 shrink-0">
-                        <User className="h-3.5 w-3.5" />
-                      </span>
-                      <div>
-                        <p className="font-bold text-slate-800">My Profile</p>
-                        <p className="text-[10px] text-slate-400 font-normal mt-0.5">View &amp; edit your details</p>
-                      </div>
-                    </button>
+                    {/* My Profile / Dashboard */}
+                    {(user.role === 'owner' || user.role === 'agency' || user.role === 'admin') ? (
+                      <button
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          if (user.role === 'admin') {
+                            navigate('/admin/dashboard');
+                          } else {
+                            navigate('/owner/dashboard');
+                          }
+                        }}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors text-left"
+                      >
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-deep-green/10 text-brand-deep-green shrink-0">
+                          <LayoutDashboard className="h-3.5 w-3.5" />
+                        </span>
+                        <div>
+                          <p className="font-bold text-slate-800">Dashboard</p>
+                          <p className="text-[10px] text-slate-400 font-normal mt-0.5">Go to your dashboard</p>
+                        </div>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          setProfileModalOpen(true);
+                        }}
+                        className="flex w-full items-center gap-3 px-4 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors text-left"
+                      >
+                        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-slate-700 shrink-0">
+                          <User className="h-3.5 w-3.5" />
+                        </span>
+                        <div>
+                          <p className="font-bold text-slate-800">My Profile</p>
+                          <p className="text-[10px] text-slate-400 font-normal mt-0.5">View &amp; edit your details</p>
+                        </div>
+                      </button>
+                    )}
 
                     {/* Sign Out */}
                     <button
