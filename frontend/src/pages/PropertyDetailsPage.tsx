@@ -576,7 +576,7 @@ export const PropertyDetailsPage: React.FC = () => {
     </div>
   );
 
-  const specCardClass = "space-y-1 w-full sm:w-auto pt-3 sm:pt-0 sm:pl-5 border-t sm:border-t-0 sm:border-l border-slate-100 first:border-0 first:pt-0 first:sm:pl-0";
+  const specCardClass = "space-y-1 w-full sm:w-auto pt-3 sm:pt-0 sm:px-6 border-t sm:border-t-0 sm:border-l border-slate-100 first:border-0 first:pt-0 first:sm:pl-0 last:sm:pr-0";
 
   const seoLocation = property.location_area || property.location_city || "";
   const seoDescription = `${property.title}${seoLocation ? ` in ${seoLocation}` : ""} - ${formatPrice(property.price, property.price_unit)}. ${property.bedrooms ? `${property.bedrooms} BHK, ` : ""}verified listing direct from ${property.owner_role === "agency" ? "agency" : "owner"}, no brokerage on Letsellr.`;

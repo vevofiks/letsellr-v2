@@ -273,7 +273,7 @@ async def list_live_properties(current_user: CurrentUser, db: DbSession):
     result = await db.execute(
         select(Property)
         .options(selectinload(Property.owner))
-        .where(Property.status == "live")
+        .where(Property.status.in_(["live", "inactive"]))
         .order_by(Property.created_at.desc())
     )
     return result.scalars().all()

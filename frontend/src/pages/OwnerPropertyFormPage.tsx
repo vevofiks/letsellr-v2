@@ -71,7 +71,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
   const [area, setArea] = useState<number | "">("");
   const [bedrooms, setBedrooms] = useState<number | "">("");
   const [bathrooms, setBathrooms] = useState<number | "">("");
-  const [furnishing, setFurnishing] = useState<"unfurnished" | "semi" | "furnished">("semi");
+  const [furnishing, setFurnishing] = useState<"unfurnished" | "semi" | "furnished">("unfurnished");
 
   const [address, setAddress] = useState("");
   const [locationArea, setLocationArea] = useState("");
@@ -344,7 +344,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
       setArea(data.area || "");
       setBedrooms(data.bedrooms || "");
       setBathrooms(data.bathrooms || "");
-      setFurnishing(data.furnishing || "semi");
+      setFurnishing(data.furnishing || "unfurnished");
       
       setAddress(data.location_address || "");
       setLocationArea(data.location_area || "");
@@ -887,9 +887,9 @@ export const OwnerPropertyFormPage: React.FC = () => {
                   onChange={(e) => setFurnishing(e.target.value as "unfurnished" | "semi" | "furnished")}
                   className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs font-bold text-slate-900"
                 >
+                  <option value="unfurnished">Unfurnished</option>
                   <option value="semi">Semi-Furnished</option>
                   <option value="furnished">Fully Furnished</option>
-                  <option value="unfurnished">Unfurnished</option>
                 </select>
               </div>
 
