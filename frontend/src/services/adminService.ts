@@ -56,6 +56,7 @@ export interface AdminProperty {
   bathrooms?: number;
   furnishing?: string;
   furnishing_status?: string;
+  gender_preference?: string;
   area?: number;
   built_up_sqft?: number;
   carpet_sqft?: number;

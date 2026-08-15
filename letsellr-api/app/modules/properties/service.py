@@ -365,6 +365,7 @@ class PropertyService:
         lat: Optional[float] = None,
         lng: Optional[float] = None,
         radius: Optional[float] = 20.0,
+        gender_preference: Optional[str] = None,
         page: int = 1,
         limit: int = 20,
     ) -> PropertyBrowseResponse:
@@ -383,6 +384,8 @@ class PropertyService:
             filters["min_price"] = min_price
         if max_price is not None:
             filters["max_price"] = max_price
+        if gender_preference:
+            filters["gender_preference"] = gender_preference
 
         offset = (page - 1) * limit
         items, total = await self.repo.list_public(

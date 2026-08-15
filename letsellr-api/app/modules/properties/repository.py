@@ -150,6 +150,8 @@ class PropertyRepository:
             stmt = stmt.where(Property.price >= filters["min_price"])
         if "max_price" in filters:
             stmt = stmt.where(Property.price <= filters["max_price"])
+        if "gender_preference" in filters:
+            stmt = stmt.where(Property.gender_preference == filters["gender_preference"])
 
         if lat is not None and lng is not None:
             radius = radius or 20.0

@@ -248,7 +248,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
           <div className="hero-right flex flex-col items-end gap-2" style={{ opacity: 0 }}>
             {[
               { val: "10K", label: "Clients" },
-              { val: "15+", label: "Cities" },
+              { val: "01+", label: "Cities" },
               { val: "100%", label: "Verified" },
             ].map((s) => (
               <div key={s.label} className="text-right">

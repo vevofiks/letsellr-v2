@@ -31,6 +31,7 @@ class PropertyCreate(BaseModel):
     bedrooms: Optional[int] = None
     bathrooms: Optional[int] = None
     furnishing: Optional[Literal["unfurnished", "semi", "furnished"]] = None
+    gender_preference: Optional[Literal["any", "ladies", "men", "family", "couple", "bachelors"]] = None
     extra_details: Optional[dict[str, Any]] = Field(
         None, description="Flexible field for PG sharing, vacancies, etc."
     )
@@ -72,6 +73,7 @@ class PropertyUpdate(BaseModel):
     bedrooms: Optional[int] = None
     bathrooms: Optional[int] = None
     furnishing: Optional[Literal["unfurnished", "semi", "furnished"]] = None
+    gender_preference: Optional[Literal["any", "ladies", "men", "family", "couple", "bachelors"]] = None
     extra_details: Optional[dict[str, Any]] = None
     amenities: Optional[list[str]] = None
     photos: Optional[list[str]] = Field(None, min_length=1, max_length=10)
@@ -122,6 +124,7 @@ class PropertyResponse(BaseModel):
     bedrooms: Optional[int]
     bathrooms: Optional[int]
     furnishing: Optional[str]
+    gender_preference: Optional[str]
     extra_details: Optional[dict[str, Any]]
 
     amenities: list[str]

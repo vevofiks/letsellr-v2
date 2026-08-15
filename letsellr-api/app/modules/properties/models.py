@@ -190,6 +190,9 @@ class Property(UUIDMixin, TimestampMixin, Base):
     furnishing: Mapped[str | None] = mapped_column(
         String(20), nullable=True, comment="unfurnished | semi | furnished"
     )
+    gender_preference: Mapped[str | None] = mapped_column(
+        String(20), nullable=True, comment="any | ladies | men | family"
+    )
     extra_details: Mapped[dict | None] = mapped_column(
         JSONB, nullable=True, comment="Flexible field for PG sharing, vacancies, etc."
     )

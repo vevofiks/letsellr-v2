@@ -78,11 +78,12 @@ async def list_properties(
     radius: Optional[float] = Query(20.0, ge=0.0, description="Radius in kilometers"),
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
+    gender_preference: Optional[str] = Query(None, description="Filter by gender preference for PGs and Hostels"),
 ):
     """
     Public property browse — returns paginated live listings.
 
-    **Filters:** category (comma-separated for multiple, e.g. `pg,hostel`), intent, city (case-insensitive partial), q (general search), min/max price, owner_id.
+    **Filters:** category (comma-separated for multiple, e.g. `pg,hostel`), intent, city (case-insensitive partial), q (general search), min/max price, owner_id, gender_preference.
     **Sorting:** newest (default), price_asc, price_desc.
     """
     service = PropertyService(db)
@@ -98,6 +99,7 @@ async def list_properties(
         lat=lat,
         lng=lng,
         radius=radius,
+        gender_preference=gender_preference,
         page=page,
         limit=limit,
     )

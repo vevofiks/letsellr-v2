@@ -37,7 +37,7 @@ interface PropertyType {
 const PROPERTY_TYPES: PropertyType[] = [
   { slug: "apartment", label: "Flat & Apartment" },
   { slug: "villa_house", label: "House & Villa" },
-  { slug: "pg,hostel", label: "PGs & Hostel" },
+  { slug: "pg_hostel", label: "PGs & Hostel" },
   { slug: "commercial", label: "Commercial" },
   { slug: "land", label: "Land" },
   { slug: "coworking_space", label: "Coworking Space" },
@@ -46,7 +46,7 @@ const PROPERTY_TYPES: PropertyType[] = [
 function getCategoryIconName(slug: string) {
   if (slug === "villa_house") return "material-symbols:holiday-village-outline";
   if (slug === "apartment") return "mingcute:building-2-fill";
-  if (slug === "pg,hostel") return "osmic:hostel-14";
+  if (slug === "pg_hostel") return "osmic:hostel-14";
   if (slug === "commercial") return "hugeicons:office";
   if (slug === "land") return "material-symbols-light:landscape";
   if (slug === "coworking_space") return "streamline-ultimate:office-desk-2";
@@ -172,7 +172,8 @@ export function SearchBarModal({ open, onClose, activeTab }: { open: boolean; on
                 }
             )
             : [];
-          setSuggestions(normalised.slice(0, 6));
+          const maxSuggestions = activeTab === "agent" ? 6 : 5;
+          setSuggestions(normalised.slice(0, maxSuggestions));
           setShowSuggestions(true);
         }
       } catch {

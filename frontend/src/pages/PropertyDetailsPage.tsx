@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { useNavigate, useParams, Link } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
@@ -30,7 +30,7 @@ import {
   HelpCircle,
   MessageSquare,
   Clock,
-  Shield,
+
   Play,
   Eye,
   Mail,
@@ -42,6 +42,7 @@ import {
   Share2,
   CheckCircle2,
   X,
+  User,
 } from "lucide-react";
 
 const getYoutubeEmbedUrl = (url: string | undefined): string | null => {
@@ -73,7 +74,7 @@ export const PropertyDetailsPage: React.FC = () => {
   const confirm = useConfirm();
 
   const [property, setProperty] = useState<any | null>(null);
-  const [agency, setAgency] = useState<any | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [relatedProperties, setRelatedProperties] = useState<any[]>([]);
   const [showFullDescription, setShowFullDescription] = useState(false);
@@ -381,22 +382,6 @@ export const PropertyDetailsPage: React.FC = () => {
     fetchRelated();
   }, [property]);
 
-  // Fetch Agency Details if applicable
-  useEffect(() => {
-    const fetchAgencyDetails = async () => {
-      if (property && property.owner_role === "agency" && property.owner_id) {
-        try {
-          const res = await api.get(`/api/agencies/${property.owner_id}`);
-          setAgency(res.data);
-        } catch (err) {
-          console.error("Failed to load agency details", err);
-        }
-      } else {
-        setAgency(null);
-      }
-    };
-    fetchAgencyDetails();
-  }, [property]);
 
   // Leaflet Map Initialization
   useEffect(() => {
@@ -531,7 +516,11 @@ export const PropertyDetailsPage: React.FC = () => {
     property.furnishing.toLowerCase() !== "none" &&
     property.furnishing.toLowerCase() !== "not specified"
   );
-  const hasAnySpec = hasBed || hasBath || hasArea || hasFurnish;
+  const hasGenderPref = Boolean(
+    property.gender_preference &&
+    property.gender_preference !== "any"
+  );
+  const hasAnySpec = hasBed || hasBath || hasArea || hasFurnish || hasGenderPref;
 
   const isPgOrHostelCategory = ["pg", "hostel", "pg_hostel"].includes(property.category);
   const roomSharingOptions: { sharing: number; price: number; vacancy: number }[] =
@@ -632,7 +621,7 @@ export const PropertyDetailsPage: React.FC = () => {
             <button
               onClick={handleShareLink}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200/80 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-2xs cursor-pointer active:scale-95"
-            >
+            >title
               <Share2 className="h-3.5 w-3.5 text-slate-500" />
               <span>Share</span>
             </button>
@@ -745,6 +734,11 @@ export const PropertyDetailsPage: React.FC = () => {
                 <span className="bg-slate-900 text-white px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
                   For {property.intent === "buy" ? "Sale" : property.intent === "rent" ? "Rent" : "Lease"}
                 </span>
+                {["pg", "hostel", "pg_hostel"].includes(property.category) && property.gender_preference && (
+                  <span className="bg-indigo-50 border border-indigo-200/50 text-indigo-700 px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+                    {property.gender_preference === "ladies" ? "Ladies Only" : property.gender_preference === "men" ? "Men Only" : property.gender_preference === "family" ? "Family Only" : "Any Gender"}
+                  </span>
+                )}
               </div>
 
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 leading-tight m-0 tracking-tight">
@@ -783,61 +777,53 @@ export const PropertyDetailsPage: React.FC = () => {
               )}
             </div>
 
-            {/* Mobile Pricing Widget (Visible on phone view directly under address) */}
-            <div className="block lg:hidden my-2">
-              <Card className="border border-slate-200/80 bg-white shadow-md rounded-2xl p-5 relative overflow-hidden space-y-4">
-                {/* Header */}
-                <div className="space-y-1 border-b border-slate-100 pb-3">
-                  <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Property Price</span>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-black text-[#0B6E4F]">
-                      {formatPrice(property.price, property.price_unit)}
-                    </span>
-                  </div>
+            {/* Inline Detailed Pricing (Mobile only) */}
+            <div className="block lg:hidden my-4 space-y-4">
+              {/* Total Calculation */}
+              <div className="space-y-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 shadow-2xs">
+                <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
+                  <span>Base Price:</span>
+                  <span className="font-bold text-slate-800">{formatPrice(property.price, property.price_unit)}</span>
                 </div>
-
-                {/* Total Calculation */}
-                <div className="space-y-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+                {property.deposit ? (
                   <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
-                    <span>Base Price:</span>
-                    <span className="font-bold text-slate-800">{formatPrice(property.price, property.price_unit)}</span>
+                    <span>Security Deposit:</span>
+                    <span className="font-bold text-slate-800">₹{property.deposit.toLocaleString()}</span>
                   </div>
-                  {property.deposit ? (
-                    <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
-                      <span>Security Deposit:</span>
-                      <span className="font-bold text-slate-800">₹{property.deposit.toLocaleString()}</span>
-                    </div>
-                  ) : null}
-                  <div className="flex justify-between items-center pt-2 font-black text-sm text-slate-900 border-t border-slate-200/60">
-                    <span>Estimated Total:</span>
-                    <span className="text-base font-extrabold text-[#0B6E4F]">
-                      {formatPrice(property.price + (property.deposit || 0), property.price_unit)}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Room Sharing & Vacancy (PG/Hostel Only) */}
-                {hasRoomSharing && <RoomSharingVacancy />}
-
-                {/* Action Buttons */}
-                <div className="pt-1">
-                  <Button
-                    onClick={handleWhatsAppContact}
-                    className="w-full bg-[#23D283] hover:bg-[#11995E] text-white font-extrabold py-6 text-sm rounded-xl flex items-center justify-center gap-2 cursor-pointer shadow-md transition-all active:scale-98"
-                  >
-                    <MessageSquare className="h-4.5 w-4.5" />
-                    Chat on WhatsApp
-                  </Button>
-                </div>
-
-                {/* Verified listing note */}
-                <div className="pt-2 border-t border-slate-100 flex items-start gap-2 text-xs text-slate-500 font-medium">
-                  <Clock className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                  <span>
-                    High interest listing in {property.location_city}. Contact early to schedule a visit.
+                ) : null}
+                <div className="flex justify-between items-center pt-2 font-black text-sm text-slate-900 border-t border-slate-200/60">
+                  <span>Estimated Total:</span>
+                  <span className="text-base font-extrabold text-[#0B6E4F]">
+                    {formatPrice(property.price + (property.deposit || 0), property.price_unit)}
                   </span>
                 </div>
-              </Card>
+              </div>
+
+              {/* Room Sharing & Vacancy (PG/Hostel Only) */}
+              {hasRoomSharing && (
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-4 shadow-2xs">
+                   <RoomSharingVacancy />
+                </div>
+              )}
+            </div>
+
+            {/* Mobile Floating Sticky Action Bar */}
+            <div className="block lg:hidden sticky top-20 z-50 my-4 pointer-events-none">
+              <div className="bg-white/95 backdrop-blur-xl border border-slate-200 shadow-md rounded-2xl p-3 flex items-center justify-between pointer-events-auto">
+                <div className="flex flex-col pl-2">
+                  <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Property Price</span>
+                  <span className="text-xl font-black text-[#0B6E4F] leading-tight">
+                    {formatPrice(property.price, property.price_unit)}
+                  </span>
+                </div>
+                <Button
+                  onClick={handleWhatsAppContact}
+                  className="bg-[#23D283] hover:bg-[#11995E] text-white font-extrabold px-6 py-5 text-sm rounded-xl flex items-center gap-2 shadow-md active:scale-95 transition-all cursor-pointer"
+                >
+                  <MessageSquare className="h-4.5 w-4.5" />
+                  Chat Now
+                </Button>
+              </div>
             </div>
 
             {/* Key Specs Cards Grid */}
@@ -878,6 +864,15 @@ export const PropertyDetailsPage: React.FC = () => {
                         <span className="h-1.5 w-1.5 bg-emerald-600 rounded-full" />
                       </div>
                       <span>{property.furnishing}</span>
+                    </div>
+                  </div>
+                )}
+                {hasGenderPref && (
+                  <div className={specCardClass}>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Allowed For</span>
+                    <div className="flex items-center gap-2 text-slate-900 font-black text-sm capitalize">
+                      <User className="h-4 w-4 text-[#0B6E4F] shrink-0" />
+                      <span>{property.gender_preference === "ladies" ? "Ladies Only" : property.gender_preference === "men" ? "Men Only" : property.gender_preference === "family" ? "Family Only" : "Any"}</span>
                     </div>
                   </div>
                 )}
@@ -1217,51 +1212,6 @@ export const PropertyDetailsPage: React.FC = () => {
               </div>
 
             </Card>
-
-            {/* Direct Owner or Agency Partner Card */}
-            {property.owner_role === "agency" && agency ? (
-              <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs space-y-4 text-left">
-                <div className="flex items-center gap-3">
-                  <div className="h-14 w-14 rounded-2xl bg-[#014645]/5 border border-slate-100 flex items-center justify-center text-[#014645] shrink-0 overflow-hidden relative shadow-2xs">
-                    {agency.logo_key ? (
-                      <img src={agency.logo_key} alt={agency.display_name} className="h-full w-full object-cover" />
-                    ) : (
-                      <Building2 className="h-7 w-7 text-[#23D283]" />
-                    )}
-                  </div>
-                  <div className="min-w-0 space-y-0.5">
-                    <span className="text-[9px] font-black uppercase text-amber-600 tracking-wider">Agency Partner</span>
-                    <h4 className="text-base font-black text-slate-900 truncate leading-snug my-0">
-                      {agency.display_name}
-                    </h4>
-                    {agency.verification_status === "verified" && (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                        <Shield className="h-3 w-3 fill-emerald-500 text-white" /> Verified Agency
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="border-t border-slate-100 pt-3">
-                  <Link
-                    to={`/agencies/${property.owner_id}`}
-                    className="w-full border border-slate-200 hover:bg-slate-50 text-slate-800 font-extrabold py-2.5 text-xs rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    View Agency Profile →
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center gap-3 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-2xs text-left">
-                <div className="p-3 rounded-2xl bg-[#23D283]/10 text-[#0B6E4F]">
-                  <Shield className="h-6 w-6" />
-                </div>
-                <div className="space-y-0.5">
-                  <p className="text-sm font-black text-slate-900">Direct Owner Listing</p>
-                  <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Zero Brokerage Commission</p>
-                </div>
-              </div>
-            )}
 
           </div>
 

@@ -101,6 +101,7 @@ export const ClientDashboard: React.FC = () => {
 
   // Advanced Filter state variables
   const [priceRange, setPriceRange] = useState<string>("all");
+  const [genderPreference, setGenderPreference] = useState<string>(() => sessionStorage.getItem("dashboard_genderPreference") || "any");
   const [sortBy, setSortBy] = useState<string>("newest");
   const [radius, setRadius] = useState<number>(20);
   const [limit, setLimit] = useState<number>(12);
@@ -185,7 +186,8 @@ export const ClientDashboard: React.FC = () => {
     sessionStorage.setItem("dashboard_category", category);
     sessionStorage.setItem("dashboard_searchMode", searchMode);
     sessionStorage.setItem("dashboard_searchQuery", searchQuery);
-  }, [intent, category, searchMode, searchQuery]);
+    sessionStorage.setItem("dashboard_genderPreference", genderPreference);
+  }, [intent, category, searchMode, searchQuery, genderPreference]);
 
   // Dynamic SEO title/description derived from active search filters
   const { seoTitle, seoDescription, seoCanonical, seoNoindex } = useMemo(() => {
@@ -673,6 +675,9 @@ export const ClientDashboard: React.FC = () => {
         if (category) params.category = category;
         if (city && !gpsActive) params.city = city;
         if (searchQuery && !gpsActive) params.q = searchQuery;
+        if (genderPreference && genderPreference !== "any") {
+          params.gender_preference = genderPreference;
+        }
 
         // Map price range dropdown value to min_price and max_price API parameters
         if (priceRange === "under-50k") {
@@ -730,7 +735,7 @@ export const ClientDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [searchMode, intent, category, city, searchQuery, lat, lng, gpsActive, page, priceRange, sortBy, radius, limit]);
+  }, [searchMode, intent, category, city, searchQuery, lat, lng, gpsActive, page, priceRange, sortBy, radius, limit, genderPreference]);
 
   const handleDrawerScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
@@ -833,6 +838,7 @@ export const ClientDashboard: React.FC = () => {
     setCity("");
     setSearchCity("");
     setPriceRange("all");
+    setGenderPreference("any");
     setSortBy("newest");
     setRadius(20);
     setLimit(12);
@@ -872,6 +878,8 @@ export const ClientDashboard: React.FC = () => {
       </CardContent>
     </Card>
   );
+
+  console.log(category)
 
   return (
     <div className={cn(
@@ -1040,6 +1048,7 @@ export const ClientDashboard: React.FC = () => {
                       </div>
 
                       Type
+                      {/* Type */}
                       <div className="flex flex-col gap-1 text-left">
                         <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Type</span>
                         <Select
@@ -1062,6 +1071,18 @@ export const ClientDashboard: React.FC = () => {
                           </SelectContent>
                         </Select>
                       </div>
+
+                      {/* Gender Preference (PG/Hostel only) */}
+                      {["pg", "hostel", "pg_hostel"].includes(category) && (
+                        <div className="flex flex-col gap-1 text-left col-span-2 mt-1">
+                          <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Gender Pref.</span>
+                          <div className="flex bg-slate-200/50 p-0.5 rounded-md w-full">
+                            <button type="button" onClick={() => { setGenderPreference("any"); setPage(1); }} className={cn("flex-1 text-[10px] font-bold py-1 rounded-sm transition-colors", genderPreference === "any" ? "bg-white shadow-sm text-brand-green" : "text-slate-500 hover:text-slate-700")}>All</button>
+                            <button type="button" onClick={() => { setGenderPreference("men"); setPage(1); }} className={cn("flex-1 text-[10px] font-bold py-1 rounded-sm transition-colors", genderPreference === "men" ? "bg-white shadow-sm text-brand-green" : "text-slate-500 hover:text-slate-700")}>Mens</button>
+                            <button type="button" onClick={() => { setGenderPreference("ladies"); setPage(1); }} className={cn("flex-1 text-[10px] font-bold py-1 rounded-sm transition-colors", genderPreference === "ladies" ? "bg-white shadow-sm text-brand-green" : "text-slate-500 hover:text-slate-700")}>Ladies</button>
+                          </div>
+                        </div>
+                      )}
 
                       {/* Price */}
                       <div className="flex flex-col gap-1 text-left col-span-2">
@@ -1268,15 +1289,10 @@ export const ClientDashboard: React.FC = () => {
                               {prop.intent === "rent" && <span className="text-[9px] font-medium text-slate-400">/ month</span>}
                             </span>
 
-                            {prop.owner_role === "agency" ? (
-                              <span className="inline-flex items-center gap-0.5 rounded-md bg-amber-50 border border-amber-100/50 px-1.5 py-0.5 text-[8px] font-black text-amber-700 uppercase tracking-wider">
-                                <Building2 className="h-2.5 w-2.5" /> Agency
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-0.5 rounded-md bg-emerald-50 border border-emerald-100/50 px-1.5 py-0.5 text-[8px] font-black text-emerald-700 uppercase tracking-wider">
-                                <Shield className="h-2.5 w-2.5" /> Owner
-                              </span>
-                            )}
+                         
+                          <span className="inline-flex items-center gap-0.5 rounded-md bg-emerald-50 border border-emerald-100/50 px-1.5 py-0.5 text-[8px] font-black text-emerald-700 uppercase tracking-wider">
+                            <Shield className="h-2.5 w-2.5" /> Verified
+                          </span>
                           </div>
                         </div>
                       </div>
@@ -1307,7 +1323,7 @@ export const ClientDashboard: React.FC = () => {
         </div>
       ) : (
         /* Main Container */
-        <main className="mx-auto max-w-9xl px-5 py-8 pb-5 sm:pb-5">
+        <main className="mx-auto max-w-9xl px-5 py-2 pb-5 sm:pb-5">
 
           {/* Full-width Hero Banner Section */}
           {/* <div 
@@ -1326,7 +1342,7 @@ export const ClientDashboard: React.FC = () => {
         </div> */}
 
           {/* Custom Search Filter Bar from Reference UI */}
-          <div className="w-full relative z-20 mt-6 pb-6 border-b border-slate-200">
+          <div className="w-full relative z-20 mt-4 pb-4 border-b border-slate-200">
             <form onSubmit={handleSearchSubmit} className="w-full">
               <div className="flex flex-col lg:flex-row lg:items-end gap-3 w-full justify-between">
 
@@ -1389,6 +1405,7 @@ export const ClientDashboard: React.FC = () => {
                   </Select>
                 </div>
 
+              
                 {/* Location Input - Hidden on mobile, shown on lg screens */}
                 <div className="hidden lg:flex flex-col text-left min-w-42.5 flex-1">
                   <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">Location</label>
@@ -1426,9 +1443,6 @@ export const ClientDashboard: React.FC = () => {
                 <div className="flex items-end gap-3 flex-1 min-w-0 w-full lg:contents">
                   {/* Find Specific Property Input */}
                   <div ref={topSearchRef} className="flex-1 min-w-0 lg:min-w-35 flex flex-col text-left relative">
-                    <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">
-                      {searchMode === "agencies" ? "Find Agencies by Location" : "Find Specific Property"}
-                    </label>
                     <div className={cn(
                       "flex items-center gap-1.5 bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 transition-all shadow-sm relative",
                       "focus-within:ring-2 focus-within:ring-brand-green/20 focus-within:border-brand-green"
@@ -1618,18 +1632,42 @@ export const ClientDashboard: React.FC = () => {
                                 <Select value={category || undefined} onValueChange={(val) => { setCategory(val === "all" || !val ? "" : val); setPage(1); }}>
                                   <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
                                     <SelectValue placeholder="All Types">
-                                      {category ? (propertyTypes.find(t => t.slug === category || (t.slug === "pg_hostel" && category === "pg,hostel"))?.label || category.replace("_", " ")) : "All Types"}
+                                      {category ? (propertyTypes.find(t => t.slug === category)?.label || category.replace("_", " ")) : "All Types"}
                                     </SelectValue>
                                   </SelectTrigger>
                                   <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
                                     <SelectItem value="all">All Types</SelectItem>
                                     {propertyTypes.map((t: any) => (
-                                      <SelectItem key={t.slug} value={t.slug === "pg_hostel" ? "pg,hostel" : t.slug}>{t.label}</SelectItem>
+                                      <SelectItem key={t.slug} value={t.slug}>{t.label}</SelectItem>
                                     ))}
                                   </SelectContent>
                                 </Select>
                               </div>
                             </div>
+
+                            {/* Gender / Tenant Preference */}
+                            {category && (
+                              <div className="flex flex-col gap-1 lg:hidden">
+                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                                  {["pg", "hostel", "pg_hostel"].includes(category) ? "Gender Preference" : "Tenant Preference"}
+                                </span>
+                                <div className="flex bg-slate-100 p-0.5 rounded-lg w-full flex-wrap">
+                                  <button type="button" onClick={() => { setGenderPreference("any"); setPage(1); }} className={cn("flex-1 text-xs font-bold py-1.5 px-2 rounded-md transition-colors whitespace-nowrap", genderPreference === "any" ? "bg-white shadow-sm text-brand-green" : "text-slate-500 hover:text-slate-700")}>All</button>
+                                  {["pg", "hostel", "pg_hostel"].includes(category) ? (
+                                    <>
+                                      <button type="button" onClick={() => { setGenderPreference("men"); setPage(1); }} className={cn("flex-1 text-xs font-bold py-1.5 px-2 rounded-md transition-colors whitespace-nowrap", genderPreference === "men" ? "bg-white shadow-sm text-brand-green" : "text-slate-500 hover:text-slate-700")}>Men</button>
+                                      <button type="button" onClick={() => { setGenderPreference("ladies"); setPage(1); }} className={cn("flex-1 text-xs font-bold py-1.5 px-2 rounded-md transition-colors whitespace-nowrap", genderPreference === "ladies" ? "bg-white shadow-sm text-brand-green" : "text-slate-500 hover:text-slate-700")}>Ladies</button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <button type="button" onClick={() => { setGenderPreference("family"); setPage(1); }} className={cn("flex-1 text-xs font-bold py-1.5 px-2 rounded-md transition-colors whitespace-nowrap", genderPreference === "family" ? "bg-white shadow-sm text-brand-green" : "text-slate-500 hover:text-slate-700")}>Family</button>
+                                      <button type="button" onClick={() => { setGenderPreference("bachelors"); setPage(1); }} className={cn("flex-1 text-xs font-bold py-1.5 px-2 rounded-md transition-colors whitespace-nowrap", genderPreference === "bachelors" ? "bg-white shadow-sm text-brand-green" : "text-slate-500 hover:text-slate-700")}>Bachelors</button>
+                                      <button type="button" onClick={() => { setGenderPreference("couple"); setPage(1); }} className={cn("flex-1 text-xs font-bold py-1.5 px-2 rounded-md transition-colors whitespace-nowrap", genderPreference === "couple" ? "bg-white shadow-sm text-brand-green" : "text-slate-500 hover:text-slate-700")}>Couples</button>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            )}
 
                             {/* Mobile-only: Price + Location in 2-col grid */}
                             <div className="grid grid-cols-2 gap-2 lg:hidden">
@@ -1794,31 +1832,178 @@ export const ClientDashboard: React.FC = () => {
           )}
 
           {/* Title Grid Section */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6 mt-10 border-b border-slate-200/60 pb-4">
-            <div className="text-left">
-              <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight capitalize">
-                {searchMode === "agencies" ? "Verified Agencies" : (category ? category.replace("_", " / ") : "Residence")}{city ? ` in ${city}` : ""}
-              </h2>
-              <p className="text-slate-500 text-xs mt-0.5 font-semibold">
-                {searchMode === "agencies" ? (
-                  <>We found <span className="font-extrabold text-slate-900">{filteredAgencies.length}</span> {filteredAgencies.length === 1 ? "agency" : "agencies"}</>
-                ) : (
-                  <>We found <span className="font-extrabold text-slate-900">{filteredProperties.length}</span> {filteredProperties.length === 1 ? "property" : "properties"}</>
-                )}
-              </p>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 mt-6 border-b border-slate-200/60 pb-4">
+            <div className="flex items-center justify-between w-full md:w-auto gap-4">
+              <div className="text-left">
+                <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight capitalize">
+                  {searchMode === "agencies" ? "Verified Agencies" : (category ? category.replace("_", " / ") : "Residence")}{city ? ` in ${city}` : ""}
+                </h2>
+                <p className="text-slate-500 text-xs mt-0.5 font-semibold">
+                  {searchMode === "agencies" ? (
+                    <>We found <span className="font-extrabold text-slate-900">{filteredAgencies.length}</span> {filteredAgencies.length === 1 ? "agency" : "agencies"}</>
+                  ) : (
+                    <>We found <span className="font-extrabold text-slate-900">{filteredProperties.length}</span> {filteredProperties.length === 1 ? "property" : "properties"}</>
+                  )}
+                </p>
+              </div>
+
+              {/* Mobile Gender Preference */}
+              {searchMode !== "agencies" && category && (
+                <div className="flex md:hidden bg-slate-100/80 border border-slate-200/50 p-1 rounded-lg shrink-0 overflow-x-auto scrollbar-none">
+                  <button
+                    type="button"
+                    onClick={() => { setGenderPreference("any"); setPage(1); }}
+                    className={cn(
+                      "px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold rounded-md transition-colors whitespace-nowrap",
+                      genderPreference === "any" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
+                    )}
+                  >
+                    All
+                  </button>
+                  {["pg", "hostel", "pg_hostel"].includes(category) ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => { setGenderPreference("men"); setPage(1); }}
+                        className={cn(
+                          "px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold rounded-md transition-colors whitespace-nowrap",
+                          genderPreference === "men" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
+                        )}
+                      >
+                        Men
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setGenderPreference("ladies"); setPage(1); }}
+                        className={cn(
+                          "px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold rounded-md transition-colors whitespace-nowrap",
+                          genderPreference === "ladies" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
+                        )}
+                      >
+                        Ladies
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => { setGenderPreference("family"); setPage(1); }}
+                        className={cn(
+                          "px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold rounded-md transition-colors whitespace-nowrap",
+                          genderPreference === "family" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
+                        )}
+                      >
+                        Family
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setGenderPreference("bachelors"); setPage(1); }}
+                        className={cn(
+                          "px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold rounded-md transition-colors whitespace-nowrap",
+                          genderPreference === "bachelors" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
+                        )}
+                      >
+                        Bachelors
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setGenderPreference("couple"); setPage(1); }}
+                        className={cn(
+                          "px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold rounded-md transition-colors whitespace-nowrap",
+                          genderPreference === "couple" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
+                        )}
+                      >
+                        Couples
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end shrink-0">
-              {((searchMode === "agencies" && agencies.length > 0) || (searchMode !== "agencies" && properties.length > 0)) && (
-                <span className="text-[10px] text-brand-green px-2.5 py-1 rounded-full font-black uppercase tracking-wider">
-                  PAGE {page}
-                </span>
-              )}
-
+            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end shrink-0 mt-3 md:mt-0">
               {searchMode !== "agencies" && (
-                <div className="flex items-center gap-1 text-xs font-semibold text-slate-500 shrink-0 whitespace-nowrap">
-                  <span className="shrink-0">Sort By:</span>
-                  <Select
+                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+                  {properties.length > 0 && (
+                    <span className="text-[10px] text-brand-green px-2.5 py-1 rounded-full font-black uppercase tracking-wider shrink-0">
+                      PAGE {page}
+                    </span>
+                  )}
+                  {/* Desktop Gender Preference */}
+                  {category && (
+                    <div className="hidden md:flex bg-slate-100/80 border border-slate-200/50 p-1 rounded-lg shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => { setGenderPreference("any"); setPage(1); }}
+                        className={cn(
+                          "px-3 py-1.5 text-xs font-bold rounded-md transition-colors",
+                          genderPreference === "any" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
+                        )}
+                      >
+                        All
+                      </button>
+                      {["pg", "hostel", "pg_hostel"].includes(category) ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => { setGenderPreference("men"); setPage(1); }}
+                            className={cn(
+                              "px-3 py-1.5 text-xs font-bold rounded-md transition-colors",
+                              genderPreference === "men" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
+                            )}
+                          >
+                            Men
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setGenderPreference("ladies"); setPage(1); }}
+                            className={cn(
+                              "px-3 py-1.5 text-xs font-bold rounded-md transition-colors",
+                              genderPreference === "ladies" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
+                            )}
+                          >
+                            Ladies
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => { setGenderPreference("family"); setPage(1); }}
+                            className={cn(
+                              "px-3 py-1.5 text-xs font-bold rounded-md transition-colors",
+                              genderPreference === "family" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
+                            )}
+                          >
+                            Family
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setGenderPreference("bachelors"); setPage(1); }}
+                            className={cn(
+                              "px-3 py-1.5 text-xs font-bold rounded-md transition-colors",
+                              genderPreference === "bachelors" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
+                            )}
+                          >
+                            Bachelors
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setGenderPreference("couple"); setPage(1); }}
+                            className={cn(
+                              "px-3 py-1.5 text-xs font-bold rounded-md transition-colors",
+                              genderPreference === "couple" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
+                            )}
+                          >
+                            Couples
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1 text-xs font-semibold text-slate-500 shrink-0 whitespace-nowrap ml-auto md:ml-0">
+                    <span className="shrink-0">Sort By:</span>
+                    <Select
                     value={sortBy || "newest"}
                     onValueChange={(val) => {
                       setSortBy(val || "newest");
@@ -1836,6 +2021,7 @@ export const ClientDashboard: React.FC = () => {
                       <SelectItem value="price_desc">High to Low</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
                 </div>
               )}
             </div>
@@ -2137,6 +2323,7 @@ export const ClientDashboard: React.FC = () => {
                   <Card
                     key={prop.id}
                     className="border border-slate-100 bg-white hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col group p-3.5 rounded-xl"
+                    onClick={() => handleOpenDetails(prop)}
                   >
                     {/* Aspect image box */}
                     <div className="h-48 w-full rounded-lg overflow-hidden relative shrink-0">
@@ -2148,7 +2335,7 @@ export const ClientDashboard: React.FC = () => {
                       />
 
                       {/* Absolute tags matching Webflow theme */}
-                      <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+                      <div className="absolute bottom-3 left-3 flex flex-col gap-1.5">
                         <span className="inline-flex rounded-[6px] bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-800 shadow-sm uppercase tracking-wider">
                           For {prop.intent === "buy" ? "Sale" : prop.intent === "rent" ? "Rent" : "Lease"}
                         </span>
@@ -2160,19 +2347,11 @@ export const ClientDashboard: React.FC = () => {
                         </span>
                       </div>
 
-                      {prop.owner_role === "agency" ? (
-                        <div className="absolute bottom-3 left-3">
-                          <span className="inline-flex items-center gap-1 rounded bg-amber-600 text-white px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest shadow-sm">
-                            Agency
-                          </span>
-                        </div>
-                      ) : (
-                        <div className="absolute bottom-3 left-3">
-                          <span className="inline-flex items-center gap-1 rounded bg-emerald-600 text-white px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest shadow-sm">
-                            Direct Owner
-                          </span>
-                        </div>
-                      )}
+                      <div className="absolute top-3 left-3">
+                        <span className="inline-flex items-center gap-1 rounded bg-amber-600 text-white px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest shadow-sm">
+                          verified 
+                        </span>
+                      </div>
                     </div>
 
                     <CardHeader className="pb-1.5 flex-1 flex flex-col justify-between px-1 pt-3.5 space-y-0">
