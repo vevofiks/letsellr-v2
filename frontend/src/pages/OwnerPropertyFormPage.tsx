@@ -7,7 +7,7 @@ import {
   Save, 
   Send, 
   MapPin, 
-  Lock, 
+ 
   Image as ImageIcon, 
   ArrowLeft,
   Check,
@@ -72,6 +72,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
   const [bedrooms, setBedrooms] = useState<number | "">("");
   const [bathrooms, setBathrooms] = useState<number | "">("");
   const [furnishing, setFurnishing] = useState<"unfurnished" | "semi" | "furnished">("unfurnished");
+  const [genderPreference, setGenderPreference] = useState<string>("any");
 
   const [address, setAddress] = useState("");
   const [locationArea, setLocationArea] = useState("");
@@ -111,7 +112,15 @@ export const OwnerPropertyFormPage: React.FC = () => {
   };
 
   // Accordion open/close state
-  const [specsOpen, setSpecsOpen] = useState(false);
+  const [specsOpen, setSpecsOpen] = useState(true);
+
+  useEffect(() => {
+    if (["pg", "hostel", "pg_hostel"].includes(category)) {
+      setSpecsOpen(false);
+    } else {
+      setSpecsOpen(true);
+    }
+  }, [category]);
 
   // Map and Search states
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -345,6 +354,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
       setBedrooms(data.bedrooms || "");
       setBathrooms(data.bathrooms || "");
       setFurnishing(data.furnishing || "unfurnished");
+      setGenderPreference(data.gender_preference || "any");
       
       setAddress(data.location_address || "");
       setLocationArea(data.location_area || "");
@@ -535,6 +545,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
         bedrooms: bedrooms ? Number(bedrooms) : undefined,
         bathrooms: bathrooms ? Number(bathrooms) : undefined,
         furnishing,
+        gender_preference: genderPreference !== "any" ? genderPreference : "any",
         amenities,
         photos: finalPhotos,
         extra_details: {
@@ -650,11 +661,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
             <div className="space-y-1.5 sm:col-span-1">
               <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
                 <span>Property Category</span>
-                {isOwner && (
-                  <span className="text-[10px] text-brand-green font-black flex items-center gap-1">
-                    <Lock className="h-3 w-3" /> Restricted
-                  </span>
-                )}
+
               </label>
 
               <div className="space-y-2">
@@ -692,6 +699,22 @@ export const OwnerPropertyFormPage: React.FC = () => {
                 <option value="lease">For Lease</option>
               </select>
             </div>
+
+            {/* Gender Preference (PG/Hostel Only) */}
+            {["pg", "hostel", "pg_hostel"].includes(category) && (
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-xs font-bold text-slate-700">Gender Preference</label>
+                <select
+                  value={genderPreference}
+                  onChange={(e) => setGenderPreference(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-brand-green/20"
+                >
+                  <option value="any">Any / No Restriction</option>
+                  <option value="men">Men Only</option>
+                  <option value="ladies">Ladies Only</option>
+                </select>
+              </div>
+            )}
 
             {/* Property Title */}
             <div className="space-y-1.5 sm:col-span-2">
@@ -892,6 +915,22 @@ export const OwnerPropertyFormPage: React.FC = () => {
                   <option value="furnished">Fully Furnished</option>
                 </select>
               </div>
+
+              {!["pg", "hostel", "pg_hostel"].includes(category) && (
+                <div className="flex flex-col justify-end gap-1.5">
+                  <label className="text-xs font-bold text-slate-700">Tenant Preference</label>
+                  <select
+                    value={genderPreference}
+                    onChange={(e) => setGenderPreference(e.target.value)}
+                    className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs font-bold text-slate-900"
+                  >
+                    <option value="any">Any / No Restriction</option>
+                    <option value="family">Family Only</option>
+                    <option value="bachelors">Bachelors Only</option>
+                    <option value="couple">Couples Allowed</option>
+                  </select>
+                </div>
+              )}
 
             </div>
           )}

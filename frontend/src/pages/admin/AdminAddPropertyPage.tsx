@@ -77,7 +77,8 @@ export const AdminAddPropertyPage: React.FC = () => {
   const [area, setArea] = useState<number | "">("");
   const [bedrooms, setBedrooms] = useState<number | "">("");
   const [bathrooms, setBathrooms] = useState<number | "">("");
-  const [furnishing, setFurnishing] = useState<"unfurnished" | "semi" | "furnished">("semi");
+  const [furnishing, setFurnishing] = useState<"unfurnished" | "semi" | "furnished">("unfurnished");
+  const [genderPreference, setGenderPreference] = useState<string>("any");
 
   const [address, setAddress] = useState("");
   const [locationArea, setLocationArea] = useState("");
@@ -119,7 +120,16 @@ export const AdminAddPropertyPage: React.FC = () => {
   };
 
 
-  const [specsOpen, setSpecsOpen] = useState(false);
+  const [specsOpen, setSpecsOpen] = useState(true);
+
+  // Set default specsOpen to true, except for PG/Hostel
+  useEffect(() => {
+    if (["pg", "hostel", "pg_hostel"].includes(category)) {
+      setSpecsOpen(false);
+    } else {
+      setSpecsOpen(true);
+    }
+  }, [category]);
 
   // ── Map ──
   const mapRef = useRef<HTMLDivElement | null>(null);
@@ -452,6 +462,7 @@ export const AdminAddPropertyPage: React.FC = () => {
           bedrooms: bedrooms ? Number(bedrooms) : undefined,
           bathrooms: bathrooms ? Number(bathrooms) : undefined,
           furnishing,
+          gender_preference: genderPreference,
           amenities,
           photos: finalPhotos,
           video_link: videoLink.trim() || undefined,
@@ -511,6 +522,7 @@ export const AdminAddPropertyPage: React.FC = () => {
       bedrooms,
       bathrooms,
       furnishing,
+      genderPreference,
       amenities,
       videoLink,
       availabilityStatus,
@@ -644,6 +656,22 @@ export const AdminAddPropertyPage: React.FC = () => {
               <option value="lease">For Lease</option>
             </select>
           </div>
+
+          {/* Gender Preference (PG/Hostel Only) */}
+          {["pg", "hostel", "pg_hostel"].includes(category) && (
+            <div className="space-y-1.5 sm:col-span-2">
+              <label className="text-xs font-bold text-slate-700">Gender Preference</label>
+              <select
+                value={genderPreference}
+                onChange={(e) => setGenderPreference(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-[#014645]/20"
+              >
+                <option value="any">Any / No Restriction</option>
+                <option value="men">Men Only</option>
+                <option value="ladies">Ladies Only</option>
+              </select>
+            </div>
+          )}
 
           <div className="space-y-1.5 sm:col-span-2">
             <label className="text-xs font-bold text-slate-700">Listing Title *</label>
@@ -795,6 +823,7 @@ export const AdminAddPropertyPage: React.FC = () => {
               ))}
             </div>
           )}
+
         </div>
       )}
 
@@ -848,11 +877,26 @@ export const AdminAddPropertyPage: React.FC = () => {
                 onChange={(e) => setFurnishing(e.target.value as "unfurnished" | "semi" | "furnished")}
                 className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs font-bold text-slate-900"
               >
+                <option value="unfurnished">Unfurnished</option>
                 <option value="semi">Semi-Furnished</option>
                 <option value="furnished">Fully Furnished</option>
-                <option value="unfurnished">Unfurnished</option>
               </select>
             </div>
+            {!["pg", "hostel", "pg_hostel"].includes(category) && (
+              <div className="flex flex-col justify-end gap-1.5">
+                <label className="text-xs font-bold text-slate-700">Tenant Preference</label>
+                <select
+                  value={genderPreference}
+                  onChange={(e) => setGenderPreference(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs font-bold text-slate-900"
+                >
+                  <option value="any">Any / No Restriction</option>
+                  <option value="family">Family Only</option>
+                  <option value="bachelors">Bachelors Only</option>
+                  <option value="couple">Couples Allowed</option>
+                </select>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -901,7 +945,7 @@ export const AdminAddPropertyPage: React.FC = () => {
               placeholder="e.g. Flat 4B, Skyline Ivy League, Seaport Airport Road"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
-              className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-[#014645]/20"
+              className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-[#014645]/20 capitalize"
             />
           </div>
           <div className="space-y-1.5">
