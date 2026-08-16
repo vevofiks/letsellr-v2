@@ -84,6 +84,7 @@ export const PropertyDetailsPage: React.FC = () => {
     mode: "login",
   });
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+  const [isSharingExpanded, setIsSharingExpanded] = useState(false);
 
   // Reviews State
   const [reviews, setReviews] = useState<any[]>([]);
@@ -536,34 +537,49 @@ export const PropertyDetailsPage: React.FC = () => {
         .filter(Boolean)
     : [];
 
-  const RoomSharingVacancy: React.FC = () => (
-    <div className="space-y-2 pt-1">
-      <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
-        <Bed className="h-3.5 w-3.5 text-[#0B6E4F]" /> Room Sharing & Vacancy
-      </span>
-      <div className="grid grid-cols-2 gap-2">
-        {roomSharingOptions.map((opt, idx) => (
-          <div key={idx} className="bg-slate-50 border border-slate-200/60 rounded-xl p-2.5 space-y-0.5">
-            <div className="flex items-center justify-between gap-1">
-              <span className="text-xs font-black text-slate-900">{opt.sharing} Sharing</span>
-              <span
-                className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md shrink-0 ${
-                  opt.vacancy > 0
-                    ? "bg-emerald-50 text-emerald-700"
-                    : "bg-rose-50 text-rose-600"
-                }`}
-              >
-                {opt.vacancy > 0 ? `${opt.vacancy} Vacant` : "Full"}
+  const RoomSharingVacancy: React.FC = () => {
+    const displayedOptions = isSharingExpanded ? roomSharingOptions : roomSharingOptions.slice(0, 2);
+    const hasMore = roomSharingOptions.length > 2;
+
+    return (
+      <div className="space-y-2 pt-1">
+        <div className="flex items-center justify-between">
+          <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1.5">
+            <Bed className="h-3.5 w-3.5 text-[#0B6E4F]" /> Room Sharing & Vacancy
+          </span>
+          {hasMore && (
+            <button
+              onClick={() => setIsSharingExpanded(!isSharingExpanded)}
+              className="text-[10px] font-extrabold text-[#0B6E4F] hover:text-[#014645] transition-colors cursor-pointer"
+            >
+              {isSharingExpanded ? "Show Less" : "See All"}
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {displayedOptions.map((opt, idx) => (
+            <div key={idx} className="bg-slate-50 border border-slate-200/60 rounded-xl p-2.5 space-y-0.5">
+              <div className="flex items-center justify-between gap-1">
+                <span className="text-xs font-black text-slate-900">{opt.sharing} Sharing</span>
+                <span
+                  className={`text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md shrink-0 ${
+                    opt.vacancy > 0
+                      ? "bg-emerald-50 text-emerald-700"
+                      : "bg-rose-50 text-rose-600"
+                  }`}
+                >
+                  {opt.vacancy > 0 ? `${opt.vacancy} Vacant` : "Full"}
+                </span>
+              </div>
+              <span className="text-[11px] font-bold text-slate-500 block">
+                ₹{opt.price?.toLocaleString()} / bed / mo
               </span>
             </div>
-            <span className="text-[11px] font-bold text-slate-500 block">
-              ₹{opt.price?.toLocaleString()} / bed / mo
-            </span>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const specCardClass = "space-y-1 w-full sm:w-auto pt-3 sm:pt-0 sm:px-6 border-t sm:border-t-0 sm:border-l border-slate-100 first:border-0 first:pt-0 first:sm:pl-0 last:sm:pr-0";
 
@@ -621,7 +637,7 @@ export const PropertyDetailsPage: React.FC = () => {
             <button
               onClick={handleShareLink}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200/80 text-xs font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-2xs cursor-pointer active:scale-95"
-            >title
+            >
               <Share2 className="h-3.5 w-3.5 text-slate-500" />
               <span>Share</span>
             </button>
@@ -734,20 +750,25 @@ export const PropertyDetailsPage: React.FC = () => {
                 <span className="bg-slate-900 text-white px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
                   For {property.intent === "buy" ? "Sale" : property.intent === "rent" ? "Rent" : "Lease"}
                 </span>
-                {["pg", "hostel", "pg_hostel"].includes(property.category) && property.gender_preference && (
+                {["pg", "hostel", "pg_hostel"].includes(property.category) && property.gender_preference && property.gender_preference !== "any" && (
                   <span className="bg-indigo-50 border border-indigo-200/50 text-indigo-700 px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
-                    {property.gender_preference === "ladies" ? "Ladies Only" : property.gender_preference === "men" ? "Men Only" : property.gender_preference === "family" ? "Family Only" : "Any Gender"}
+                    {property.gender_preference === "ladies" ? "Ladies Only" : property.gender_preference === "men" ? "Men Only" : "Any Gender"}
+                  </span>
+                )}
+                {["villa_house", "apartment", "flat_apartment"].includes(property.category) && property.gender_preference && property.gender_preference !== "any" && (
+                  <span className="bg-amber-50 border border-amber-200/50 text-amber-700 px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+                    {property.gender_preference === "family" ? "Family Only" : property.gender_preference === "bachelors" ? "Bachelors Only" : property.gender_preference === "couple" ? "Couples Only" : property.gender_preference}
                   </span>
                 )}
               </div>
 
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 leading-tight m-0 tracking-tight">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 leading-tight m-0 tracking-tight capitalize">
                 {property.title}
               </h1>
 
               <div className="text-sm font-semibold text-slate-500 flex flex-wrap items-center gap-1.5">
-                <MapPin className="h-4 w-4 text-rose-500 shrink-0" />
-                <span>
+                <MapPin className="h-4 w-4 inline text-rose-500 shrink-0" />
+                <span className="capitalize">
                   {[
                     property.location_address,
                     property.location_area,
