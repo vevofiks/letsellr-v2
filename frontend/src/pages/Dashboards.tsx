@@ -733,7 +733,7 @@ export const ClientDashboard: React.FC = () => {
           });
         }
 
-        const newTotal = res.data.total ?? newItems.length;
+
         const newTotalPages = res.data.total_pages ?? (newItems.length < limit ? page : page + 1);
         setTotalPages(newTotalPages);
 
@@ -1060,7 +1060,6 @@ export const ClientDashboard: React.FC = () => {
                           <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-50">
                             <SelectItem value="all">All Types</SelectItem>
                             {propertyTypes.map((t: any) => (
-                              console.log(t.slug,"console slugs"),
                               <SelectItem key={t.slug} value={t.slug}>{t.label}</SelectItem>
                             ))}
                           </SelectContent>
