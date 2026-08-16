@@ -98,7 +98,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
           {[
             { val: "100%", label: "Verified Owners" },
             { val: "10K", label: "Happy Clients" },
-            { val: "15+", label: "Cities" },
+            { val: "01+", label: "Cities" },
           ].map((s) => (
             <div key={s.label} className="text-right">
               <div className="font-extrabold tracking-tighter text-[#0F0F11]" style={{ fontSize: "clamp(2rem, 4.5vw, 4rem)" }}>{s.val}</div>

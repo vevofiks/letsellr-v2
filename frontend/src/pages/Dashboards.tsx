@@ -97,7 +97,10 @@ export const ClientDashboard: React.FC = () => {
   });
   const [gpsLoading, setGpsLoading] = useState(false);
   const [detectedLocation, setDetectedLocation] = useState<string>("");
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState<number>(() => {
+    const saved = sessionStorage.getItem("dashboard_page");
+    return saved ? parseInt(saved, 10) : 1;
+  });
 
   // Advanced Filter state variables
   const [priceRange, setPriceRange] = useState<string>("all");
@@ -121,6 +124,7 @@ export const ClientDashboard: React.FC = () => {
   const [drawerOpen, setDrawerOpen] = useState<boolean>(true);
   const [loadingMore, setLoadingMore] = useState<boolean>(false);
   const [hasMore, setHasMore] = useState<boolean>(true);
+  const [totalPages, setTotalPages] = useState<number>(1);
 
   const [searchMode, setSearchMode] = useState<"properties" | "agencies">(
     () => {
@@ -188,6 +192,11 @@ export const ClientDashboard: React.FC = () => {
     sessionStorage.setItem("dashboard_searchQuery", searchQuery);
     sessionStorage.setItem("dashboard_genderPreference", genderPreference);
   }, [intent, category, searchMode, searchQuery, genderPreference]);
+
+  // Persist current page so it survives navigation away and back
+  useEffect(() => {
+    sessionStorage.setItem("dashboard_page", String(page));
+  }, [page]);
 
   // Dynamic SEO title/description derived from active search filters
   const { seoTitle, seoDescription, seoCanonical, seoNoindex } = useMemo(() => {
@@ -672,7 +681,13 @@ export const ClientDashboard: React.FC = () => {
           limit,
         };
         if (intent) params.intent = intent;
-        if (category) params.category = category;
+        if (category) {
+          if (category === "apartment" || category === "flat_apartment") {
+            params.category = "apartment,flat_apartment";
+          } else {
+            params.category = category;
+          }
+        }
         if (city && !gpsActive) params.city = city;
         if (searchQuery && !gpsActive) params.q = searchQuery;
         if (genderPreference && genderPreference !== "any") {
@@ -718,7 +733,11 @@ export const ClientDashboard: React.FC = () => {
           });
         }
 
-        if (newItems.length < limit) {
+        const newTotal = res.data.total ?? newItems.length;
+        const newTotalPages = res.data.total_pages ?? (newItems.length < limit ? page : page + 1);
+        setTotalPages(newTotalPages);
+
+        if (newItems.length < limit || page >= newTotalPages) {
           setHasMore(false);
         } else {
           setHasMore(true);
@@ -879,7 +898,7 @@ export const ClientDashboard: React.FC = () => {
     </Card>
   );
 
-  console.log(category)
+  // console.log(category)
 
   return (
     <div className={cn(
@@ -1027,31 +1046,6 @@ export const ClientDashboard: React.FC = () => {
                       <div className="flex flex-col gap-1 text-left">
                         <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Looking For</span>
                         <Select
-                          value={intent || undefined}
-                          onValueChange={(val) => {
-                            setIntent(val === "all" || !val ? "" : val);
-                            setPage(1);
-                          }}
-                        >
-                          <SelectTrigger className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-md h-8 px-2 font-semibold text-slate-800 text-[10px]">
-                            <SelectValue placeholder="Buy / Rent / Lease">
-                              {intent === "buy" ? "For Sale" : intent === "rent" ? "For Rent" : intent === "lease" ? "For Lease" : "All Intents"}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-50">
-                            <SelectItem value="all">All Intents</SelectItem>
-                            <SelectItem value="buy">For Sale</SelectItem>
-                            <SelectItem value="rent">For Rent</SelectItem>
-                            <SelectItem value="lease">For Lease</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      Type
-                      {/* Type */}
-                      <div className="flex flex-col gap-1 text-left">
-                        <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Type</span>
-                        <Select
                           value={category || undefined}
                           onValueChange={(val) => {
                             setCategory(val === "all" || !val ? "" : val);
@@ -1059,13 +1053,14 @@ export const ClientDashboard: React.FC = () => {
                           }}
                         >
                           <SelectTrigger className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-md h-8 px-2 font-semibold text-slate-800 text-[10px]">
-                            <SelectValue placeholder="Residence">
-                              {category ? propertyTypes.find(t => t.slug === category)?.label || category : "All Types"}
+                            <SelectValue placeholder="Property Type">
+                              {category ? propertyTypes.find((t: any) => t.slug === category)?.label || category : "All Types"}
                             </SelectValue>
                           </SelectTrigger>
                           <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-50">
                             <SelectItem value="all">All Types</SelectItem>
                             {propertyTypes.map((t: any) => (
+                              console.log(t.slug,"console slugs"),
                               <SelectItem key={t.slug} value={t.slug}>{t.label}</SelectItem>
                             ))}
                           </SelectContent>
@@ -1219,7 +1214,6 @@ export const ClientDashboard: React.FC = () => {
                     {filteredProperties.map((prop) => (
                       <div
                         key={prop.id}
-                        onClick={() => handleOpenDetails(prop)}
                         className="relative border border-slate-200/80 bg-white hover:shadow-md transition-all duration-200 overflow-hidden flex flex-row p-3 rounded-lg gap-4 text-left shrink-0 cursor-pointer group animate-in fade-in"
                       >
                         {/* Image Thumbnail */}
@@ -1227,6 +1221,7 @@ export const ClientDashboard: React.FC = () => {
                           <img
                             src={prop.photos && prop.photos.length > 0 ? prop.photos[0] : getCategoryFallbackImage(prop.category)}
                             alt={prop.title}
+
                             className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
                             loading="lazy"
                           />
@@ -1283,16 +1278,15 @@ export const ClientDashboard: React.FC = () => {
                           </div>
 
                           {/* Price Row */}
-                          <div className="flex items-center justify-between pt-1.5 border-t border-slate-100/60 mt-1">
-                            <span className="font-extrabold text-[12px] sm:text-[13px] text-slate-900 flex items-baseline gap-0.5">
-                              {formatPrice(prop.price, prop.price_unit)}
-                              {prop.intent === "rent" && <span className="text-[9px] font-medium text-slate-400">/ month</span>}
+                          <div className="flex flex-wrap items-center justify-between pt-1.5 border-t border-slate-100/60 mt-1 gap-1.5">
+                            <span className="font-extrabold text-[12px] sm:text-[13px] text-slate-900 flex items-baseline gap-0.5 truncate min-w-0">
+                              <span className="truncate">{formatPrice(prop.price, prop.price_unit)}</span>
+                              {prop.intent === "rent" && <span className="text-[9px] font-medium text-slate-400 shrink-0">/ month</span>}
                             </span>
 
-                         
-                          <span className="inline-flex items-center gap-0.5 rounded-md bg-emerald-50 border border-emerald-100/50 px-1.5 py-0.5 text-[8px] font-black text-emerald-700 uppercase tracking-wider">
-                            <Shield className="h-2.5 w-2.5" /> Verified
-                          </span>
+                            <span className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-emerald-50 border border-emerald-100/50 px-1.5 py-0.5 text-[8px] font-black text-emerald-700 uppercase tracking-wider">
+                              <Shield className="h-2.5 w-2.5" /> Verified
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -1350,9 +1344,9 @@ export const ClientDashboard: React.FC = () => {
                 <div className={cn("hidden lg:flex flex-col text-left min-w-35 flex-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
                   <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">Looking For</label>
                   <Select
-                    value={intent || undefined}
+                    value={category || undefined}
                     onValueChange={(val) => {
-                      setIntent(val === "all" || !val ? "" : val);
+                      setCategory(val === "all" || !val ? "" : val);
                       setPage(1);
                     }}
                   >
@@ -1360,15 +1354,15 @@ export const ClientDashboard: React.FC = () => {
                       "w-full bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 font-semibold text-slate-800 text-[13px] shadow-sm cursor-pointer transition-all",
                       "focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green"
                     )}>
-                      <SelectValue placeholder="Buy / Rent / Lease">
-                        {intent === "buy" ? "For Sale" : intent === "rent" ? "For Rent" : intent === "lease" ? "For Lease" : "Buy / Rent / Lease"}
+                      <SelectValue placeholder="Property Type">
+                        {category ? propertyTypes.find((t: any) => t.slug === category)?.label || category : "All Types"}
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent className="bg-white border border-slate-100 shadow-md rounded-lg p-1 z-30">
-                      <SelectItem value="all">Buy / Rent / Lease</SelectItem>
-                      <SelectItem value="buy">For Sale</SelectItem>
-                      <SelectItem value="rent">For Rent</SelectItem>
-                      <SelectItem value="lease">For Lease</SelectItem>
+                      <SelectItem value="all">All Types</SelectItem>
+                      {propertyTypes.map((t: any) => (
+                        <SelectItem key={t.slug} value={t.slug}>{t.label}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1646,7 +1640,7 @@ export const ClientDashboard: React.FC = () => {
                             </div>
 
                             {/* Gender / Tenant Preference */}
-                            {category && (
+                            {category && ["pg", "hostel", "pg_hostel", "villa_house", "apartment"].includes(category) && (
                               <div className="flex flex-col gap-1 lg:hidden">
                                 <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
                                   {["pg", "hostel", "pg_hostel"].includes(category) ? "Gender Preference" : "Tenant Preference"}
@@ -1848,7 +1842,7 @@ export const ClientDashboard: React.FC = () => {
               </div>
 
               {/* Mobile Gender Preference */}
-              {searchMode !== "agencies" && category && (
+              {searchMode !== "agencies" && category && ["pg", "hostel", "pg_hostel", "villa_house", "apartment"].includes(category) && (
                 <div className="flex md:hidden bg-slate-100/80 border border-slate-200/50 p-1 rounded-lg shrink-0 overflow-x-auto scrollbar-none">
                   <button
                     type="button"
@@ -1930,7 +1924,7 @@ export const ClientDashboard: React.FC = () => {
                     </span>
                   )}
                   {/* Desktop Gender Preference */}
-                  {category && (
+                  {category && ["pg", "hostel", "pg_hostel", "villa_house", "apartment"].includes(category) && (
                     <div className="hidden md:flex bg-slate-100/80 border border-slate-200/50 p-1 rounded-lg shrink-0">
                       <button
                         type="button"
@@ -2202,7 +2196,7 @@ export const ClientDashboard: React.FC = () => {
                       </PaginationLink>
                     </PaginationItem>
 
-                    {agencies.length >= 20 && (
+                    {page < totalPages && (
                       <PaginationItem>
                         <PaginationLink
                           href="#"
@@ -2222,9 +2216,9 @@ export const ClientDashboard: React.FC = () => {
                         href="#"
                         onClick={(e) => {
                           e.preventDefault();
-                          if (agencies.length >= 20) setPage(p => p + 1);
+                          if (page < totalPages) setPage(p => p + 1);
                         }}
-                        className={agencies.length < 20 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                        className={page >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                       />
                     </PaginationItem>
                   </PaginationContent>
@@ -2323,13 +2317,14 @@ export const ClientDashboard: React.FC = () => {
                   <Card
                     key={prop.id}
                     className="border border-slate-100 bg-white hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col group p-3.5 rounded-xl"
-                    onClick={() => handleOpenDetails(prop)}
+                    // onClick={() => handleOpenDetails(prop)}
                   >
                     {/* Aspect image box */}
                     <div className="h-48 w-full rounded-lg overflow-hidden relative shrink-0">
                       <img
                         src={prop.photos && prop.photos.length > 0 ? prop.photos[0] : getCategoryFallbackImage(prop.category)}
                         alt={prop.title}
+                        onClick={() => handleOpenDetails(prop)}
                         className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
                       />
@@ -2342,14 +2337,14 @@ export const ClientDashboard: React.FC = () => {
                       </div>
 
                       <div className="absolute top-3 right-3">
-                        <span className="inline-flex rounded-[6px] bg-brand-green px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm uppercase tracking-wider">
+                        <span className="inline-flex rounded-[6px] bg-amber-600 px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm uppercase tracking-wider">
                           {prop.category.replace("_", " ")}
                         </span>
                       </div>
 
                       <div className="absolute top-3 left-3">
-                        <span className="inline-flex items-center gap-1 rounded bg-amber-600 text-white px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-widest shadow-sm">
-                          verified 
+                        <span className="inline-flex items-center gap-1 rounded bg-brand-green text-white px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-widest shadow-sm">
+                         <Shield size={12} /> verified
                         </span>
                       </div>
                     </div>
@@ -2439,7 +2434,7 @@ export const ClientDashboard: React.FC = () => {
                     </PaginationLink>
                   </PaginationItem>
 
-                  {properties.length >= limit && (
+                  {page < totalPages && (
                     <PaginationItem>
                       <PaginationLink
                         href="#"
@@ -2459,9 +2454,9 @@ export const ClientDashboard: React.FC = () => {
                       href="#"
                       onClick={(e) => {
                         e.preventDefault();
-                        if (properties.length >= limit) setPage(p => p + 1);
+                        if (page < totalPages) setPage(p => p + 1);
                       }}
-                      className={properties.length < limit ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                      className={page >= totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
                     />
                   </PaginationItem>
                 </PaginationContent>
