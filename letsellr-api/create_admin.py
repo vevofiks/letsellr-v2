@@ -69,13 +69,13 @@ if __name__ == "__main__":
         description="Create or elevate a user to Admin role."
     )
     parser.add_argument(
-        "--email", default="admin@letsellr.in", help="Admin email address"
+        "--email", required=True, help="Admin email address"
     )
-    parser.add_argument("--password", default="Admin123!@#", help="Admin password")
+    parser.add_argument("--password", required=True, help="Admin password")
     parser.add_argument(
         "--name", default="System Administrator", help="Admin full name"
     )
-    parser.add_argument("--phone", default="+919876543210", help="Admin phone number")
+    parser.add_argument("--phone", required=True, help="Admin phone number")
 
     args = parser.parse_args()
     asyncio.run(create_admin_user(args.email, args.password, args.name, args.phone))

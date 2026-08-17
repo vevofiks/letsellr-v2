@@ -65,6 +65,17 @@ class PropertyService:
         not the admin's.
         """
         owner_user = owner_user or current_user
+
+        if (
+            owner_user.role in ("owner", "agency")
+            and owner_user.verification_status != "verified"
+            and current_user.role != "admin"
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Your account is pending admin verification. You'll be able to list properties once it's approved.",
+            )
+
         # Only Owners can post PG/Hostels, Agencies can post everything else
         if owner_user.role == "owner" and data.category not in OWNER_ALLOWED_CATEGORIES:
             raise HTTPException(

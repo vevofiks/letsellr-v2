@@ -39,21 +39,19 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  const isPendingOrUnverified =
-    user.status === "suspended" ||
-    user.status === "pending" ||
-    ((user.role === "owner" || user.role === "agency") && user.verification_status !== "verified");
-
-  if (isPendingOrUnverified) {
+  // Suspended accounts are still fully blocked. Owners/agencies pending
+  // verification get their dashboard right away — only property creation
+  // (gated server-side, and via <VerificationGuard>) requires approval.
+  if (user.status === "suspended") {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4 font-sans">
         <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center space-y-4 shadow-xl border border-slate-200 animate-in fade-in zoom-in-95 duration-300">
           <div className="h-20 w-20 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 border-[6px] border-amber-100/50 shadow-inner">
             <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
           </div>
-          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Account Under Review</h2>
+          <h2 className="text-2xl font-black text-slate-900 tracking-tight">Account Suspended</h2>
           <p className="text-sm font-semibold text-slate-500 leading-relaxed max-w-sm mx-auto">
-            Your <span className="capitalize font-bold text-slate-800">{user.role}</span> account details are currently under review by our administration team. You will be granted full access to your dashboard once an administrator verifies and approves your account.
+            Your <span className="capitalize font-bold text-slate-800">{user.role}</span> account has been suspended. Please contact support if you believe this is a mistake.
           </p>
           <div className="pt-6">
             <button 

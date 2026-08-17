@@ -8,6 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
 import { Building2, User, Plus, X, ArrowRight, ArrowLeft } from "lucide-react";
 import { cn, getErrorMessage } from "@/lib/utils";
+import { useAvailabilityCheck } from "@/hooks/useAvailabilityCheck";
 
 export const RegisterOwnerAgency: React.FC = () => {
   const { registerOwnerAgency } = useAuth();
@@ -37,6 +38,14 @@ export const RegisterOwnerAgency: React.FC = () => {
   const areas = watch("agency_areas_served") || [];
   const [areaInput, setAreaInput] = useState("");
 
+  const phoneValue = watch("phone");
+  const emailValue = watch("email");
+  const { phoneTaken, emailTaken, checkingPhone, checkingEmail } = useAvailabilityCheck(
+    phoneValue,
+    emailValue,
+    { phoneValid: !errors.phone, emailValid: !errors.email }
+  );
+
   const addArea = () => {
     if (!areaInput.trim()) return;
     if (areas.includes(areaInput.trim())) {
@@ -55,6 +64,10 @@ export const RegisterOwnerAgency: React.FC = () => {
   };
 
   const onSubmit = async (data: OwnerAgencyRegisterInput) => {
+    if (phoneTaken || emailTaken) {
+      toast.error("Please resolve the highlighted fields before continuing.");
+      return;
+    }
     try {
       await registerOwnerAgency(data);
       toast.success("OTP sent to your WhatsApp!");
@@ -167,11 +180,22 @@ export const RegisterOwnerAgency: React.FC = () => {
                   type="email"
                   placeholder="owner@example.com"
                   {...register("email")}
-                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+                  className={cn(
+                    "w-full bg-white border rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all",
+                    emailTaken
+                      ? "border-rose-300 focus:border-rose-400 focus:ring-rose-200"
+                      : "border-slate-200 focus:border-[#23D283] focus:ring-[#23D283]/20"
+                  )}
                 />
-                {errors.email && (
+                {errors.email ? (
                   <p className="text-xs text-rose-600 font-medium text-left">{errors.email.message}</p>
-                )}
+                ) : checkingEmail ? (
+                  <p className="text-xs text-slate-400 font-medium text-left">Checking availability...</p>
+                ) : emailTaken ? (
+                  <p className="text-xs text-rose-600 font-medium text-left">
+                    This email is already registered. Please log in or use a different email.
+                  </p>
+                ) : null}
               </div>
 
               {/* Phone Number */}
@@ -184,11 +208,22 @@ export const RegisterOwnerAgency: React.FC = () => {
                   type="tel"
                   placeholder="+1234567890"
                   {...register("phone")}
-                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+                  className={cn(
+                    "w-full bg-white border rounded-md px-3 py-2 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all",
+                    phoneTaken
+                      ? "border-rose-300 focus:border-rose-400 focus:ring-rose-200"
+                      : "border-slate-200 focus:border-[#23D283] focus:ring-[#23D283]/20"
+                  )}
                 />
-                {errors.phone && (
+                {errors.phone ? (
                   <p className="text-xs text-rose-600 font-medium text-left">{errors.phone.message}</p>
-                )}
+                ) : checkingPhone ? (
+                  <p className="text-xs text-slate-400 font-medium text-left">Checking availability...</p>
+                ) : phoneTaken ? (
+                  <p className="text-xs text-rose-600 font-medium text-left">
+                    An account with this phone number already exists. Please log in.
+                  </p>
+                ) : null}
               </div>
 
               {/* Listing Purpose */}
@@ -377,7 +412,7 @@ export const RegisterOwnerAgency: React.FC = () => {
             <div className="pt-2">
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || phoneTaken || emailTaken}
                 className="w-full h-11 bg-[#23D283] hover:bg-[#11995E] text-white font-bold text-sm rounded-md transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.99] disabled:opacity-60"
               >
                 {isSubmitting ? (

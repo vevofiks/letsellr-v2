@@ -60,3 +60,4 @@ letsellr-api/*.egg-info/
 deploy_vps.py
 ssh_check.py
 fix_db.py
+letsellr-api/create_admin.py

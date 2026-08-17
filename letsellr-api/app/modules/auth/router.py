@@ -28,6 +28,7 @@ from app.depends.auth import CurrentUser
 from app.depends.db import DbSession
 from app.modules.auth.schemas import (
     AdminLoginRequest,
+    AvailabilityResponse,
     LoginRequest,
     MessageResponse,
     RegisterRequest,
@@ -46,6 +47,24 @@ router = APIRouter()
 
 
 # ── Registration ──────────────────────────────────────────────────────────────
+
+
+@router.get(
+    "/check-availability",
+    response_model=AvailabilityResponse,
+    summary="Check phone/email availability — used for live inline form validation",
+)
+async def check_availability(
+    db: DbSession,
+    phone: Optional[str] = None,
+    email: Optional[str] = None,
+) -> AvailabilityResponse:
+    """
+    Lets the registration forms show a "phone/email already registered" message
+    under the field as the user types, instead of only failing on submit.
+    """
+    service = AuthService(db)
+    return await service.check_availability(phone, email)
 
 
 @router.post(

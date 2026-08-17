@@ -44,3 +44,6 @@ build/
 .DS_Store
 *.swp
 *.swo
+
+# Admin utility script - contains sensitive logic, do not commit
+create_admin.py

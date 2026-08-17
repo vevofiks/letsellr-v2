@@ -210,6 +210,24 @@ class AuthService:
             user=UserPublic.model_validate(user),
         )
 
+    # ── Availability check (live form validation) ───────────────────────────────
+
+    async def check_availability(
+        self, phone: str | None, email: str | None
+    ) -> "AvailabilityResponse":
+        from app.modules.auth.schemas import AvailabilityResponse
+
+        phone_taken = False
+        email_taken = False
+
+        if phone and phone.strip():
+            phone_taken = (await self.repo.get_by_phone(_normalize_phone(phone))) is not None
+
+        if email and email.strip():
+            email_taken = (await self.repo.get_by_email(email.strip())) is not None
+
+        return AvailabilityResponse(phone_taken=phone_taken, email_taken=email_taken)
+
     # ── Registration ─────────────────────────────────────────────────────────
 
     async def register(self, payload: RegisterRequest) -> RegisterResponse:
@@ -225,6 +243,13 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="An account with this phone number already exists. Please log in.",
+            )
+
+        email = payload.email.strip() if payload.email and payload.email.strip() else None
+        if email and await self.repo.get_by_email(email):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="An account with this email address already exists. Please log in or use a different email.",
             )
 
         otp = _generate_otp(settings.OTP_LENGTH)
@@ -290,6 +315,16 @@ class AuthService:
 
         reg_type = reg_data.get("_registration_type", "user")
 
+        email = reg_data.get("email")
+        email = email.strip() if email and email.strip() else None
+        if email:
+            existing_email_user = await self.repo.get_by_email(email)
+            if existing_email_user:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="An account with this email address already exists. Please log in or use a different email.",
+                )
+
         # Build user
         if reg_type == "user" or (
             "preference_type" in reg_data and "location" in reg_data
@@ -297,11 +332,7 @@ class AuthService:
             user = User(
                 role="user",
                 name=reg_data.get("name"),
-                email=(
-                    reg_data["email"].strip()
-                    if reg_data.get("email") and reg_data["email"].strip()
-                    else None
-                ),
+                email=email,
                 phone=phone,
                 auth_provider_uid=hash_password(reg_data["pin"]),
                 email_verified=False,
@@ -318,11 +349,7 @@ class AuthService:
             user = User(
                 role=role,
                 name=reg_data.get("name"),
-                email=(
-                    reg_data["email"].strip()
-                    if reg_data.get("email") and reg_data["email"].strip()
-                    else None
-                ),
+                email=email,
                 phone=phone,
                 auth_provider_uid=hash_password(reg_data["pin"]),
                 email_verified=False,
@@ -401,14 +428,6 @@ class AuthService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Your account has been suspended. Please contact support.",
             )
-        if (
-            user.status == "pending"
-            or user.verification_status in ("review_request", "pending", "unverified")
-        ) and user.role in ("owner", "agency"):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Your account is currently under review by admin. You will be able to sign in once verified and approved.",
-            )
 
         if not user.auth_provider_uid or not verify_password(
             payload.pin, user.auth_provider_uid
@@ -475,14 +494,6 @@ class AuthService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Your account has been suspended. Contact support.",
-            )
-        if (
-            user.status == "pending"
-            or user.verification_status in ("review_request", "pending", "unverified")
-        ) and user.role in ("owner", "agency"):
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Your account is currently under review by admin. You will be able to sign in once verified and approved.",
             )
 
         logger.info("User verified login: phone=%s", phone)
