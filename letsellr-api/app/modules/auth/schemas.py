@@ -80,6 +80,13 @@ class RegisterResponse(BaseModel):
     phone: str
 
 
+class AvailabilityResponse(BaseModel):
+    """Returned by the live phone/email availability check used for inline form validation."""
+
+    phone_taken: bool = False
+    email_taken: bool = False
+
+
 class ResendOTPRequest(BaseModel):
     """Resend an OTP for login or registration."""
 

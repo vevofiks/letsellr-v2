@@ -1213,6 +1213,7 @@ export const ClientDashboard: React.FC = () => {
                     {filteredProperties.map((prop) => (
                       <div
                         key={prop.id}
+                        onClick={() => handleOpenDetails(prop)}
                         className="relative border border-slate-200/80 bg-white hover:shadow-md transition-all duration-200 overflow-hidden flex flex-row p-3 rounded-lg gap-4 text-left shrink-0 cursor-pointer group animate-in fade-in"
                       >
                         {/* Image Thumbnail */}
@@ -2316,7 +2317,6 @@ export const ClientDashboard: React.FC = () => {
                   <Card
                     key={prop.id}
                     className="border border-slate-100 bg-white hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col group p-3.5 rounded-xl"
-                    // onClick={() => handleOpenDetails(prop)}
                   >
                     {/* Aspect image box */}
                     <div className="h-48 w-full rounded-lg overflow-hidden relative shrink-0">

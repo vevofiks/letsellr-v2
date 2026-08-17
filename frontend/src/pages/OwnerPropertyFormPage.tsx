@@ -67,6 +67,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
   
   const [price, setPrice] = useState<number | "">("");
   const [priceUnit, setPriceUnit] = useState<"per_month" | "total">("per_month");
+  const [deposit, setDeposit] = useState<number | "">("");
 
   const [area, setArea] = useState<number | "">("");
   const [bedrooms, setBedrooms] = useState<number | "">("");
@@ -350,6 +351,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
       setIntent(data.intent || "rent");
       setPrice(data.price || "");
       setPriceUnit(data.price_unit || "per_month");
+      setDeposit(data.deposit || "");
       setArea(data.area || "");
       setBedrooms(data.bedrooms || "");
       setBathrooms(data.bathrooms || "");
@@ -527,6 +529,12 @@ export const OwnerPropertyFormPage: React.FC = () => {
 
       const finalPhotos = [...photos, ...uploadedUrls];
 
+      if (finalPhotos.length === 0) {
+        toast.error("Photo upload failed or no photos were provided. Please add at least one photo.");
+        return;
+      }
+
+
       const validSharingOptions = roomSharingOptions.filter(
         (opt) => opt.sharing !== "" && opt.price !== "" && opt.vacancy !== ""
       );
@@ -541,6 +549,7 @@ export const OwnerPropertyFormPage: React.FC = () => {
         description: description.trim() || undefined,
         price: ["pg", "hostel", "pg_hostel"].includes(category) ? leastPrice : Number(price),
         price_unit: priceUnit,
+        deposit: deposit ? Number(deposit) : undefined,
         area: area ? Number(area) : undefined,
         bedrooms: bedrooms ? Number(bedrooms) : undefined,
         bathrooms: bathrooms ? Number(bathrooms) : undefined,
@@ -611,6 +620,38 @@ export const OwnerPropertyFormPage: React.FC = () => {
             <p className="text-[10px] font-black uppercase tracking-widest text-slate-450 animate-pulse">
               Loading form details...
             </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const needsVerification =
+    !isEdit &&
+    (user?.role === "owner" || user?.role === "agency") &&
+    user?.verification_status !== "verified";
+
+  if (needsVerification) {
+    return (
+      <div className="min-h-screen bg-slate-50/70 flex flex-col font-sans text-slate-900">
+        <OwnerNavbar />
+        <div className="flex-1 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full text-center space-y-4 shadow-xl border border-slate-200">
+            <div className="h-20 w-20 bg-amber-50 text-amber-500 rounded-full flex items-center justify-center mx-auto mb-4 border-[6px] border-amber-100/50 shadow-inner">
+              <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+            </div>
+            <h2 className="text-2xl font-black text-slate-900 tracking-tight">Verification Pending</h2>
+            <p className="text-sm font-semibold text-slate-500 leading-relaxed max-w-sm mx-auto">
+              Your <span className="capitalize font-bold text-slate-800">{user?.role}</span> account is still under admin review. You'll be able to list properties as soon as it's verified — this usually doesn't take long.
+            </p>
+            <div className="pt-4">
+              <button
+                onClick={() => navigate("/owner/dashboard")}
+                className="text-xs font-bold text-white bg-brand-green hover:bg-brand-green-hover px-5 py-2.5 rounded-lg cursor-pointer transition-colors"
+              >
+                Back to Dashboard
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -716,6 +757,22 @@ export const OwnerPropertyFormPage: React.FC = () => {
               </div>
             )}
 
+            {/* Security Deposit (PG/Hostel Only — Pricing & Terms section is hidden for this category) */}
+            {["pg", "hostel", "pg_hostel"].includes(category) && (
+              <div className="space-y-1.5 sm:col-span-2">
+                <label className="text-xs font-bold text-slate-700">
+                  Security Deposit (₹) <span className="text-slate-400 font-medium">(optional)</span>
+                </label>
+                <input
+                  type="number"
+                  placeholder="e.g. 5000"
+                  value={deposit}
+                  onChange={(e) => setDeposit(e.target.value ? Number(e.target.value) : "")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-green/20"
+                />
+              </div>
+            )}
+
             {/* Property Title */}
             <div className="space-y-1.5 sm:col-span-2">
               <label className="text-xs font-bold text-slate-700">Listing Title *</label>
@@ -776,7 +833,20 @@ export const OwnerPropertyFormPage: React.FC = () => {
                   <option value="total">Total Price</option>
                 </select>
               </div>
-  
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-700">
+                  Security Deposit (₹) <span className="text-slate-400 font-medium">(optional)</span>
+                </label>
+                <input
+                  type="number"
+                  placeholder="e.g. 30000"
+                  value={deposit}
+                  onChange={(e) => setDeposit(e.target.value ? Number(e.target.value) : "")}
+                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-brand-green/20"
+                />
+              </div>
+
             </div>
           </div>
         )}

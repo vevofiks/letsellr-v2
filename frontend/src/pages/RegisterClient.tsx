@@ -6,8 +6,9 @@ import { clientRegisterSchema } from "@/lib/validation";
 import type { ClientRegisterInput } from "@/lib/validation";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-import { getErrorMessage } from "@/lib/utils";
+import { cn, getErrorMessage } from "@/lib/utils";
 import { ArrowRight, ArrowLeft } from "lucide-react";
+import { useAvailabilityCheck } from "@/hooks/useAvailabilityCheck";
 
 export const RegisterClient: React.FC = () => {
   const { registerClient } = useAuth();
@@ -16,6 +17,7 @@ export const RegisterClient: React.FC = () => {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<ClientRegisterInput>({
     resolver: zodResolver(clientRegisterSchema),
@@ -25,7 +27,16 @@ export const RegisterClient: React.FC = () => {
     },
   });
 
+  const phoneValue = watch("phone");
+  const { phoneTaken, checkingPhone } = useAvailabilityCheck(phoneValue, undefined, {
+    phoneValid: !errors.phone,
+  });
+
   const onSubmit = async (data: ClientRegisterInput) => {
+    if (phoneTaken) {
+      toast.error("Please resolve the highlighted fields before continuing.");
+      return;
+    }
     try {
       await registerClient(data);
       toast.success("OTP sent to your WhatsApp!");
@@ -106,11 +117,22 @@ export const RegisterClient: React.FC = () => {
                   type="tel"
                   placeholder="+1234567890"
                   {...register("phone")}
-                  className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:border-[#23D283] focus:ring-2 focus:ring-[#23D283]/20 transition-all"
+                  className={cn(
+                    "w-full bg-white border rounded-md px-3 py-2.5 text-xs sm:text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all",
+                    phoneTaken
+                      ? "border-rose-300 focus:border-rose-400 focus:ring-rose-200"
+                      : "border-slate-200 focus:border-[#23D283] focus:ring-[#23D283]/20"
+                  )}
                 />
-                {errors.phone && (
+                {errors.phone ? (
                   <p className="text-xs text-rose-600 font-medium text-left">{errors.phone.message}</p>
-                )}
+                ) : checkingPhone ? (
+                  <p className="text-xs text-slate-400 font-medium text-left">Checking availability...</p>
+                ) : phoneTaken ? (
+                  <p className="text-xs text-rose-600 font-medium text-left">
+                    An account with this phone number already exists. Please log in.
+                  </p>
+                ) : null}
               </div>
 
               {/* Preference Type */}
@@ -174,7 +196,7 @@ export const RegisterClient: React.FC = () => {
             <div className="pt-1">
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || phoneTaken}
                 className="w-full h-11 bg-[#23D283] hover:bg-[#11995E] text-white font-bold text-sm rounded-md transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm active:scale-[0.99] disabled:opacity-60"
               >
                 {isSubmitting ? (
