@@ -201,9 +201,24 @@ class AuthService:
         return record
 
     def _issue_tokens(self, user: User) -> TokenResponse:
-        """Issue self-signed JWT access + refresh tokens."""
-        access_token = create_access_token(str(user.id))
-        refresh_token = create_refresh_token(str(user.id))
+        """Issue self-signed JWT access + refresh tokens.
+
+        Admins get much longer-lived tokens than owner/agency/seeker accounts —
+        the admin panel is a long-running back-office tool, not a mobile app users
+        re-open constantly, so a short access-token TTL was causing it to look like
+        the admin session "auto logs out" whenever the silent refresh didn't get a
+        chance to fire within the hour.
+        """
+        if user.role == "admin":
+            access_token = create_access_token(
+                str(user.id), expire_minutes=settings.ADMIN_ACCESS_TOKEN_EXPIRE_MINUTES
+            )
+            refresh_token = create_refresh_token(
+                str(user.id), expire_days=settings.ADMIN_REFRESH_TOKEN_EXPIRE_DAYS
+            )
+        else:
+            access_token = create_access_token(str(user.id))
+            refresh_token = create_refresh_token(str(user.id))
         return TokenResponse(
             access_token=access_token,
             refresh_token=refresh_token,

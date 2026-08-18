@@ -39,18 +39,22 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 # ── JWT Tokens ────────────────────────────────────────────────────────────────
-def create_access_token(subject: str | Any, extra: dict | None = None) -> str:
+def create_access_token(
+    subject: str | Any, extra: dict | None = None, expire_minutes: int | None = None
+) -> str:
     """Create a short-lived access JWT."""
-    expire = datetime.now(UTC) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    minutes = expire_minutes if expire_minutes is not None else settings.ACCESS_TOKEN_EXPIRE_MINUTES
+    expire = datetime.now(UTC) + timedelta(minutes=minutes)
     payload = {"sub": str(subject), "exp": expire, "type": "access"}
     if extra:
         payload.update(extra)
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
-def create_refresh_token(subject: str | Any) -> str:
+def create_refresh_token(subject: str | Any, expire_days: int | None = None) -> str:
     """Create a long-lived refresh JWT."""
-    expire = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+    days = expire_days if expire_days is not None else settings.REFRESH_TOKEN_EXPIRE_DAYS
+    expire = datetime.now(UTC) + timedelta(days=days)
     payload = {"sub": str(subject), "exp": expire, "type": "refresh"}
     return jwt.encode(payload, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
