@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Literal, Optional, Any
 from uuid import UUID
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, field_validator, model_validator
 
 
 class LocationSchema(BaseModel):
@@ -205,18 +205,43 @@ class NearbyLocationsResponse(BaseModel):
 
 # ── Property Reports ───────────────────────────────────────────────────────────
 
+REPORT_REASONS = [
+    "Property is no longer available",
+    "Wrong or misleading information (price, photos, location)",
+    "Suspected broker (not a genuine owner)",
+    "Fake or duplicate listing",
+    "Fraud or scam attempt",
+    "Other",
+]
+
 
 class PropertyReportCreate(BaseModel):
-    reason: str = Field(..., max_length=100)
-    description: Optional[str] = None
+    reason: str = Field(..., max_length=150)
+    description: Optional[str] = Field(None, max_length=300)
+    reporter_phone: Optional[str] = Field(None, max_length=20)
+
+    @field_validator("reason")
+    @classmethod
+    def validate_reason(cls, v: str) -> str:
+        if v not in REPORT_REASONS:
+            raise ValueError("Please select a valid reason.")
+        return v
+
+    @model_validator(mode="after")
+    def validate_description_required_for_other(self) -> "PropertyReportCreate":
+        if self.reason == "Other" and not (self.description and self.description.strip()):
+            raise ValueError("Please describe the issue when selecting 'Other'.")
+        return self
 
 
 class PropertyReportResponse(BaseModel):
     id: UUID
     property_id: UUID
+    property_ref: Optional[str]
     reporter_id: Optional[UUID]
     reason: str
     description: Optional[str]
+    reporter_phone: Optional[str]
     status: str
     created_at: datetime
     updated_at: datetime

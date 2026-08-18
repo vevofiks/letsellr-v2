@@ -197,12 +197,19 @@ async def get_dashboard_stats(current_user: CurrentUser, db: DbSession):
         select(func.count(User.id)).where(User.role == "admin")
     )
 
+    from app.modules.properties.models import PropertyReport
+
+    pending_reports = await db.scalar(
+        select(func.count(PropertyReport.id)).where(PropertyReport.status == "pending")
+    )
+
     # Assuming no disputes model exists yet, defaulting to 0
     open_disputes = 0
 
     return DashboardStatsResponse(
         pending_property_reviews=pending_properties or 0,
         pending_kyc_reviews=pending_kyc or 0,
+        pending_reports=pending_reports or 0,
         open_disputes=open_disputes,
         total_users=total_users or 0,
         total_properties=total_properties or 0,
@@ -307,6 +314,25 @@ async def list_property_reports(current_user: CurrentUser, db: DbSession):
         .order_by(PropertyReport.created_at.desc())
     )
     return result.scalars().all()
+
+
+@router.get("/reports/{report_id}", tags=["Admin - Reports"])
+async def get_property_report(
+    report_id: uuid.UUID, current_user: CurrentUser, db: DbSession
+):
+    require_admin(current_user)
+    from app.modules.properties.models import PropertyReport
+    from sqlalchemy.orm import selectinload
+
+    result = await db.execute(
+        select(PropertyReport)
+        .options(selectinload(PropertyReport.property))
+        .where(PropertyReport.id == report_id)
+    )
+    report = result.scalar_one_or_none()
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+    return report
 
 
 @router.patch("/reports/{report_id}/status", tags=["Admin - Reports"])
