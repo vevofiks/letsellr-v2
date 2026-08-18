@@ -323,27 +323,29 @@ export const PropertyDetailsPage: React.FC = () => {
     setActivePhotoIndex((prev) => (prev - 1 + mediaList.length) % mediaList.length);
   };
 
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
-  const [touchEndX, setTouchEndX] = useState<number | null>(null);
+  const touchStartXRef = useRef<number | null>(null);
+  const touchEndXRef = useRef<number | null>(null);
 
   const handleTouchStart = (e: React.TouchEvent) => {
-    setTouchEndX(null);
-    setTouchStartX(e.targetTouches[0].clientX);
+    touchEndXRef.current = null;
+    touchStartXRef.current = e.targetTouches[0].clientX;
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    setTouchEndX(e.targetTouches[0].clientX);
+    touchEndXRef.current = e.targetTouches[0].clientX;
   };
 
   const handleTouchEnd = () => {
-    if (!touchStartX || !touchEndX) return;
-    const distance = touchStartX - touchEndX;
+    if (!touchStartXRef.current || !touchEndXRef.current) return;
+    const distance = touchStartXRef.current - touchEndXRef.current;
     const minSwipeDistance = 40;
     if (distance > minSwipeDistance) {
       handleNextPhoto();
     } else if (distance < -minSwipeDistance) {
       handlePrevPhoto();
     }
+    touchStartXRef.current = null;
+    touchEndXRef.current = null;
   };
 
   useEffect(() => {
@@ -771,6 +773,11 @@ export const PropertyDetailsPage: React.FC = () => {
                 {mediaList.length > 1 && (
                   <>
                     <button
+                      onTouchEnd={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        handlePrevPhoto();
+                      }}
                       onClick={(e) => {
                         e.stopPropagation();
                         handlePrevPhoto();
@@ -781,6 +788,11 @@ export const PropertyDetailsPage: React.FC = () => {
                       <ArrowLeft className="h-4.5 w-4.5" />
                     </button>
                     <button
+                      onTouchEnd={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        handleNextPhoto();
+                      }}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleNextPhoto();
@@ -1392,7 +1404,9 @@ export const PropertyDetailsPage: React.FC = () => {
       </main>
 
       {/* Mobile Airbnb-style Fixed Bottom Action Bar — placed at root level to guarantee true viewport fixed positioning */}
-      <div className="block lg:hidden fixed bottom-0 left-0 right-0 z-9998 bg-white border-t border-slate-200 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] px-4 py-3">
+      {/* Hidden when any modal is open so it doesn't float above overlays */}
+      {!authModal.open && !reportModalOpen && !isImageViewerOpen && (
+      <div className="block lg:hidden fixed bottom-0 left-0 right-0 z-45 bg-white border-t border-slate-200 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           <div className="flex flex-col min-w-0">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Property Price</span>
@@ -1411,6 +1425,7 @@ export const PropertyDetailsPage: React.FC = () => {
           </div>
         </div>
       </div>
+      )}
 
       {authModal.open && (
         <AuthModal

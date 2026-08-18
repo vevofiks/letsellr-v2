@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     # alive indefinitely. This ceiling only matters for a stretch of total inactivity,
     # so it's set generously long rather than tuned to a "typical" session length.
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+    # Admin sessions get a much longer-lived access token so the panel doesn't need
+    # to rely on the silent refresh cycle firing before a day of use/idle time passes.
+    ADMIN_ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+    ADMIN_REFRESH_TOKEN_EXPIRE_DAYS: int = 90
     ALGORITHM: str = "HS256"
 
     # ── Auth Provider ─────────────────────────────────────────────────────────
