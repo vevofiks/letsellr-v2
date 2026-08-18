@@ -58,6 +58,39 @@ const AMENITIES_LIST = [
   "Furnished Rooms",
 ];
 
+// The 14 revenue districts of Kerala — City must always resolve to one of these.
+const KERALA_DISTRICTS = [
+  "Thiruvananthapuram",
+  "Kollam",
+  "Pathanamthitta",
+  "Alappuzha",
+  "Kottayam",
+  "Idukki",
+  "Ernakulam",
+  "Thrissur",
+  "Palakkad",
+  "Malappuram",
+  "Kozhikode",
+  "Wayanad",
+  "Kannur",
+  "Kasaragod",
+];
+
+// Nominatim usually puts the district in state_district (sometimes county); match it
+// against the fixed 14-district list rather than trusting town/village/city, which are
+// often a specific place name (e.g. "Kondotty") rather than the enclosing district.
+const findKeralaDistrict = (addressObj: any): string => {
+  if (!addressObj) return "";
+  const candidates = [addressObj.state_district, addressObj.county, addressObj.city, addressObj.town, addressObj.village];
+  for (const candidate of candidates) {
+    if (!candidate) continue;
+    const normalized = String(candidate).replace(/\s+district$/i, "").trim().toLowerCase();
+    const match = KERALA_DISTRICTS.find((d) => d.toLowerCase() === normalized);
+    if (match) return match;
+  }
+  return "";
+};
+
 const YoutubeIcon: React.FC<{ className?: string }> = ({ className = "h-4 w-4" }) => (
   <svg className={className} viewBox="0 0 24 24" fill="currentColor">
     <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
@@ -221,6 +254,8 @@ export const AdminPropertiesQueuePage: React.FC = () => {
   const [mapSearchQuery, setMapSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [googleMapsLink, setGoogleMapsLink] = useState("");
+  const [gmapsLoading, setGmapsLoading] = useState(false);
 
   // Fetch both pending & live properties simultaneously
   const fetchProperties = async (isManualRefresh = false) => {
@@ -349,6 +384,58 @@ export const AdminPropertiesQueuePage: React.FC = () => {
     }
   };
 
+  // Shared helper: apply city / state / area fields from a Nominatim address payload.
+  // City is resolved strictly to one of the 14 Kerala districts (via state_district/
+  // county); Area/Locality is filled from the most hyper-local field that ISN'T just
+  // a repeat of that district, so the pinned point drives the precise locality.
+  const applyAddressFromNominatim = (addressObj: any, name?: string, displayName?: string) => {
+    if (!addressObj) return;
+    const districtVal = findKeralaDistrict(addressObj);
+    const stateVal = addressObj.state || "";
+
+    const isDistrict = (val?: string) => !!val && !!districtVal && val.toLowerCase() === districtVal.toLowerCase();
+
+    let areaVal =
+      [
+        addressObj.neighbourhood,
+        addressObj.suburb,
+        addressObj.quarter,
+        addressObj.residential,
+        addressObj.city_district,
+        addressObj.hamlet,
+        addressObj.village,
+        addressObj.town,
+        addressObj.city,
+      ].find((val) => val && !isDistrict(val)) || "";
+
+    if (!areaVal && addressObj.road) {
+      areaVal = addressObj.road;
+    }
+    if (!areaVal && name && !isDistrict(name) && name !== stateVal) {
+      areaVal = name;
+    }
+    if (!areaVal && displayName) {
+      areaVal = displayName.split(",")[0].trim();
+    }
+
+    if (districtVal) setEditCity(districtVal);
+    if (stateVal) setEditState(stateVal);
+    if (areaVal) setEditAreaLocation(areaVal);
+  };
+
+  // Reverse geocode a lat/lng pair via Nominatim and fill in city/area/state + search box
+  const reverseGeocodeAndFill = async (lat: number, lng: number) => {
+    const resp = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
+    );
+    const data = await resp.json();
+    if (data?.address) {
+      applyAddressFromNominatim(data.address, data.name, data.display_name);
+      if (data.display_name) setMapSearchQuery(data.display_name);
+    }
+    return data;
+  };
+
   const handleSelectSearchResult = (result: any) => {
     const lat = Number(result.lat);
     const lng = Number(result.lon);
@@ -357,15 +444,7 @@ export const AdminPropertiesQueuePage: React.FC = () => {
     setSearchResults([]);
     setMapSearchQuery(result.display_name);
 
-    if (result.address) {
-      const cityVal = result.address.city || result.address.town || result.address.village || result.address.county || "";
-      const stateVal = result.address.state || "";
-      const areaVal = result.address.suburb || result.address.neighbourhood || result.address.residential || "";
-
-      if (cityVal) setEditCity(cityVal);
-      if (stateVal) setEditState(stateVal);
-      if (areaVal) setEditAreaLocation(areaVal);
-    }
+    applyAddressFromNominatim(result.address, result.name, result.display_name);
     toast.success("Marker moved to selected location.");
   };
 
@@ -385,20 +464,7 @@ export const AdminPropertiesQueuePage: React.FC = () => {
         toast.success("Marker updated to current location.");
 
         try {
-          const resp = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`
-          );
-          const data = await resp.json();
-          if (data?.address) {
-            const cityVal = data.address.city || data.address.town || data.address.village || data.address.county || "";
-            const stateVal = data.address.state || "";
-            const areaVal = data.address.suburb || data.address.neighbourhood || data.address.residential || "";
-
-            if (cityVal) setEditCity(cityVal);
-            if (stateVal) setEditState(stateVal);
-            if (areaVal) setEditAreaLocation(areaVal);
-            if (data.display_name) setMapSearchQuery(data.display_name);
-          }
+          await reverseGeocodeAndFill(lat, lng);
         } catch (e) {
           console.error("Reverse geocode failed:", e);
         }
@@ -409,6 +475,64 @@ export const AdminPropertiesQueuePage: React.FC = () => {
         toast.error("Unable to retrieve location.");
       }
     );
+  };
+
+  // Extract a {lat, lng} pair from common Google Maps URL formats, or null if not found.
+  const parseGoogleMapsLink = (rawUrl: string): { lat: number; lng: number } | null => {
+    const patterns = [
+      /@(-?\d+\.\d+),(-?\d+\.\d+)/,
+      /!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/,
+      /[?&]q=(-?\d+\.\d+),(-?\d+\.\d+)/,
+      /[?&]ll=(-?\d+\.\d+),(-?\d+\.\d+)/,
+    ];
+    for (const pattern of patterns) {
+      const match = rawUrl.match(pattern);
+      if (match) {
+        const lat = Number(match[1]);
+        const lng = Number(match[2]);
+        if (!Number.isNaN(lat) && !Number.isNaN(lng)) {
+          return { lat, lng };
+        }
+      }
+    }
+    return null;
+  };
+
+  // Handle "Paste Google Maps link" submit: resolve to lat/lng, drop the pin, and
+  // auto-fill city/area/state from OpenStreetMap reverse-geocoding of that point.
+  const handleGoogleMapsLinkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const link = googleMapsLink.trim();
+    if (!link) return;
+
+    const isShortLink = /goo\.gl|maps\.app\.goo\.gl/i.test(link);
+    const coords = parseGoogleMapsLink(link);
+
+    if (!coords) {
+      if (isShortLink) {
+        toast.error("Shortened Google Maps links can't be read directly. Open the link in your browser, then paste the full URL from the address bar.");
+      } else {
+        toast.error("Couldn't find coordinates in that link. Make sure it's a Google Maps location link.");
+      }
+      return;
+    }
+
+    try {
+      setGmapsLoading(true);
+      setEditLatitude(coords.lat);
+      setEditLongitude(coords.lng);
+      const data = await reverseGeocodeAndFill(coords.lat, coords.lng);
+      if (data?.address) {
+        toast.success("Location, city, and area filled in from the Google Maps link.");
+      } else {
+        toast.success("Pin placed from the Google Maps link, but the address couldn't be fully resolved — please check city/area.");
+      }
+    } catch (err) {
+      console.error("Failed to resolve Google Maps link", err);
+      toast.error("Pin placed, but auto-filling city/area failed. Please fill them manually.");
+    } finally {
+      setGmapsLoading(false);
+    }
   };
 
   // Handle Approval Action
@@ -1873,15 +1997,21 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-bold text-slate-700">City *</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Ernakulam / Kochi"
+                    <label className="text-xs font-bold text-slate-700">City (District) *</label>
+                    <select
                       value={editCity}
                       onChange={(e) => setEditCity(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-semibold text-slate-900"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 text-xs font-bold text-slate-900"
                       required
-                    />
+                    >
+                      <option value="">Select District</option>
+                      {!KERALA_DISTRICTS.includes(editCity) && editCity && (
+                        <option value={editCity}>{editCity}</option>
+                      )}
+                      {KERALA_DISTRICTS.map((d) => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="space-y-1">
@@ -1953,6 +2083,30 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                       </div>
                     )}
                   </div>
+
+                  {/* Paste Google Maps Link */}
+                  <form onSubmit={handleGoogleMapsLinkSubmit} className="flex flex-col sm:flex-row gap-2">
+                    <div className="relative flex-1">
+                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Or paste a Google Maps link here..."
+                        value={googleMapsLink}
+                        onChange={(e) => setGoogleMapsLink(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-900 font-medium"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={gmapsLoading}
+                      className="bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs px-4 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer border-0 shrink-0 disabled:opacity-50"
+                    >
+                      {gmapsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Use Link"}
+                    </button>
+                  </form>
+                  <p className="text-[10px] text-slate-400 font-semibold my-0">
+                    Tip: use the full URL from your browser's address bar (shortened links like maps.app.goo.gl/... aren't supported).
+                  </p>
 
                   {/* Leaflet Canvas */}
                   <div
