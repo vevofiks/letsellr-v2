@@ -97,8 +97,14 @@ class PropertyReport(UUIDMixin, TimestampMixin, Base):
         nullable=True,
         index=True,
     )
-    reason: Mapped[str] = mapped_column(String(100), nullable=False)
+    # Denormalized human-readable ref (e.g. "KL-EKM-0412") so admin can read
+    # reports without joining, even if the property is later deleted.
+    property_ref: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    reason: Mapped[str] = mapped_column(String(150), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    reporter_phone: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # Captured silently server-side for abuse/rate-limiting, never shown to the reporter.
+    reporter_ip: Mapped[str | None] = mapped_column(String(45), nullable=True)
     status: Mapped[str] = mapped_column(
         String(50),
         nullable=False,

@@ -1,6 +1,7 @@
 import asyncio
 import math
 import uuid
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 import httpx
 
@@ -494,6 +495,8 @@ class PropertyService:
         property_id: uuid.UUID,
         reason: str,
         description: Optional[str],
+        reporter_phone: Optional[str],
+        reporter_ip: Optional[str],
         user_id: Optional[uuid.UUID],
     ):
         prop = await self.repo.get_by_id(property_id)
@@ -501,12 +504,29 @@ class PropertyService:
             raise HTTPException(status_code=404, detail="Property not found")
 
         from app.modules.properties.models import PropertyReport
+        from sqlalchemy import func, select as sa_select
+
+        # Silent IP rate-limit: max 3 reports/hour. Exceeding it drops the
+        # report without telling the caller, so spammers see the same
+        # success response as everyone else.
+        if reporter_ip:
+            one_hour_ago = datetime.now(timezone.utc) - timedelta(hours=1)
+            count_stmt = sa_select(func.count()).select_from(PropertyReport).where(
+                PropertyReport.reporter_ip == reporter_ip,
+                PropertyReport.created_at >= one_hour_ago,
+            )
+            recent_count = (await self.repo.db.execute(count_stmt)).scalar_one()
+            if recent_count >= 3:
+                return None
 
         report = PropertyReport(
             property_id=property_id,
+            property_ref=prop.ref,
             reporter_id=user_id,
             reason=reason,
             description=description,
+            reporter_phone=reporter_phone,
+            reporter_ip=reporter_ip,
             status="pending",
         )
         self.repo.db.add(report)

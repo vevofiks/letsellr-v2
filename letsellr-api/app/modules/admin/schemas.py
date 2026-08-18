@@ -51,6 +51,7 @@ class VerificationActionRequest(BaseModel):
 class DashboardStatsResponse(BaseModel):
     pending_property_reviews: int
     pending_kyc_reviews: int = 0
+    pending_reports: int = 0
     open_disputes: int
     total_users: int
     total_properties: int

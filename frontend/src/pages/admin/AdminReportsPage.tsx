@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   ShieldAlert,
   AlertTriangle,
@@ -15,9 +16,11 @@ import {
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/utils";
 import { adminService, type AdminProperty } from "@/services/adminService";
+import { propertyPath } from "@/lib/urls";
 import { Badge } from "@/components/ui/badge";
 
 export const AdminReportsPage: React.FC = () => {
+  const navigate = useNavigate();
   const [reports, setReports] = useState<any[]>([]);
   const [rejectedProperties, setRejectedProperties] = useState<AdminProperty[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
@@ -231,33 +234,47 @@ export const AdminReportsPage: React.FC = () => {
                         {report.description && (
                           <p className="text-[11px] text-slate-500 truncate max-w-xs my-0">{report.description}</p>
                         )}
+                        {report.reporter_phone && (
+                          <p className="text-[11px] text-slate-400 font-semibold my-0 mt-0.5">
+                            Contact: {report.reporter_phone}
+                          </p>
+                        )}
                       </td>
                       <td className="py-3 px-5">
                         {getStatusBadge(report.status)}
                       </td>
                       <td className="py-3 px-5 text-right">
-                        {report.status === "pending" && (
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => handleUpdateReportStatus(report.id, "resolved")}
-                              disabled={actionLoading}
-                              className="h-8 px-2.5 rounded-lg bg-emerald-50 text-[#014645] hover:bg-emerald-100 border border-emerald-200 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
-                              title="Resolve Report"
-                            >
-                              <CheckCircle className="h-3.5 w-3.5" />
-                              <span>Resolve</span>
-                            </button>
-                            <button
-                              onClick={() => handleUpdateReportStatus(report.id, "dismissed")}
-                              disabled={actionLoading}
-                              className="h-8 px-2.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
-                              title="Dismiss Report"
-                            >
-                              <XCircle className="h-3.5 w-3.5" />
-                              <span>Dismiss</span>
-                            </button>
-                          </div>
-                        )}
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => navigate(`/admin-platform/reports/${report.id}`)}
+                            className="h-8 w-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer transition-colors"
+                            title="View Details"
+                          >
+                            <Eye className="h-3.5 w-3.5" />
+                          </button>
+                          {report.status === "pending" && (
+                            <>
+                              <button
+                                onClick={() => handleUpdateReportStatus(report.id, "resolved")}
+                                disabled={actionLoading}
+                                className="h-8 px-2.5 rounded-lg bg-emerald-50 text-[#014645] hover:bg-emerald-100 border border-emerald-200 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                                title="Resolve Report"
+                              >
+                                <CheckCircle className="h-3.5 w-3.5" />
+                                <span>Resolve</span>
+                              </button>
+                              <button
+                                onClick={() => handleUpdateReportStatus(report.id, "dismissed")}
+                                disabled={actionLoading}
+                                className="h-8 px-2.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 text-xs font-bold transition-colors cursor-pointer flex items-center gap-1"
+                                title="Dismiss Report"
+                              >
+                                <XCircle className="h-3.5 w-3.5" />
+                                <span>Dismiss</span>
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -314,6 +331,7 @@ export const AdminReportsPage: React.FC = () => {
                       </td>
                       <td className="py-3 px-5 text-right">
                         <button
+                          onClick={() => navigate(propertyPath(property))}
                           className="h-8 w-8 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center cursor-pointer transition-colors ml-auto"
                           title="View Details"
                         >

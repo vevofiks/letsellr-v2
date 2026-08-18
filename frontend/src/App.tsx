@@ -24,6 +24,7 @@ import { AdminPropertiesQueuePage } from "@/pages/admin/AdminPropertiesQueuePage
 import { AdminAddPropertyPage } from "@/pages/admin/AdminAddPropertyPage";
 import { AdminUsersPage } from "@/pages/admin/AdminUsersPage";
 import { AdminReportsPage } from "@/pages/admin/AdminReportsPage";
+import { AdminReportDetailPage } from "@/pages/admin/AdminReportDetailPage";
 import { AdminCategoriesPage } from "@/pages/admin/AdminCategoriesPage";
 import { AdminLocationsPage } from "@/pages/admin/AdminLocationsPage";
 import { AdminLandingPageConfig } from "@/pages/admin/AdminLandingPageConfig";
@@ -176,6 +177,7 @@ function App() {
               <Route path="properties/add" element={<AdminAddPropertyPage />} />
               <Route path="users" element={<AdminUsersPage />} />
               <Route path="reports" element={<AdminReportsPage />} />
+              <Route path="reports/:reportId" element={<AdminReportDetailPage />} />
               <Route path="categories" element={<AdminCategoriesPage />} />
               <Route path="locations" element={<AdminLocationsPage />} />
               <Route path="landing-page" element={<AdminLandingPageConfig />} />

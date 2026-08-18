@@ -10,7 +10,7 @@ before parameterised routes (/{property_id}) to avoid collision.
 from typing import List, Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Header, Query, status
+from fastapi import APIRouter, Depends, Header, Query, Request, status
 
 from app.depends.auth import CurrentUser, OptionalCurrentUser, require_owner_or_agency
 from app.depends.db import DbSession
@@ -223,14 +223,29 @@ async def report_property(
     property_id: UUID,
     data: PropertyReportCreate,
     db: DbSession,
-    current_user: CurrentUser,
+    request: Request,
+    current_user: OptionalCurrentUser = None,
 ):
-    """Report a property listing."""
+    """
+    Report a property listing. No login required — reporting must stay low-friction.
+    Silently rate-limited by IP (max 3/hour) to deter spam without blocking genuine users.
+    """
+    forwarded_for = request.headers.get("x-forwarded-for")
+    client_ip = (
+        forwarded_for.split(",")[0].strip()
+        if forwarded_for
+        else (request.client.host if request.client else None)
+    )
     service = PropertyService(db)
     await service.report_property(
-        property_id, data.reason, data.description, current_user.id
+        property_id,
+        data.reason,
+        data.description,
+        data.reporter_phone,
+        client_ip,
+        current_user.id if current_user else None,
     )
-    return {"message": "Report submitted successfully"}
+    return {"message": "Thanks — our team will review this listing."}
 
 
 @router.get("/config/types", tags=["Properties"])

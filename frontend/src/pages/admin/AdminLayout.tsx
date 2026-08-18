@@ -25,6 +25,7 @@ export const AdminLayout: React.FC = () => {
   const { user, logout } = useAuth();
   const [pendingPropertyCount, setPendingPropertyCount] = useState<number>(0);
   const [pendingKycCount, setPendingKycCount] = useState<number>(0);
+  const [pendingReportCount, setPendingReportCount] = useState<number>(0);
   const [sidebarOpen, setSidebarOpen] = useState(false); // Mobile drawer toggle
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(() => {
     return localStorage.getItem("admin_sidebar_collapsed") === "true";
@@ -40,6 +41,7 @@ export const AdminLayout: React.FC = () => {
       .then((stats) => {
         setPendingPropertyCount(stats.pending_property_reviews || 0);
         setPendingKycCount(stats.pending_kyc_reviews || 0);
+        setPendingReportCount(stats.pending_reports || 0);
       })
       .catch((err) =>
         console.error("Failed to fetch sidebar pending stats:", err)
@@ -256,10 +258,21 @@ export const AdminLayout: React.FC = () => {
               onClick={() => setSidebarOpen(false)}
               title="Reports & Flags"
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2.5 relative">
                 <ShieldAlert className="h-4 w-4 shrink-0" />
                 {!sidebarCollapsed && <span>Reports & Flags</span>}
+                {sidebarCollapsed && pendingReportCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600" />
+                  </span>
+                )}
               </div>
+              {!sidebarCollapsed && pendingReportCount > 0 && (
+                <span className={`h-5 min-w-5 ${pendingReportCount < 10 ? "w-5" : "px-1.5"} rounded-full bg-rose-600 text-white font-black text-[10px] flex items-center justify-center shrink-0 leading-none shadow-2xs`}>
+                  {pendingReportCount}
+                </span>
+              )}
             </Link>
 
             <Link

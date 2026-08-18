@@ -33,8 +33,12 @@ class Settings(BaseSettings):
 
     # ── Security ─────────────────────────────────────────────────────────────
     SECRET_KEY: str
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
+    # Refresh is re-issued (sliding window) on every use — see AuthService._issue_tokens
+    # via /api/auth/refresh — so any activity within this window keeps the session
+    # alive indefinitely. This ceiling only matters for a stretch of total inactivity,
+    # so it's set generously long rather than tuned to a "typical" session length.
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
     ALGORITHM: str = "HS256"
 
     # ── Auth Provider ─────────────────────────────────────────────────────────

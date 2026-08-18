@@ -3,6 +3,7 @@ import { api } from "@/lib/api";
 export interface AdminDashboardStats {
   pending_property_reviews: number;
   pending_kyc_reviews?: number;
+  pending_reports?: number;
   open_disputes: number;
   total_users: number;
   total_properties: number;
@@ -279,6 +280,11 @@ export const adminService = {
 
   getReports: async (): Promise<any[]> => {
     const res = await api.get("/api/admin/reports");
+    return res.data;
+  },
+
+  getReportById: async (reportId: string): Promise<any> => {
+    const res = await api.get(`/api/admin/reports/${reportId}`);
     return res.data;
   },
 

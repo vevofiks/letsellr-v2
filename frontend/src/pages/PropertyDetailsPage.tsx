@@ -3,6 +3,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { api } from "@/lib/api";
 import { getErrorMessage } from "@/lib/utils";
 import { toast } from "sonner";
@@ -20,6 +21,21 @@ import { APP_URL } from "@/lib/site";
 import { buildPropertyJsonLd, buildBreadcrumbJsonLd } from "@/lib/jsonLd";
 import { propertyPath, propertyUrl } from "@/lib/urls";
 import { useConfirm } from "@/components/ConfirmDialogProvider";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import {
   ArrowLeft,
@@ -43,10 +59,26 @@ import {
   CheckCircle2,
   X,
   User,
+  Flag,
 } from "lucide-react";
+
+const REPORT_REASONS = [
+  "Property is no longer available",
+  "Wrong or misleading information (price, photos, location)",
+  "Suspected broker (not a genuine owner)",
+  "Fake or duplicate listing",
+  "Fraud or scam attempt",
+  "Other",
+];
 
 const getYoutubeEmbedUrl = (url: string | undefined): string | null => {
   if (!url) return null;
+  // Handle YouTube Shorts: youtube.com/shorts/<id>
+  const shortsMatch = url.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/);
+  if (shortsMatch) {
+    return `https://www.youtube.com/embed/${shortsMatch[1]}?playsinline=1&enablejsapi=1&rel=0`;
+  }
+  // Handle standard YouTube URLs
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
   const match = url.match(regExp);
   if (match && match[2].length === 11) {
@@ -57,6 +89,12 @@ const getYoutubeEmbedUrl = (url: string | undefined): string | null => {
 
 const getYoutubeThumbnailUrl = (url: string | undefined): string | null => {
   if (!url) return null;
+  // Handle YouTube Shorts: youtube.com/shorts/<id>
+  const shortsMatch = url.match(/youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/);
+  if (shortsMatch) {
+    return `https://img.youtube.com/vi/${shortsMatch[1]}/hqdefault.jpg`;
+  }
+  // Handle standard YouTube URLs
   const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
   const match = url.match(regExp);
   if (match && match[2].length === 11) {
@@ -85,6 +123,14 @@ export const PropertyDetailsPage: React.FC = () => {
   });
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [isSharingExpanded, setIsSharingExpanded] = useState(false);
+
+  // Report Property State
+  const [reportModalOpen, setReportModalOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("");
+  const [reportDescription, setReportDescription] = useState("");
+  const [reportPhone, setReportPhone] = useState("");
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportErrors, setReportErrors] = useState<{ reason?: string; description?: string }>({});
 
   // Reviews State
   const [reviews, setReviews] = useState<any[]>([]);
@@ -474,6 +520,46 @@ export const PropertyDetailsPage: React.FC = () => {
     }
   };
 
+  const resetReportForm = () => {
+    setReportReason("");
+    setReportDescription("");
+    setReportPhone("");
+    setReportErrors({});
+  };
+
+  const handleSubmitReport = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const errors: { reason?: string; description?: string } = {};
+    if (!reportReason) {
+      errors.reason = "Please select a reason.";
+    }
+    if (reportReason === "Other" && !reportDescription.trim()) {
+      errors.description = "Please describe the issue.";
+    }
+    if (reportDescription.length > 300) {
+      errors.description = "Description must be 300 characters or fewer.";
+    }
+    setReportErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+
+    try {
+      setReportSubmitting(true);
+      await api.post(`/api/properties/${property.id}/report`, {
+        reason: reportReason,
+        description: reportDescription.trim() || undefined,
+        reporter_phone: reportPhone.trim() || undefined,
+      });
+      toast.success("Thanks — our team will review this listing.");
+      setReportModalOpen(false);
+      resetReportForm();
+    } catch (err) {
+      toast.error(getErrorMessage(err, "Failed to submit report. Please try again."));
+    } finally {
+      setReportSubmitting(false);
+    }
+  };
+
   const formatPrice = (price: number, unit: string) => {
     const formatted = new Intl.NumberFormat("en-IN", {
       style: "currency",
@@ -766,8 +852,8 @@ export const PropertyDetailsPage: React.FC = () => {
                 {property.title}
               </h1>
 
-              <div className="text-sm font-semibold text-slate-500 flex flex-wrap items-center gap-1.5">
-                <MapPin className="h-4 w-4 inline text-rose-500 shrink-0" />
+              <div className="text-sm font-semibold text-slate-500 flex flex-wrap items-start gap-1.5">
+                <MapPin className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
                 <span className="capitalize">
                   {[
                     property.location_address,
@@ -828,24 +914,6 @@ export const PropertyDetailsPage: React.FC = () => {
               )}
             </div>
 
-            {/* Mobile Floating Sticky Action Bar */}
-            <div className="block lg:hidden sticky top-20 z-50 my-4 pointer-events-none">
-              <div className="bg-white/95 backdrop-blur-xl border border-slate-200 shadow-md rounded-2xl p-3 flex items-center justify-between pointer-events-auto">
-                <div className="flex flex-col pl-2">
-                  <span className="text-[10px] font-black uppercase text-slate-500 tracking-wider">Property Price</span>
-                  <span className="text-xl font-black text-[#0B6E4F] leading-tight">
-                    {formatPrice(property.price, property.price_unit)}
-                  </span>
-                </div>
-                <Button
-                  onClick={handleWhatsAppContact}
-                  className="bg-[#23D283] hover:bg-[#11995E] text-white font-extrabold px-6 py-5 text-sm rounded-xl flex items-center gap-2 shadow-md active:scale-95 transition-all cursor-pointer"
-                >
-                  <MessageSquare className="h-4.5 w-4.5" />
-                  Chat Now
-                </Button>
-              </div>
-            </div>
 
             {/* Key Specs Cards Grid */}
             {hasAnySpec && (
@@ -975,6 +1043,17 @@ export const PropertyDetailsPage: React.FC = () => {
                   Coordinates not provided for this listing.
                 </div>
               )}
+            </div>
+
+            {/* Report this listing — quiet, findable, not competing with Enquire */}
+            <div className="flex justify-start">
+              <button
+                onClick={() => setReportModalOpen(true)}
+                className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              >
+                <Flag className="h-3 w-3" />
+                <span>Report this property</span>
+              </button>
             </div>
 
             {/* Reviews Section */}
@@ -1171,6 +1250,9 @@ export const PropertyDetailsPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Spacer so last content clears the fixed mobile bottom bar */}
+            <div className="block lg:hidden h-20" />
+
           </div>
 
           {/* Right Sticky Sidebar: Price Card & Owner/Agency Info */}
@@ -1309,12 +1391,142 @@ export const PropertyDetailsPage: React.FC = () => {
         </div>
       </main>
 
+      {/* Mobile Airbnb-style Fixed Bottom Action Bar — placed at root level to guarantee true viewport fixed positioning */}
+      <div className="block lg:hidden fixed bottom-0 left-0 right-0 z-9998 bg-white border-t border-slate-200 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] px-4 py-3">
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col min-w-0">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Property Price</span>
+            <span className="text-xl font-black text-slate-900 leading-tight underline decoration-slate-300 underline-offset-2 truncate">
+              {formatPrice(property.price, property.price_unit)}
+            </span>
+          </div>
+          <div className="flex flex-col items-end shrink-0 gap-1">
+            <Button
+              onClick={handleWhatsAppContact}
+              className="bg-[#23D283] hover:bg-[#11995E] active:bg-[#0B6E4F] text-white font-extrabold px-7 py-4 text-sm rounded-xl flex items-center gap-2 shadow-md active:scale-95 transition-all cursor-pointer"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Chat Now
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {authModal.open && (
         <AuthModal
           initialMode={authModal.mode}
           onClose={() => setAuthModal({ open: false, mode: "login" })}
         />
       )}
+
+      {/* Report Property Modal */}
+      <Dialog
+        open={reportModalOpen}
+        onOpenChange={(open) => {
+          setReportModalOpen(open);
+          if (!open) resetReportForm();
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Flag className="h-4 w-4 text-rose-500" />
+              Report this property
+            </DialogTitle>
+            <DialogDescription>
+              Help us keep listings genuine. Your report is reviewed by our team.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleSubmitReport} className="space-y-4 min-w-0">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">
+                Reason for report <span className="text-rose-500">*</span>
+              </label>
+              <Select
+                value={reportReason}
+                onValueChange={(value) => {
+                  setReportReason(value as string);
+                  setReportErrors((prev) => ({ ...prev, reason: undefined }));
+                }}
+              >
+                <SelectTrigger className={reportErrors.reason ? "border-rose-400" : ""}>
+                  <SelectValue placeholder="Select a reason" />
+                </SelectTrigger>
+                <SelectContent alignItemWithTrigger={false} className="max-w-[calc(100vw-2rem)]">
+                  {REPORT_REASONS.map((reason) => (
+                    <SelectItem key={reason} value={reason}>
+                      {reason}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {reportErrors.reason && (
+                <p className="text-[11px] font-semibold text-rose-500">{reportErrors.reason}</p>
+              )}
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">
+                Description
+                {reportReason === "Other" && <span className="text-rose-500"> *</span>}
+              </label>
+              <textarea
+                value={reportDescription}
+                onChange={(e) => {
+                  setReportDescription(e.target.value.slice(0, 300));
+                  setReportErrors((prev) => ({ ...prev, description: undefined }));
+                }}
+                maxLength={300}
+                placeholder={
+                  reportReason === "Other"
+                    ? "Tell us what's wrong with this listing..."
+                    : "Optional — add any extra detail (optional)"
+                }
+                className={`w-full min-h-20 bg-slate-50 border rounded-xl p-3 text-sm focus:outline-none focus:border-[#23D283] transition-all resize-y font-semibold text-slate-800 placeholder-slate-400 ${
+                  reportErrors.description ? "border-rose-400" : "border-slate-200/80"
+                }`}
+              />
+              <div className="flex items-center justify-between">
+                {reportErrors.description ? (
+                  <p className="text-[11px] font-semibold text-rose-500">{reportErrors.description}</p>
+                ) : <span />}
+                <span className="text-[10.5px] text-slate-400 font-semibold">
+                  {reportDescription.length}/300
+                </span>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-slate-700">Your phone number</label>
+              <Input
+                type="tel"
+                value={reportPhone}
+                onChange={(e) => setReportPhone(e.target.value)}
+                placeholder="e.g. 9876543210"
+                maxLength={20}
+              />
+              <p className="text-[11px] text-slate-400 font-medium">
+                Optional — add your number if you're okay with us contacting you to verify.
+              </p>
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setReportModalOpen(false)}
+                disabled={reportSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={reportSubmitting}>
+                {reportSubmitting ? "Submitting..." : "Submit Report"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Detailed Image Viewer Modal */}
       {isImageViewerOpen && mediaList.length > 0 && (
