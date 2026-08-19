@@ -18,7 +18,8 @@ import {
   Bath,
   Maximize,
   ArrowLeft,
-  Share2
+  Share2,
+  Award
 } from "lucide-react";
 
 interface AgencyProfile {
@@ -164,6 +165,18 @@ export const AgencyProfilePage: React.FC = () => {
 
   if (!agency) return null;
 
+  // Same completeness checklist as the agency's own settings page — a
+  // profile-strength trust signal, distinct from admin-approved verification.
+  const profileChecklistDone = [
+    Boolean(agency.display_name),
+    Boolean(agency.about),
+    Boolean(logoUrl || agency.logo_key),
+    Boolean(bannerUrl || agency.banner_key),
+    Boolean(agency.areas_served && agency.areas_served.length > 0),
+    Boolean(agency.location_city && agency.location_area),
+  ].filter(Boolean).length;
+  const isProfileComplete = profileChecklistDone === 6;
+
   const agencyLocation = agency.location_area || agency.location_city || "";
   const agencyCanonicalUrl = `${APP_URL}/agencies/${agency.id}`;
 
@@ -241,6 +254,14 @@ export const AgencyProfilePage: React.FC = () => {
                   {agency.verification_status === "verified" && (
                     <span className="inline-flex items-center gap-1 bg-emerald-50 border border-emerald-200 rounded-md px-2 py-0.5 text-[10px] font-bold text-emerald-700 uppercase tracking-wide">
                       <ShieldCheck className="h-3 w-3 fill-emerald-500 text-white" /> Verified
+                    </span>
+                  )}
+                  {isProfileComplete && (
+                    <span
+                      className="inline-flex items-center gap-1 bg-amber-50 border border-amber-200 rounded-md px-2 py-0.5 text-[10px] font-bold text-amber-700 uppercase tracking-wide"
+                      title="This agency has filled in every profile detail"
+                    >
+                      <Award className="h-3 w-3" /> Trusted Profile
                     </span>
                   )}
                 </div>

@@ -259,6 +259,10 @@ class Property(UUIDMixin, TimestampMixin, Base):
     )
 
     is_featured: Mapped[bool] = mapped_column(default=False, nullable=False)
+    # Manually set by an admin as a trust signal shown to seekers. Deliberately
+    # kept out of PropertyUpdate — only the admin toggle endpoint may flip it,
+    # so an owner/agency can never self-verify their own listing.
+    is_verified: Mapped[bool] = mapped_column(default=False, nullable=False)
 
     stats: Mapped[dict] = mapped_column(
         JSONB,

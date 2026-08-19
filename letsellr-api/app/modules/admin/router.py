@@ -436,6 +436,45 @@ async def toggle_feature_property(
     return result_updated.scalars().first()
 
 
+@router.post(
+    "/properties/{property_id}/toggle-verify",
+    response_model=PropertyResponse,
+    tags=["Admin - Properties"],
+)
+async def toggle_verify_property(
+    property_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+):
+    """Admin toggle to manually mark a property listing as verified / unverified.
+
+    Deliberately bypasses PropertyUpdate — is_verified is not a field on that
+    schema, so this is the only way to flip it. Keeps the trust badge
+    admin-only; an owner/agency can never self-verify their own listing.
+    """
+    require_admin(current_user)
+    from sqlalchemy.orm import selectinload
+
+    result = await db.execute(
+        select(Property)
+        .options(selectinload(Property.owner))
+        .where(Property.id == property_id)
+    )
+    property_obj = result.scalars().first()
+    if not property_obj:
+        raise HTTPException(status_code=404, detail="Property not found")
+
+    property_obj.is_verified = not property_obj.is_verified
+    await db.commit()
+
+    result_updated = await db.execute(
+        select(Property)
+        .options(selectinload(Property.owner))
+        .where(Property.id == property_id)
+    )
+    return result_updated.scalars().first()
+
+
 @router.get(
     "/property-types",
     response_model=list[PropertyTypeResponse],

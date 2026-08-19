@@ -76,6 +76,7 @@ export interface AdminProperty {
   ref?: string;
   ref_code?: string;
   is_featured?: boolean;
+  is_verified?: boolean;
   created_at: string;
   photos?: (string | { photo_url: string; display_order?: number })[];
   amenities?: (string | { name: string; category?: string })[];
@@ -181,6 +182,12 @@ export const adminService = {
   // Toggle feature property on landing page
   toggleFeatureProperty: async (propertyId: string): Promise<AdminProperty> => {
     const res = await api.post<AdminProperty>(`/api/admin/properties/${propertyId}/toggle-feature`);
+    return res.data;
+  },
+
+  // Toggle manual "Verified" trust badge on a property listing
+  toggleVerifyProperty: async (propertyId: string): Promise<AdminProperty> => {
+    const res = await api.post<AdminProperty>(`/api/admin/properties/${propertyId}/toggle-verify`);
     return res.data;
   },
 

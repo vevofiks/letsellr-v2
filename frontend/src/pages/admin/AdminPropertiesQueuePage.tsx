@@ -27,6 +27,7 @@ import {
   Sparkles,
   Star,
   MessageSquare,
+  ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
 import { getErrorMessage } from "@/lib/utils";
@@ -1087,6 +1088,34 @@ export const AdminPropertiesQueuePage: React.FC = () => {
                     >
                       <Sparkles className={`h-3.5 w-3.5 shrink-0 ${prop.is_featured ? "fill-emerald-600 text-emerald-600" : "text-slate-400"}`} />
                       <span className="truncate">{prop.is_featured ? "Featured" : "Feature"}</span>
+                    </button>
+
+                    <button
+                      onClick={async () => {
+                        try {
+                          const updated = await adminService.toggleVerifyProperty(prop.id);
+                          toast.success(
+                            updated.is_verified
+                              ? `"${prop.title}" marked as verified.`
+                              : `"${prop.title}" unverified.`
+                          );
+                          const updater = (list: AdminProperty[]) =>
+                            list.map((p) => (p.id === prop.id ? { ...p, is_verified: updated.is_verified } : p));
+                          setPendingProperties(updater);
+                          setLiveProperties(updater);
+                        } catch {
+                          toast.error("Failed to update verified status.");
+                        }
+                      }}
+                      className={`font-extrabold text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 cursor-pointer border flex-1 sm:flex-none ${
+                        prop.is_verified
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-300 hover:bg-emerald-100"
+                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-100"
+                      }`}
+                      title={prop.is_verified ? "Verified listing (click to unverify)" : "Mark listing as verified"}
+                    >
+                      <ShieldCheck className={`h-3.5 w-3.5 shrink-0 ${prop.is_verified ? "fill-emerald-600 text-white" : "text-slate-400"}`} />
+                      <span className="truncate">{prop.is_verified ? "Verified" : "Verify"}</span>
                     </button>
 
                     <button
