@@ -26,6 +26,24 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
+import { Slider } from "@/components/ui/slider";
+
+const formatCompactPrice = (val: number) => {
+  if (val >= 1000000) return `${val / 1000000}M`;
+  if (val >= 1000) return `${val / 1000}K`;
+  return val.toString();
+};
+
+const formatExactPrice = (val: number) => val.toLocaleString("en-IN");
+
+const PRICE_RANGE_MAX = { sale: 10000000, rent: 200000 };
+const PRICE_RANGE_STEP = { sale: 1000, rent: 100 };
+
+const getPriceRangeMax = (intent: string) =>
+  intent === "rent" || intent === "lease" ? PRICE_RANGE_MAX.rent : PRICE_RANGE_MAX.sale;
+
+const getPriceRangeStep = (intent: string) =>
+  intent === "rent" || intent === "lease" ? PRICE_RANGE_STEP.rent : PRICE_RANGE_STEP.sale;
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -1219,35 +1237,26 @@ export const ClientDashboard: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Price — OLX-style small min/max boxes */}
-                      <div className="flex flex-col gap-1 text-left col-span-2">
-                        <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Budget</span>
-                        <div className="flex items-center gap-1.5">
-                          <div className="flex items-center flex-1 bg-white border border-slate-200 hover:border-slate-300 rounded-md h-8 px-2 focus-within:ring-2 focus-within:ring-brand-green/20 focus-within:border-brand-green">
-                            <span className="text-[10px] text-slate-400 font-semibold mr-0.5">₹</span>
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              min={0}
-                              placeholder="Min"
-                              value={minPrice}
-                              onChange={(e) => { setMinPrice(e.target.value); setPage(1); }}
-                              className="w-full min-w-0 bg-transparent outline-none font-semibold text-slate-800 text-[10px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            />
-                          </div>
-                          <span className="text-slate-300 text-[10px] font-bold shrink-0">–</span>
-                          <div className="flex items-center flex-1 bg-white border border-slate-200 hover:border-slate-300 rounded-md h-8 px-2 focus-within:ring-2 focus-within:ring-brand-green/20 focus-within:border-brand-green">
-                            <span className="text-[10px] text-slate-400 font-semibold mr-0.5">₹</span>
-                            <input
-                              type="number"
-                              inputMode="numeric"
-                              min={0}
-                              placeholder="Max"
-                              value={maxPrice}
-                              onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }}
-                              className="w-full min-w-0 bg-transparent outline-none font-semibold text-slate-800 text-[10px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                            />
-                          </div>
+                      {/* Price — Slider */}
+                      <div className={cn("flex flex-col gap-2 text-left col-span-2 mt-2 mb-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
+                        <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-[0.15em]">Price Range</span>
+                        <span className="text-base font-bold text-slate-800 tabular-nums">
+                          ₹{formatExactPrice(Number(minPrice) || 0)} - ₹{maxPrice ? formatExactPrice(Number(maxPrice)) : `${formatExactPrice(getPriceRangeMax(intent))}+`}
+                        </span>
+                        <div className="px-1.5 pb-1 pt-1">
+                          <Slider
+                            min={0}
+                            max={getPriceRangeMax(intent)}
+                            step={getPriceRangeStep(intent)}
+                            value={[Number(minPrice) || 0, Number(maxPrice) || getPriceRangeMax(intent)]}
+                            onValueChange={(val) => {
+                              const [lo, hi] = val as number[];
+                              setMinPrice(lo === 0 ? "" : lo.toString());
+                              setMaxPrice(hi === getPriceRangeMax(intent) ? "" : hi.toString());
+                            }}
+                            onValueCommitted={() => setPage(1)}
+                            className="w-full [&_[data-slot=slider-track]]:h-1.5 [&_[data-slot=slider-range]]:bg-[#0B6E4F] [&_[data-slot=slider-thumb]]:size-4 [&_[data-slot=slider-thumb]]:border-2 [&_[data-slot=slider-thumb]]:border-[#0B6E4F]"
+                          />
                         </div>
                       </div>
 
@@ -1517,33 +1526,35 @@ export const ClientDashboard: React.FC = () => {
 
 
 
-                {/* Price — OLX-style min/max boxes. Hidden on mobile, shown on lg screens */}
+                {/* Price — Min/Max inputs. Hidden on mobile, shown on lg screens */}
                 <div className={cn("hidden lg:flex flex-col text-left min-w-45 flex-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
-                  <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">Price</label>
+                  <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">Price Range</label>
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center flex-1 bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 shadow-sm transition-all focus-within:ring-2 focus-within:ring-brand-green/20 focus-within:border-brand-green">
-                      <span className="text-[13px] text-slate-400 font-semibold mr-1">₹</span>
+                    <div className="flex items-center gap-1 bg-white border border-slate-200 hover:border-slate-300 focus-within:ring-2 focus-within:ring-brand-green/20 focus-within:border-brand-green rounded-lg h-10 px-3 transition-all shadow-sm flex-1 min-w-0">
+                      <span className="text-slate-400 text-[13px] font-semibold shrink-0">₹</span>
                       <input
                         type="number"
-                        inputMode="numeric"
                         min={0}
                         placeholder="Min"
                         value={minPrice}
-                        onChange={(e) => { setMinPrice(e.target.value); setPage(1); }}
-                        className="w-full min-w-0 bg-transparent outline-none font-semibold text-slate-800 text-[13px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        onChange={(e) => setMinPrice(e.target.value)}
+                        onBlur={() => setPage(1)}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.currentTarget.blur(); } }}
+                        className="w-full bg-transparent border-0 font-semibold text-slate-800 text-[13px] focus:outline-none focus:ring-0 p-0 placeholder:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
-                    <span className="text-slate-300 font-bold shrink-0">–</span>
-                    <div className="flex items-center flex-1 bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 shadow-sm transition-all focus-within:ring-2 focus-within:ring-brand-green/20 focus-within:border-brand-green">
-                      <span className="text-[13px] text-slate-400 font-semibold mr-1">₹</span>
+                    <span className="text-slate-400 text-xs font-semibold shrink-0">–</span>
+                    <div className="flex items-center gap-1 bg-white border border-slate-200 hover:border-slate-300 focus-within:ring-2 focus-within:ring-brand-green/20 focus-within:border-brand-green rounded-lg h-10 px-3 transition-all shadow-sm flex-1 min-w-0">
+                      <span className="text-slate-400 text-[13px] font-semibold shrink-0">₹</span>
                       <input
                         type="number"
-                        inputMode="numeric"
                         min={0}
                         placeholder="Max"
                         value={maxPrice}
-                        onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }}
-                        className="w-full min-w-0 bg-transparent outline-none font-semibold text-slate-800 text-[13px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                        onChange={(e) => setMaxPrice(e.target.value)}
+                        onBlur={() => setPage(1)}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.currentTarget.blur(); } }}
+                        className="w-full bg-transparent border-0 font-semibold text-slate-800 text-[13px] focus:outline-none focus:ring-0 p-0 placeholder:text-slate-400 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       />
                     </div>
                   </div>
@@ -1817,35 +1828,26 @@ export const ClientDashboard: React.FC = () => {
                               </div>
                             </div>
 
-                            {/* Mobile-only: Price — OLX-style small min/max boxes */}
-                            <div className={cn("flex flex-col gap-1 lg:hidden", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
-                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Price</span>
-                              <div className="flex items-center gap-1.5">
-                                <div className="flex items-center flex-1 bg-white border border-slate-200 rounded-md h-8 px-2">
-                                  <span className="text-[10px] text-slate-400 font-semibold mr-0.5">₹</span>
-                                  <input
-                                    type="number"
-                                    inputMode="numeric"
-                                    min={0}
-                                    placeholder="Min"
-                                    value={minPrice}
-                                    onChange={(e) => { setMinPrice(e.target.value); setPage(1); }}
-                                    className="w-full min-w-0 bg-transparent outline-none font-semibold text-slate-800 text-[11px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                  />
-                                </div>
-                                <span className="text-slate-300 text-[10px] font-bold shrink-0">–</span>
-                                <div className="flex items-center flex-1 bg-white border border-slate-200 rounded-md h-8 px-2">
-                                  <span className="text-[10px] text-slate-400 font-semibold mr-0.5">₹</span>
-                                  <input
-                                    type="number"
-                                    inputMode="numeric"
-                                    min={0}
-                                    placeholder="Max"
-                                    value={maxPrice}
-                                    onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }}
-                                    className="w-full min-w-0 bg-transparent outline-none font-semibold text-slate-800 text-[11px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                  />
-                                </div>
+                            {/* Mobile-only: Price Slider */}
+                            <div className={cn("flex flex-col gap-2 lg:hidden mt-2 mb-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
+                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.15em]">Price Range</span>
+                              <span className="text-base font-bold text-slate-800 tabular-nums">
+                                ₹{formatExactPrice(Number(minPrice) || 0)} - ₹{maxPrice ? formatExactPrice(Number(maxPrice)) : `${formatExactPrice(getPriceRangeMax(intent))}+`}
+                              </span>
+                              <div className="px-1.5 pb-1 pt-1">
+                                <Slider
+                                  min={0}
+                                  max={getPriceRangeMax(intent)}
+                                  step={getPriceRangeStep(intent)}
+                                  value={[Number(minPrice) || 0, Number(maxPrice) || getPriceRangeMax(intent)]}
+                                  onValueChange={(val) => {
+                                    const [lo, hi] = val as number[];
+                                    setMinPrice(lo === 0 ? "" : lo.toString());
+                                    setMaxPrice(hi === getPriceRangeMax(intent) ? "" : hi.toString());
+                                  }}
+                                  onValueCommitted={() => setPage(1)}
+                                  className="w-full [&_[data-slot=slider-track]]:h-1.5 [&_[data-slot=slider-range]]:bg-[#0B6E4F] [&_[data-slot=slider-thumb]]:size-4 [&_[data-slot=slider-thumb]]:border-2 [&_[data-slot=slider-thumb]]:border-[#0B6E4F]"
+                                />
                               </div>
                             </div>
 
@@ -1957,7 +1959,7 @@ export const ClientDashboard: React.FC = () => {
 
               {(minPrice || maxPrice) && searchMode !== "agencies" && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
-                  Budget: ₹{minPrice ? Number(minPrice).toLocaleString() : "0"} – {maxPrice ? `₹${Number(maxPrice).toLocaleString()}` : "Any"}
+                  Budget: ₹{minPrice ? formatCompactPrice(Number(minPrice)) : "0"} – {maxPrice ? `₹${formatCompactPrice(Number(maxPrice))}` : "Any"}
                   <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => { setMinPrice(""); setMaxPrice(""); setPage(1); }} />
                 </span>
               )}
@@ -2022,11 +2024,9 @@ export const ClientDashboard: React.FC = () => {
             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end shrink-0 mt-3 md:mt-0">
               {searchMode !== "agencies" && (
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-                  {properties.length > 0 && (
-                    <span className="text-[10px] text-brand-green px-2.5 py-1 rounded-full font-black uppercase tracking-wider shrink-0">
-                      PAGE {page}
-                    </span>
-                  )}
+                  <span className="text-[10px] text-brand-green px-2.5 py-1 rounded-full font-black uppercase tracking-wider shrink-0">
+                    PAGE {page}
+                  </span>
                   {/* Gender Preference Filters */}
                   {category && ["pg", "hostel", "pg_hostel", "villa_house", "apartment"].includes(category) && (
                     <div className="flex bg-slate-100/80 border border-slate-200/50 p-1 rounded-lg shrink-0 overflow-x-auto scrollbar-none max-w-full">
