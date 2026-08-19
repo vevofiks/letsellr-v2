@@ -905,7 +905,7 @@ export const PropertyDetailsPage: React.FC = () => {
             {/* Inline Detailed Pricing (Mobile only) */}
             <div className="block lg:hidden my-4 space-y-4">
               {/* Total Calculation */}
-              <div className="space-y-2.5 bg-white p-4 rounded-2xl border-2 border-slate-200 shadow-sm">
+              <div className="space-y-2.5 bg-white p-4 rounded-2xl border-1">
                 <div className="flex justify-between items-center text-sm font-semibold text-slate-600">
                   <span>Base Price:</span>
                   <span className="font-extrabold text-slate-900 text-base">{formatPrice(property.price, property.price_unit)}</span>
@@ -935,7 +935,7 @@ export const PropertyDetailsPage: React.FC = () => {
 
             {/* Key Specs Cards Grid */}
             {hasAnySpec && (
-              <div className="flex flex-wrap sm:flex-nowrap sm:items-center gap-y-3 sm:gap-y-0 bg-white border border-slate-200/80 rounded-2xl p-4 sm:px-5 sm:py-4 shadow-2xs text-left">
+              <div className="w-full sm:w-fit flex flex-wrap sm:flex-nowrap sm:items-center gap-y-3 sm:gap-y-0 bg-white border border-slate-200/80 rounded-2xl p-4 sm:px-5 sm:py-4 shadow-2xs text-left">
                 {hasBed && (
                   <div className={specCardClass}>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Bedroom</span>

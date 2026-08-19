@@ -54,7 +54,6 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
           DESKTOP LAYOUT (lg and up)
       ───────────────────────────────────────────── */}
       <div className="hidden lg:block relative overflow-hidden" style={{ height: "100vh", minHeight: "640px" }}>
-
         {/* Layer 0 Brand name behind everything */}
         <div
           className="hero-title absolute left-0 right-0 flex justify-center pointer-events-none select-none"
@@ -154,7 +153,7 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
           size so it scales with the type.
       ───────────────────────────────────────────── */}
       <div
-        className="lg:hidden relative bg-[#FAFAF8] overflow-hidden flex flex-col"
+        className="lg:hidden relative bg-[#FAFAF8] overflow-hidden flex flex-col justify-center"
         style={
           {
             height: "100svh",
@@ -186,8 +185,14 @@ export default function HeroSection({ isLoading = true }: { isLoading?: boolean 
         </div>
 
         {/* Pushes the wordmark+villa group down so the composition sits low,
-            like the desktop. Collapses to nothing when height is tight. */}
-        <div className="flex-1 min-h-[2vh]" />
+            like the desktop. Collapses to nothing when height is tight, and is
+            capped relative to the (width-limited) logo size so it can't balloon
+            into a huge gap on tall/wide devices where --hero-w never grows to
+            fill the extra height. */}
+        <div
+          className="flex-1 min-h-[2vh]"
+          style={{ maxHeight: "calc(var(--hero-w) * 0.22)" }}
+        />
 
         {/* LETSELLR wordmark */}
         <div
