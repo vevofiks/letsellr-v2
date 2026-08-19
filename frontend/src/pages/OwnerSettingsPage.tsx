@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   User,
   Building2,
@@ -7,6 +7,9 @@ import {
   Save,
   Camera,
   BadgeCheck,
+  CheckCircle2,
+  Circle,
+  Award,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { OwnerNavbar } from "@/components/OwnerNavbar";
@@ -172,6 +175,35 @@ export const OwnerSettingsPage: React.FC = () => {
     ? (user as any)?.agency_display_name || agencyName || user?.name || "Agency"
     : user?.name || "Your Name";
 
+  // Profile completeness checklist — a trust signal distinct from admin KYC
+  // verification: this is auto-computed from how much of the profile is
+  // filled in, and unlocks a "Complete Profile" badge at 100%.
+  const profileChecklist = useMemo(() => {
+    if (!user) return [];
+    const items: { label: string; done: boolean }[] = [
+      { label: "Full name added", done: Boolean(user.name) },
+      { label: "Phone number verified", done: Boolean(user.phone) },
+      { label: "Email address added", done: Boolean(user.email) },
+      { label: "Location set", done: Boolean(user.location_city && user.location_area) },
+      { label: "Identity verified by admin", done: isVerified },
+    ];
+    if (isAgency) {
+      items.push(
+        { label: "Agency display name set", done: Boolean(user.agency_profile?.display_name) },
+        { label: "About / bio written", done: Boolean(user.agency_profile?.about) },
+        { label: "Logo uploaded", done: Boolean(user.agency_profile?.logo_key) },
+        { label: "Banner uploaded", done: Boolean(user.agency_profile?.banner_key) },
+        { label: "Areas served added", done: Boolean(user.agency_profile?.areas_served?.length) },
+      );
+    }
+    return items;
+  }, [user, isAgency, isVerified]);
+
+  const profileCompletionPercent = profileChecklist.length
+    ? Math.round((profileChecklist.filter((i) => i.done).length / profileChecklist.length) * 100)
+    : 0;
+  const isProfileComplete = profileChecklist.length > 0 && profileCompletionPercent === 100;
+
   return (
     <div className="min-h-screen bg-slate-50/70 flex flex-col font-sans pb-20 md:pb-12 text-slate-900">
       <OwnerNavbar />
@@ -248,6 +280,14 @@ export const OwnerSettingsPage: React.FC = () => {
               {isVerified && (
                 <BadgeCheck className="h-5 w-5 text-brand-green shrink-0" strokeWidth={2.5} />
               )}
+              {isProfileComplete && (
+                <span
+                  className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200/80 rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider"
+                  title="All profile details are filled in — a trust signal shown to seekers"
+                >
+                  <Award className="h-3 w-3" /> Trusted Profile
+                </span>
+              )}
             </div>
 
             {/* Owner name subtitle for agencies */}
@@ -267,6 +307,49 @@ export const OwnerSettingsPage: React.FC = () => {
               )}
             </div>
           </div>
+        </div>
+
+        {/* ── Profile Completion / Trust Badge ─────────────────────────── */}
+        <div className="bg-white border border-slate-200/80 rounded-xl shadow-2xs p-5 space-y-4 text-left">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+            <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest my-0">
+              Profile Trust
+            </h2>
+            <span className={`text-xs font-black ${isProfileComplete ? "text-brand-green" : "text-slate-700"}`}>
+              {profileCompletionPercent}% complete
+            </span>
+          </div>
+
+          <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${isProfileComplete ? "bg-brand-green" : "bg-amber-400"}`}
+              style={{ width: `${profileCompletionPercent}%` }}
+            />
+          </div>
+
+          {isProfileComplete ? (
+            <div className="flex items-center gap-2 bg-amber-50 border border-amber-200/70 rounded-lg px-3 py-2.5">
+              <Award className="h-4 w-4 text-amber-600 shrink-0" />
+              <p className="text-xs font-bold text-amber-800 m-0">
+                Your profile is fully complete — the Trusted Profile badge is now shown to seekers browsing your listings.
+              </p>
+            </div>
+          ) : (
+            <ul className="space-y-1.5">
+              {profileChecklist.map((item) => (
+                <li key={item.label} className="flex items-center gap-2 text-xs font-semibold">
+                  {item.done ? (
+                    <CheckCircle2 className="h-3.5 w-3.5 text-brand-green shrink-0" />
+                  ) : (
+                    <Circle className="h-3.5 w-3.5 text-slate-300 shrink-0" />
+                  )}
+                  <span className={item.done ? "text-slate-500 line-through decoration-slate-300" : "text-slate-700"}>
+                    {item.label}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
 
         {/* ── Profile Details Form ──────────────────────────────────────── */}

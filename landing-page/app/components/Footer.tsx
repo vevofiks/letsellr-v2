@@ -73,8 +73,6 @@ export default function Footer() {
                   <li key={t.slug}>
                     <a
                       href={`${getAppUrl()}/dashboard?category=${t.slug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       className="hover:text-white transition-colors duration-150"
                     >
                       {t.label}
@@ -99,8 +97,6 @@ export default function Footer() {
                   <li key={l}>
                     <a
                       href={`${getAppUrl()}/dashboard?city=${encodeURIComponent(l)}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       className="hover:text-white transition-colors duration-150"
                     >
                       {l}
@@ -142,8 +138,6 @@ export default function Footer() {
         </div>
         <a
           href={getAppUrl()}
-          target="_blank"
-          rel="noopener noreferrer"
           className="inline-flex items-center gap-2 text-sm font-semibold px-6 py-3 rounded-full transition-all duration-200 hover:scale-105 shrink-0 text-black"
           style={{ backgroundColor: PRIMARY }}
         >

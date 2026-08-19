@@ -145,6 +145,7 @@ class PropertyResponse(BaseModel):
 
     status: str
     is_featured: bool = False
+    is_verified: bool = False
     stats: StatsSchema
 
     created_at: datetime

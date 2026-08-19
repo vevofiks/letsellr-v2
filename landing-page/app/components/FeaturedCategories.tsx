@@ -163,8 +163,6 @@ export default function FeaturedCategories() {
             <a
               key={cat.id}
               href={`${getAppUrl()}/dashboard?category=${cat.slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
               className={`group relative overflow-hidden rounded-2xl md:rounded-3xl ${cat.spanClass} ${cat.spanClass.startsWith("col-span-2") ? "h-36" : "h-44"} md:h-72 lg:h-80 flex flex-col justify-between p-4 md:p-8 cursor-pointer shadow-sm hover:shadow-2xl transition-all duration-500`}
             >
               {/* Background Image */}

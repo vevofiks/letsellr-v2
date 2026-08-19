@@ -100,8 +100,6 @@ export default function FeaturedLocations() {
               <a
                 key={`${loc.id}-${index}`}
                 href={`${getAppUrl()}/dashboard?city=${encodeURIComponent(loc.title)}`}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="group flex-none cursor-pointer flex flex-col items-center gap-2"
                 style={{ width: "clamp(108px, 31vw, 200px)" }}
               >
