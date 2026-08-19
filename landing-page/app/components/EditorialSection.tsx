@@ -357,8 +357,6 @@ export default function EditorialSection() {
             {/* Explore button */}
             <a
               href={currentCard.id ? `${getAppUrl()}/properties/${currentCard.id}` : `${getAppUrl()}/dashboard`}
-              target="_blank"
-              rel="noopener noreferrer"
               className="w-full flex items-center justify-center gap-2 bg-[#23D283] hover:bg-[#11995E] text-white text-xs font-bold py-3 rounded-xl transition-all duration-300 shadow-md shadow-[#23D283]/20 cursor-pointer"
             >
               Explore Properties

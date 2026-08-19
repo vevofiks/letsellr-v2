@@ -87,8 +87,6 @@ export default function Navbar() {
         <div className="relative group">
           <a
             href="https://app.letsellr.in/register/type"
-            target="_blank"
-            rel="noopener noreferrer"
             className="inline-flex items-center justify-center bg-[#23D283] hover:bg-[#11995E] text-white text-xs font-bold px-5 py-2.5 rounded-full transition-transform duration-300 shadow-md shadow-[#23D283]/20 group-hover:scale-105"
           >
             List Property

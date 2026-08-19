@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { cn, getErrorMessage } from "@/lib/utils";
 import { ArrowRight, ArrowLeft } from "lucide-react";
 import { useAvailabilityCheck } from "@/hooks/useAvailabilityCheck";
+import { SITE_URL } from "@/lib/site";
 
 export const RegisterClient: React.FC = () => {
   const { registerClient } = useAuth();
@@ -56,20 +57,20 @@ export const RegisterClient: React.FC = () => {
         <div className="bg-white border border-slate-200/80 shadow-md rounded-lg p-6 sm:p-8 space-y-5">
           {/* Header Bar */}
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <Link
-              to="/"
+            <a
+              href={SITE_URL}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-[#0B6E4F] transition-colors"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               <span>Back to Home</span>
-            </Link>
+            </a>
 
-            <Link to="/" className="flex items-center gap-1.5 hover:opacity-90 transition-opacity">
+            <a href={SITE_URL} className="flex items-center gap-1.5 hover:opacity-90 transition-opacity">
               <img src="/logo.png" alt="Letsellr Logo" className="h-6 w-auto shrink-0" />
               <span className="text-sm font-black tracking-tight text-[#23D283] uppercase">
                 LETSELLR
               </span>
-            </Link>
+            </a>
           </div>
 
           {/* Headline */}
