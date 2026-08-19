@@ -48,7 +48,8 @@ import {
   LayoutGrid,
   Map as MapIcon,
   Building2,
-  Shield
+  Shield,
+  ArrowRight
 } from "lucide-react";
 
 
@@ -103,8 +104,11 @@ export const ClientDashboard: React.FC = () => {
   });
 
   // Advanced Filter state variables
-  const [priceRange, setPriceRange] = useState<string>("all");
+  const [minPrice, setMinPrice] = useState<string>("");
+  const [maxPrice, setMaxPrice] = useState<string>("");
   const [genderPreference, setGenderPreference] = useState<string>(() => sessionStorage.getItem("dashboard_genderPreference") || "any");
+  const [bhkFilter, setBhkFilter] = useState<string>(() => sessionStorage.getItem("dashboard_bhk") || "any");
+  const [furnishingFilter, setFurnishingFilter] = useState<string>(() => sessionStorage.getItem("dashboard_furnishing") || "any");
   const [sortBy, setSortBy] = useState<string>("newest");
   const [radius, setRadius] = useState<number>(20);
   const [limit, setLimit] = useState<number>(12);
@@ -133,6 +137,9 @@ export const ClientDashboard: React.FC = () => {
     }
   );
   const [agencies, setAgencies] = useState<any[]>([]);
+  const [selectedAgency, setSelectedAgency] = useState<any | null>(null);
+  const [agencyProperties, setAgencyProperties] = useState<any[]>([]);
+  const [agencyPropertiesLoading, setAgencyPropertiesLoading] = useState(false);
   const [propertyTypes, setPropertyTypes] = useState<any[]>([]);
   const searchModeRef = useRef(searchMode);
   useEffect(() => {
@@ -191,7 +198,9 @@ export const ClientDashboard: React.FC = () => {
     sessionStorage.setItem("dashboard_searchMode", searchMode);
     sessionStorage.setItem("dashboard_searchQuery", searchQuery);
     sessionStorage.setItem("dashboard_genderPreference", genderPreference);
-  }, [intent, category, searchMode, searchQuery, genderPreference]);
+    sessionStorage.setItem("dashboard_bhk", bhkFilter);
+    sessionStorage.setItem("dashboard_furnishing", furnishingFilter);
+  }, [intent, category, searchMode, searchQuery, genderPreference, bhkFilter, furnishingFilter]);
 
   // Persist current page so it survives navigation away and back
   useEffect(() => {
@@ -390,6 +399,12 @@ export const ClientDashboard: React.FC = () => {
   };
 
   const filteredProperties = properties.filter((prop) => {
+    if (bhkFilter !== "any") {
+      const bhk = Number(prop.bedrooms) || 0;
+      if (bhkFilter === "4+" ? bhk < 4 : bhk !== Number(bhkFilter)) return false;
+    }
+    if (furnishingFilter !== "any" && prop.furnishing !== furnishingFilter) return false;
+
     if (!searchQuery) return true;
     const query = searchQuery.toLowerCase();
     return (
@@ -484,6 +499,122 @@ export const ClientDashboard: React.FC = () => {
       maximumFractionDigits: 0
     }).format(price);
     return unit === "per_month" ? `${formatted}/mo` : formatted;
+  };
+
+  const formatPriceValue = (price: number) => {
+    return new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      maximumFractionDigits: 0
+    }).format(price);
+  };
+
+  const priceUnitLabel = (unit: string) => {
+    return unit === "per_month" ? "per month" : "total price";
+  };
+
+  const renderPropertyCard = (prop: any) => {
+    const hasSpecs = Boolean(prop.bedrooms || prop.bathrooms || (prop.area && Number(prop.area) > 0));
+    return (
+      <Card
+        key={prop.id}
+        onClick={() => handleOpenDetails(prop)}
+        className="relative border-0 bg-slate-900 hover:shadow-xl hover:shadow-slate-900/10 transition-all duration-300 overflow-hidden flex flex-col group rounded-2xl p-0 gap-0 cursor-pointer h-80"
+      >
+        {/* Full-bleed photo */}
+        <img
+          src={prop.photos && prop.photos.length > 0 ? prop.photos[0] : getCategoryFallbackImage(prop.category)}
+          alt={prop.title}
+          className="absolute inset-0 h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+          loading="lazy"
+        />
+
+        {/* Top scrim so badges stay visible over bright photos */}
+        <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/60 to-transparent" />
+
+        {/* Bottom scrim for legibility over the photo */}
+        <div className="absolute inset-x-0 bottom-0 h-3/4 bg-gradient-to-t from-black/90 via-black/50 to-transparent" />
+
+        {/* Top-left: category badge */}
+        <div className="absolute top-3 left-3 z-10">
+          <span className="inline-flex items-center gap-1 rounded-full bg-black/45 backdrop-blur-md border border-white/30 px-2.5 py-1 text-[9px] font-bold text-white uppercase tracking-wider shadow-sm">
+            <Home className="h-2.5 w-2.5" />
+            {prop.category.replace("_", " ")}
+          </span>
+        </div>
+
+        {/* Top-right: navigate-to-property button */}
+        <button
+          onClick={(e) => { e.stopPropagation(); handleOpenDetails(prop); }}
+          aria-label="View property details"
+          className="absolute top-3 right-3 z-10 h-8 w-8 flex items-center justify-center rounded-full bg-black/45 backdrop-blur-md border border-white/30 text-white shadow-sm hover:bg-black/60 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+        >
+          <ArrowRight className="h-4 w-4" />
+        </button>
+
+        {/* Bottom content overlay */}
+        <div className="relative z-10 mt-auto px-5 pb-5 pt-3 flex items-end justify-between gap-4">
+          <div className="min-w-0 space-y-2.5">
+            {/* Location on top */}
+            <div className="text-xs font-bold text-white/90 flex items-center gap-1.5 drop-shadow-md">
+              <MapPin className="h-3.5 w-3.5 text-white/90 shrink-0" />
+              <span className="truncate">{prop.location_area}{prop.location_area && prop.location_city ? ", " : ""}{prop.location_city}</span>
+            </div>
+
+            {/* Title */}
+            <h3 className="text-lg font-bold text-white line-clamp-1 leading-tight m-0 uppercase">
+              {prop.title}
+            </h3>
+
+            {/* Specification row - only if available */}
+            {hasSpecs && (
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px] text-white/85 font-medium pt-0.5">
+                {Boolean(prop.bedrooms) && (
+                  <span className="flex items-center gap-1.5 shrink-0">
+                    <Bed className="h-3.5 w-3.5 text-white/60 shrink-0" />
+                    {prop.bedrooms} beds
+                  </span>
+                )}
+                {Boolean(prop.bathrooms) && (
+                  <span className="flex items-center gap-1.5 shrink-0">
+                    <Bath className="h-3.5 w-3.5 text-white/60 shrink-0" />
+                    {prop.bathrooms} baths
+                  </span>
+                )}
+                {Boolean(prop.area && Number(prop.area) > 0) && (
+                  <span className="flex items-center gap-1.5 shrink-0">
+                    <Maximize className="h-3.5 w-3.5 text-white/60 shrink-0" />
+                    {Number(prop.area).toLocaleString()} sqft
+                  </span>
+                )}
+              </div>
+            )}
+
+            {/* Badges: verified (admin-set only) + intent type */}
+            <div className="flex items-center gap-2 pt-1">
+              {prop.is_verified && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/25 border border-emerald-300/40 backdrop-blur-md px-2.5 py-1 text-[9px] font-bold text-emerald-200 uppercase tracking-wider">
+                  <Shield className="h-2.5 w-2.5" /> Verified
+                </span>
+              )}
+              <span className="inline-flex items-center rounded-full bg-white/20 border border-white/30 backdrop-blur-md px-2.5 py-1 text-[9px] font-bold text-white uppercase tracking-wider">
+                For {prop.intent === "buy" ? "Sale" : prop.intent === "rent" ? "Rent" : "Lease"}
+              </span>
+            </div>
+          </div>
+
+          {/* Price + unit type, right-aligned */}
+          <div className="flex flex-col items-end shrink-0 text-right">
+            <span className="text-lg font-extrabold text-white leading-none whitespace-nowrap">
+              {formatPriceValue(prop.price)}
+            </span>
+            <span className="text-[10px] text-white/70 font-medium whitespace-nowrap">
+              {priceUnitLabel(prop.price_unit)}
+            </span>
+          </div>
+        </div>
+      </Card>
+    );
   };
 
   // Map Mode Initialization Effect
@@ -694,24 +825,8 @@ export const ClientDashboard: React.FC = () => {
           params.gender_preference = genderPreference;
         }
 
-        // Map price range dropdown value to min_price and max_price API parameters
-        if (priceRange === "under-50k") {
-          params.max_price = 50000;
-        } else if (priceRange === "50k-5l") {
-          params.min_price = 50000;
-          params.max_price = 500000;
-        } else if (priceRange === "5l-15l") {
-          params.min_price = 500000;
-          params.max_price = 1500000;
-        } else if (priceRange === "15l-50l") {
-          params.min_price = 1500000;
-          params.max_price = 5000000;
-        } else if (priceRange === "50l-1cr") {
-          params.min_price = 5000000;
-          params.max_price = 10000000;
-        } else if (priceRange === "above-1cr") {
-          params.min_price = 10000000;
-        }
+        if (minPrice) params.min_price = Number(minPrice);
+        if (maxPrice) params.max_price = Number(maxPrice);
 
         if (sortBy) params.sort_by = sortBy;
         if (lat !== null && lng !== null) {
@@ -754,7 +869,30 @@ export const ClientDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, [searchMode, intent, category, city, searchQuery, lat, lng, gpsActive, page, priceRange, sortBy, radius, limit, genderPreference]);
+  }, [searchMode, intent, category, city, searchQuery, lat, lng, gpsActive, page, minPrice, maxPrice, sortBy, radius, limit, genderPreference]);
+
+  // Client-side: when an agency is selected from the directory, load that
+  // agency's properties inline instead of navigating to a profile page.
+  useEffect(() => {
+    if (!selectedAgency) {
+      setAgencyProperties([]);
+      return;
+    }
+    let cancelled = false;
+    setAgencyPropertiesLoading(true);
+    api.get("/api/properties", { params: { owner_id: selectedAgency.id, limit: 100 } })
+      .then((res) => {
+        if (cancelled) return;
+        setAgencyProperties(res.data.results || res.data || []);
+      })
+      .catch(() => {
+        if (!cancelled) setAgencyProperties([]);
+      })
+      .finally(() => {
+        if (!cancelled) setAgencyPropertiesLoading(false);
+      });
+    return () => { cancelled = true; };
+  }, [selectedAgency]);
 
   const handleDrawerScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const target = e.currentTarget;
@@ -856,8 +994,11 @@ export const ClientDashboard: React.FC = () => {
     setCategory("");
     setCity("");
     setSearchCity("");
-    setPriceRange("all");
+    setMinPrice("");
+    setMaxPrice("");
     setGenderPreference("any");
+    setBhkFilter("any");
+    setFurnishingFilter("any");
     setSortBy("newest");
     setRadius(20);
     setLimit(12);
@@ -1078,31 +1219,36 @@ export const ClientDashboard: React.FC = () => {
                         </div>
                       )}
 
-                      {/* Price */}
+                      {/* Price — OLX-style small min/max boxes */}
                       <div className="flex flex-col gap-1 text-left col-span-2">
                         <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">Budget</span>
-                        <Select
-                          value={priceRange === "all" ? undefined : priceRange}
-                          onValueChange={(val) => {
-                            setPriceRange(val || "all");
-                            setPage(1);
-                          }}
-                        >
-                          <SelectTrigger className="w-full bg-white border border-slate-200 hover:border-slate-300 rounded-md h-8 px-2 font-semibold text-slate-800 text-[10px]">
-                            <SelectValue placeholder="Any Price">
-                              {priceRange === "under-50k" ? "Under ₹50k" : priceRange === "50k-5l" ? "₹50k - ₹5L" : priceRange === "5l-15l" ? "₹5L - ₹15L" : priceRange === "15l-50l" ? "₹15L - ₹50L" : priceRange === "50l-1cr" ? "₹50L - ₹1Cr" : priceRange === "above-1cr" ? "Above ₹1Cr" : "Any Price"}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-50">
-                            <SelectItem value="all">Any Price</SelectItem>
-                            <SelectItem value="under-50k">Under ₹50k</SelectItem>
-                            <SelectItem value="50k-5l">₹50k - ₹5L</SelectItem>
-                            <SelectItem value="5l-15l">₹5L - ₹15L</SelectItem>
-                            <SelectItem value="15l-50l">₹15L - ₹50L</SelectItem>
-                            <SelectItem value="50l-1cr">₹50L - ₹1Cr</SelectItem>
-                            <SelectItem value="above-1cr">Above ₹1Cr</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex items-center flex-1 bg-white border border-slate-200 hover:border-slate-300 rounded-md h-8 px-2 focus-within:ring-2 focus-within:ring-brand-green/20 focus-within:border-brand-green">
+                            <span className="text-[10px] text-slate-400 font-semibold mr-0.5">₹</span>
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              min={0}
+                              placeholder="Min"
+                              value={minPrice}
+                              onChange={(e) => { setMinPrice(e.target.value); setPage(1); }}
+                              className="w-full min-w-0 bg-transparent outline-none font-semibold text-slate-800 text-[10px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                          </div>
+                          <span className="text-slate-300 text-[10px] font-bold shrink-0">–</span>
+                          <div className="flex items-center flex-1 bg-white border border-slate-200 hover:border-slate-300 rounded-md h-8 px-2 focus-within:ring-2 focus-within:ring-brand-green/20 focus-within:border-brand-green">
+                            <span className="text-[10px] text-slate-400 font-semibold mr-0.5">₹</span>
+                            <input
+                              type="number"
+                              inputMode="numeric"
+                              min={0}
+                              placeholder="Max"
+                              value={maxPrice}
+                              onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }}
+                              className="w-full min-w-0 bg-transparent outline-none font-semibold text-slate-800 text-[10px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            />
+                          </div>
+                        </div>
                       </div>
 
                       {/* Location City text input */}
@@ -1284,9 +1430,11 @@ export const ClientDashboard: React.FC = () => {
                               {prop.intent === "rent" && <span className="text-[9px] font-medium text-slate-400 shrink-0">/ month</span>}
                             </span>
 
-                            <span className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-emerald-50 border border-emerald-100/50 px-1.5 py-0.5 text-[8px] font-black text-emerald-700 uppercase tracking-wider">
-                              <Shield className="h-2.5 w-2.5" /> Verified
-                            </span>
+                            {prop.is_verified && (
+                              <span className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-emerald-50 border border-emerald-100/50 px-1.5 py-0.5 text-[8px] font-black text-emerald-700 uppercase tracking-wider">
+                                <Shield className="h-2.5 w-2.5" /> Verified
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -1369,34 +1517,36 @@ export const ClientDashboard: React.FC = () => {
 
 
 
-                {/* Price Dropdown - Hidden on mobile, shown on lg screens */}
-                <div className={cn("hidden lg:flex flex-col text-left min-w-35 flex-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
+                {/* Price — OLX-style min/max boxes. Hidden on mobile, shown on lg screens */}
+                <div className={cn("hidden lg:flex flex-col text-left min-w-45 flex-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
                   <label className="text-[13px] font-semibold text-slate-700 mb-1.5 ml-0.5">Price</label>
-                  <Select
-                    value={priceRange === "all" ? undefined : priceRange}
-                    onValueChange={(val) => {
-                      setPriceRange(val || "all");
-                      setPage(1);
-                    }}
-                  >
-                    <SelectTrigger className={cn(
-                      "w-full bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 font-semibold text-slate-800 text-[13px] shadow-sm cursor-pointer transition-all",
-                      "focus:ring-2 focus:ring-brand-green/20 focus:border-brand-green"
-                    )}>
-                      <SelectValue placeholder="Any Price">
-                        {priceRange === "under-50k" ? "Under ₹50k" : priceRange === "50k-5l" ? "₹50k - ₹5L" : priceRange === "5l-15l" ? "₹5L - ₹15L" : priceRange === "15l-50l" ? "₹15L - ₹50L" : priceRange === "50l-1cr" ? "₹50L - ₹1Cr" : priceRange === "above-1cr" ? "Above ₹1Cr" : "Any Price"}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="bg-white border border-slate-100 shadow-md rounded-lg p-1 z-30">
-                      <SelectItem value="all">Any Price</SelectItem>
-                      <SelectItem value="under-50k">Under ₹50k</SelectItem>
-                      <SelectItem value="50k-5l">₹50k - ₹5L</SelectItem>
-                      <SelectItem value="5l-15l">₹5L - ₹15L</SelectItem>
-                      <SelectItem value="15l-50l">₹15L - ₹50L</SelectItem>
-                      <SelectItem value="50l-1cr">₹50L - ₹1Cr</SelectItem>
-                      <SelectItem value="above-1cr">Above ₹1Cr</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center flex-1 bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 shadow-sm transition-all focus-within:ring-2 focus-within:ring-brand-green/20 focus-within:border-brand-green">
+                      <span className="text-[13px] text-slate-400 font-semibold mr-1">₹</span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        placeholder="Min"
+                        value={minPrice}
+                        onChange={(e) => { setMinPrice(e.target.value); setPage(1); }}
+                        className="w-full min-w-0 bg-transparent outline-none font-semibold text-slate-800 text-[13px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                    </div>
+                    <span className="text-slate-300 font-bold shrink-0">–</span>
+                    <div className="flex items-center flex-1 bg-white border border-slate-200 hover:border-slate-300 rounded-lg h-10 px-3 shadow-sm transition-all focus-within:ring-2 focus-within:ring-brand-green/20 focus-within:border-brand-green">
+                      <span className="text-[13px] text-slate-400 font-semibold mr-1">₹</span>
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        placeholder="Max"
+                        value={maxPrice}
+                        onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }}
+                        className="w-full min-w-0 bg-transparent outline-none font-semibold text-slate-800 text-[13px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
+                    </div>
+                  </div>
                 </div>
 
               
@@ -1554,7 +1704,7 @@ export const ClientDashboard: React.FC = () => {
                                 {gpsActive && <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />}
                               </span>
                               <div className="flex items-center gap-2">
-                                {(intent || category || city || priceRange !== "all" || gpsActive || limit !== 12) && (
+                                {(intent || category || city || minPrice || maxPrice || gpsActive || limit !== 12 || bhkFilter !== "any" || furnishingFilter !== "any") && (
                                   <button
                                     type="button"
                                     onClick={() => { handleResetAll(); setShowAdvancedPopover(false); }}
@@ -1579,7 +1729,7 @@ export const ClientDashboard: React.FC = () => {
                               <div className="grid grid-cols-2 gap-1 bg-slate-100 p-0.5 rounded-lg">
                                 <button
                                   type="button"
-                                  onClick={() => { setSearchMode("properties"); setPage(1); }}
+                                  onClick={() => { setSearchMode("properties"); setSelectedAgency(null); setPage(1); }}
                                   className={cn(
                                     "py-1 text-xs font-extrabold rounded-md transition-all cursor-pointer",
                                     searchMode === "properties"
@@ -1591,7 +1741,7 @@ export const ClientDashboard: React.FC = () => {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => { setSearchMode("agencies"); setPage(1); setViewMode("list"); }}
+                                  onClick={() => { setSearchMode("agencies"); setSelectedAgency(null); setPage(1); setViewMode("list"); }}
                                   className={cn(
                                     "py-1 text-xs font-extrabold rounded-md transition-all cursor-pointer",
                                     searchMode === "agencies"
@@ -1604,95 +1754,112 @@ export const ClientDashboard: React.FC = () => {
                               </div>
                             </div>
 
-                            {/* Mobile-only: Looking For + Type in 2-col grid */}
-                            <div className={cn("grid grid-cols-2 gap-2 lg:hidden", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
-                              <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Intent</span>
-                                <Select value={intent || undefined} onValueChange={(val) => { setIntent(val === "all" || !val ? "" : val); setPage(1); }}>
-                                  <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
-                                    <SelectValue placeholder="Any">{intent === "buy" ? "Sale" : intent === "rent" ? "Rent" : intent === "lease" ? "Lease" : "Any"}</SelectValue>
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
-                                    <SelectItem value="all">Any</SelectItem>
-                                    <SelectItem value="buy">For Sale</SelectItem>
-                                    <SelectItem value="rent">For Rent</SelectItem>
-                                    <SelectItem value="lease">For Lease</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
+                            {/* Mobile-only: Type */}
+                            <div className={cn("flex flex-col gap-1 lg:hidden", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
+                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Type</span>
+                              <Select value={category || undefined} onValueChange={(val) => { setCategory(val === "all" || !val ? "" : val); setPage(1); }}>
+                                <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
+                                  <SelectValue placeholder="All Types">
+                                    {category ? (propertyTypes.find(t => t.slug === category)?.label || category.replace("_", " ")) : "All Types"}
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
+                                  <SelectItem value="all">All Types</SelectItem>
+                                  {propertyTypes.map((t: any) => (
+                                    <SelectItem key={t.slug} value={t.slug}>{t.label}</SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
 
-                              <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Type</span>
-                                <Select value={category || undefined} onValueChange={(val) => { setCategory(val === "all" || !val ? "" : val); setPage(1); }}>
-                                  <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
-                                    <SelectValue placeholder="All Types">
-                                      {category ? (propertyTypes.find(t => t.slug === category)?.label || category.replace("_", " ")) : "All Types"}
-                                    </SelectValue>
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
-                                    <SelectItem value="all">All Types</SelectItem>
-                                    {propertyTypes.map((t: any) => (
-                                      <SelectItem key={t.slug} value={t.slug}>{t.label}</SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
+                            {/* Bedrooms / BHK count, pulled from property specifications */}
+                            <div className={cn("flex flex-col gap-1 lg:hidden", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
+                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Bedrooms</span>
+                              <div className="flex bg-slate-100 p-0.5 rounded-lg w-full">
+                                {["any", "1", "2", "3", "4+"].map((val) => (
+                                  <button
+                                    key={val}
+                                    type="button"
+                                    onClick={() => { setBhkFilter(val); setPage(1); }}
+                                    className={cn(
+                                      "flex-1 text-xs font-bold py-1.5 rounded-md transition-colors whitespace-nowrap",
+                                      bhkFilter === val ? "bg-white shadow-sm text-brand-green" : "text-slate-500 hover:text-slate-700"
+                                    )}
+                                  >
+                                    {val === "any" ? "Any" : val === "4+" ? "4+" : `${val} BHK`}
+                                  </button>
+                                ))}
                               </div>
                             </div>
 
-                            {/* Gender / Tenant Preference */}
-                            {category && ["pg", "hostel", "pg_hostel", "villa_house", "apartment"].includes(category) && (
-                              <div className="flex flex-col gap-1 lg:hidden">
-                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
-                                  {["pg", "hostel", "pg_hostel"].includes(category) ? "Gender Preference" : "Tenant Preference"}
-                                </span>
-                                <div className="flex bg-slate-100 p-0.5 rounded-lg w-full flex-wrap">
-                                  <button type="button" onClick={() => { setGenderPreference("any"); setPage(1); }} className={cn("flex-1 text-xs font-bold py-1.5 px-2 rounded-md transition-colors whitespace-nowrap", genderPreference === "any" ? "bg-white shadow-sm text-brand-green" : "text-slate-500 hover:text-slate-700")}>All</button>
-                                  {["pg", "hostel", "pg_hostel"].includes(category) ? (
-                                    <>
-                                      <button type="button" onClick={() => { setGenderPreference("men"); setPage(1); }} className={cn("flex-1 text-xs font-bold py-1.5 px-2 rounded-md transition-colors whitespace-nowrap", genderPreference === "men" ? "bg-white shadow-sm text-brand-green" : "text-slate-500 hover:text-slate-700")}>Men</button>
-                                      <button type="button" onClick={() => { setGenderPreference("ladies"); setPage(1); }} className={cn("flex-1 text-xs font-bold py-1.5 px-2 rounded-md transition-colors whitespace-nowrap", genderPreference === "ladies" ? "bg-white shadow-sm text-brand-green" : "text-slate-500 hover:text-slate-700")}>Ladies</button>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <button type="button" onClick={() => { setGenderPreference("family"); setPage(1); }} className={cn("flex-1 text-xs font-bold py-1.5 px-2 rounded-md transition-colors whitespace-nowrap", genderPreference === "family" ? "bg-white shadow-sm text-brand-green" : "text-slate-500 hover:text-slate-700")}>Family</button>
-                                      <button type="button" onClick={() => { setGenderPreference("bachelors"); setPage(1); }} className={cn("flex-1 text-xs font-bold py-1.5 px-2 rounded-md transition-colors whitespace-nowrap", genderPreference === "bachelors" ? "bg-white shadow-sm text-brand-green" : "text-slate-500 hover:text-slate-700")}>Bachelors</button>
-                                      <button type="button" onClick={() => { setGenderPreference("couple"); setPage(1); }} className={cn("flex-1 text-xs font-bold py-1.5 px-2 rounded-md transition-colors whitespace-nowrap", genderPreference === "couple" ? "bg-white shadow-sm text-brand-green" : "text-slate-500 hover:text-slate-700")}>Couples</button>
-                                    </>
-                                  )}
-                                </div>
+                            {/* Furnishing status */}
+                            <div className={cn("flex flex-col gap-1 lg:hidden", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
+                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Furnishing</span>
+                              <div className="flex bg-slate-100 p-0.5 rounded-lg w-full">
+                                {[
+                                  { val: "any", label: "Any" },
+                                  { val: "furnished", label: "Furnished" },
+                                  { val: "semi", label: "Semi" },
+                                  { val: "unfurnished", label: "Unfurnished" },
+                                ].map(({ val, label }) => (
+                                  <button
+                                    key={val}
+                                    type="button"
+                                    onClick={() => { setFurnishingFilter(val); setPage(1); }}
+                                    className={cn(
+                                      "flex-1 text-[11px] font-bold py-1.5 px-1 rounded-md transition-colors whitespace-nowrap",
+                                      furnishingFilter === val ? "bg-white shadow-sm text-brand-green" : "text-slate-500 hover:text-slate-700"
+                                    )}
+                                  >
+                                    {label}
+                                  </button>
+                                ))}
                               </div>
-                            )}
+                            </div>
 
-                            {/* Mobile-only: Price + Location in 2-col grid */}
-                            <div className="grid grid-cols-2 gap-2 lg:hidden">
-                              <div className={cn("flex flex-col gap-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
-                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Price</span>
-                                <Select value={priceRange === "all" ? undefined : priceRange} onValueChange={(val) => { setPriceRange(val || "all"); setPage(1); }}>
-                                  <SelectTrigger className="w-full bg-white border border-slate-200 rounded-md h-8 px-2 font-semibold text-slate-800 text-[11px]">
-                                    <SelectValue placeholder="Any">{priceRange === "under-50k" ? "<₹50k" : priceRange === "50k-5l" ? "₹50k-5L" : priceRange === "5l-15l" ? "₹5-15L" : priceRange === "15l-50l" ? "₹15-50L" : priceRange === "50l-1cr" ? "₹50L-1Cr" : priceRange === "above-1cr" ? ">₹1Cr" : "Any"}</SelectValue>
-                                  </SelectTrigger>
-                                  <SelectContent className="bg-white border border-slate-100 shadow-md rounded-md p-1 z-60">
-                                    <SelectItem value="all">Any Price</SelectItem>
-                                    <SelectItem value="under-50k">Under ₹50k</SelectItem>
-                                    <SelectItem value="50k-5l">₹50k - ₹5L</SelectItem>
-                                    <SelectItem value="5l-15l">₹5L - ₹15L</SelectItem>
-                                    <SelectItem value="15l-50l">₹15L - ₹50L</SelectItem>
-                                    <SelectItem value="50l-1cr">₹50L - ₹1Cr</SelectItem>
-                                    <SelectItem value="above-1cr">Above ₹1Cr</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div className="flex flex-col gap-1">
-                                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">City</span>
-                                <div className={cn("flex items-center gap-1 bg-white border rounded-md h-8 px-2 transition-all", gpsActive ? "border-emerald-500" : "border-slate-200")}>
-                                  <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
-                                  <input type="text" placeholder="City..." value={searchCity}
-                                    onChange={(e) => setSearchCity(e.target.value)}
-                                    onBlur={() => { setCity(searchCity); setPage(1); }}
-                                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setCity(searchCity); setPage(1); } }}
-                                    className="w-full bg-transparent border-0 font-semibold text-slate-800 text-[11px] focus:outline-none p-0 placeholder:text-slate-400"
+                            {/* Mobile-only: Price — OLX-style small min/max boxes */}
+                            <div className={cn("flex flex-col gap-1 lg:hidden", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
+                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Price</span>
+                              <div className="flex items-center gap-1.5">
+                                <div className="flex items-center flex-1 bg-white border border-slate-200 rounded-md h-8 px-2">
+                                  <span className="text-[10px] text-slate-400 font-semibold mr-0.5">₹</span>
+                                  <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    min={0}
+                                    placeholder="Min"
+                                    value={minPrice}
+                                    onChange={(e) => { setMinPrice(e.target.value); setPage(1); }}
+                                    className="w-full min-w-0 bg-transparent outline-none font-semibold text-slate-800 text-[11px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                                   />
                                 </div>
+                                <span className="text-slate-300 text-[10px] font-bold shrink-0">–</span>
+                                <div className="flex items-center flex-1 bg-white border border-slate-200 rounded-md h-8 px-2">
+                                  <span className="text-[10px] text-slate-400 font-semibold mr-0.5">₹</span>
+                                  <input
+                                    type="number"
+                                    inputMode="numeric"
+                                    min={0}
+                                    placeholder="Max"
+                                    value={maxPrice}
+                                    onChange={(e) => { setMaxPrice(e.target.value); setPage(1); }}
+                                    className="w-full min-w-0 bg-transparent outline-none font-semibold text-slate-800 text-[11px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Mobile-only: City */}
+                            <div className="flex flex-col gap-1 lg:hidden">
+                              <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">City</span>
+                              <div className={cn("flex items-center gap-1 bg-white border rounded-md h-8 px-2 transition-all", gpsActive ? "border-emerald-500" : "border-slate-200")}>
+                                <MapPin className="h-3 w-3 text-slate-400 shrink-0" />
+                                <input type="text" placeholder="City..." value={searchCity}
+                                  onChange={(e) => setSearchCity(e.target.value)}
+                                  onBlur={() => { setCity(searchCity); setPage(1); }}
+                                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); setCity(searchCity); setPage(1); } }}
+                                  className="w-full bg-transparent border-0 font-semibold text-slate-800 text-[11px] focus:outline-none p-0 placeholder:text-slate-400"
+                                />
                               </div>
                             </div>
 
@@ -1763,7 +1930,7 @@ export const ClientDashboard: React.FC = () => {
           </div>
 
           {/* Active Filter Chips — visible on all screen sizes */}
-          {(city || limit !== 12 || (searchMode !== "agencies" && (intent || category || priceRange !== "all" || gpsActive))) && (
+          {(city || limit !== 12 || (searchMode !== "agencies" && (intent || category || minPrice || maxPrice || gpsActive || bhkFilter !== "any" || furnishingFilter !== "any"))) && (
             <div className="hidden lg:flex items-center gap-2 mt-4 flex-wrap relative z-20 w-full px-0">
               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mr-1">Active:</span>
 
@@ -1788,16 +1955,10 @@ export const ClientDashboard: React.FC = () => {
                 </span>
               )}
 
-              {priceRange !== "all" && searchMode !== "agencies" && (
+              {(minPrice || maxPrice) && searchMode !== "agencies" && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
-                  Budget: {
-                    priceRange === "under-50k" ? "Under ₹50k" :
-                      priceRange === "50k-5l" ? "₹50k - ₹5L" :
-                        priceRange === "5l-15l" ? "₹5L - ₹15L" :
-                          priceRange === "15l-50l" ? "₹15L - ₹50L" :
-                            priceRange === "50l-1cr" ? "₹50L - ₹1Cr" : "Above ₹1Cr"
-                  }
-                  <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => { setPriceRange("all"); setPage(1); }} />
+                  Budget: ₹{minPrice ? Number(minPrice).toLocaleString() : "0"} – {maxPrice ? `₹${Number(maxPrice).toLocaleString()}` : "Any"}
+                  <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => { setMinPrice(""); setMaxPrice(""); setPage(1); }} />
                 </span>
               )}
 
@@ -1805,6 +1966,20 @@ export const ClientDashboard: React.FC = () => {
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
                   GPS Nearby: {detectedLocation || `${radius} km`}
                   <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={toggleGPS} />
+                </span>
+              )}
+
+              {bhkFilter !== "any" && searchMode !== "agencies" && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm">
+                  Bedrooms: {bhkFilter === "4+" ? "4+ BHK" : `${bhkFilter} BHK`}
+                  <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => { setBhkFilter("any"); setPage(1); }} />
+                </span>
+              )}
+
+              {furnishingFilter !== "any" && searchMode !== "agencies" && (
+                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-md px-2 py-0.5 shadow-sm capitalize">
+                  Furnishing: {furnishingFilter}
+                  <X className="h-3 w-3 text-slate-400 hover:text-rose-600 cursor-pointer ml-1" onClick={() => { setFurnishingFilter("any"); setPage(1); }} />
                 </span>
               )}
 
@@ -1841,78 +2016,7 @@ export const ClientDashboard: React.FC = () => {
                 </p>
               </div>
 
-              {/* Mobile Gender Preference */}
-              {searchMode !== "agencies" && category && ["pg", "hostel", "pg_hostel", "villa_house", "apartment"].includes(category) && (
-                <div className="flex md:hidden bg-slate-100/80 border border-slate-200/50 p-1 rounded-lg shrink-0 overflow-x-auto scrollbar-none">
-                  <button
-                    type="button"
-                    onClick={() => { setGenderPreference("any"); setPage(1); }}
-                    className={cn(
-                      "px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold rounded-md transition-colors whitespace-nowrap",
-                      genderPreference === "any" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
-                    )}
-                  >
-                    All
-                  </button>
-                  {["pg", "hostel", "pg_hostel"].includes(category) ? (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => { setGenderPreference("men"); setPage(1); }}
-                        className={cn(
-                          "px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold rounded-md transition-colors whitespace-nowrap",
-                          genderPreference === "men" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
-                        )}
-                      >
-                        Men
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setGenderPreference("ladies"); setPage(1); }}
-                        className={cn(
-                          "px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold rounded-md transition-colors whitespace-nowrap",
-                          genderPreference === "ladies" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
-                        )}
-                      >
-                        Ladies
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <button
-                        type="button"
-                        onClick={() => { setGenderPreference("family"); setPage(1); }}
-                        className={cn(
-                          "px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold rounded-md transition-colors whitespace-nowrap",
-                          genderPreference === "family" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
-                        )}
-                      >
-                        Family
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setGenderPreference("bachelors"); setPage(1); }}
-                        className={cn(
-                          "px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold rounded-md transition-colors whitespace-nowrap",
-                          genderPreference === "bachelors" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
-                        )}
-                      >
-                        Bachelors
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setGenderPreference("couple"); setPage(1); }}
-                        className={cn(
-                          "px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold rounded-md transition-colors whitespace-nowrap",
-                          genderPreference === "couple" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
-                        )}
-                      >
-                        Couples
-                      </button>
-                    </>
-                  )}
-                </div>
-              )}
+              {/* Removed redundant Mobile Gender Preference block here */}
             </div>
 
             <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end shrink-0 mt-3 md:mt-0">
@@ -1923,14 +2027,14 @@ export const ClientDashboard: React.FC = () => {
                       PAGE {page}
                     </span>
                   )}
-                  {/* Desktop Gender Preference */}
+                  {/* Gender Preference Filters */}
                   {category && ["pg", "hostel", "pg_hostel", "villa_house", "apartment"].includes(category) && (
-                    <div className="hidden md:flex bg-slate-100/80 border border-slate-200/50 p-1 rounded-lg shrink-0">
+                    <div className="flex bg-slate-100/80 border border-slate-200/50 p-1 rounded-lg shrink-0 overflow-x-auto scrollbar-none max-w-full">
                       <button
                         type="button"
                         onClick={() => { setGenderPreference("any"); setPage(1); }}
                         className={cn(
-                          "px-3 py-1.5 text-xs font-bold rounded-md transition-colors",
+                          "px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold rounded-md transition-colors whitespace-nowrap",
                           genderPreference === "any" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
                         )}
                       >
@@ -1942,7 +2046,7 @@ export const ClientDashboard: React.FC = () => {
                             type="button"
                             onClick={() => { setGenderPreference("men"); setPage(1); }}
                             className={cn(
-                              "px-3 py-1.5 text-xs font-bold rounded-md transition-colors",
+                              "px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold rounded-md transition-colors whitespace-nowrap",
                               genderPreference === "men" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
                             )}
                           >
@@ -1952,7 +2056,7 @@ export const ClientDashboard: React.FC = () => {
                             type="button"
                             onClick={() => { setGenderPreference("ladies"); setPage(1); }}
                             className={cn(
-                              "px-3 py-1.5 text-xs font-bold rounded-md transition-colors",
+                              "px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold rounded-md transition-colors whitespace-nowrap",
                               genderPreference === "ladies" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
                             )}
                           >
@@ -1965,7 +2069,7 @@ export const ClientDashboard: React.FC = () => {
                             type="button"
                             onClick={() => { setGenderPreference("family"); setPage(1); }}
                             className={cn(
-                              "px-3 py-1.5 text-xs font-bold rounded-md transition-colors",
+                              "px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold rounded-md transition-colors whitespace-nowrap",
                               genderPreference === "family" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
                             )}
                           >
@@ -1975,7 +2079,7 @@ export const ClientDashboard: React.FC = () => {
                             type="button"
                             onClick={() => { setGenderPreference("bachelors"); setPage(1); }}
                             className={cn(
-                              "px-3 py-1.5 text-xs font-bold rounded-md transition-colors",
+                              "px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold rounded-md transition-colors whitespace-nowrap",
                               genderPreference === "bachelors" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
                             )}
                           >
@@ -1985,7 +2089,7 @@ export const ClientDashboard: React.FC = () => {
                             type="button"
                             onClick={() => { setGenderPreference("couple"); setPage(1); }}
                             className={cn(
-                              "px-3 py-1.5 text-xs font-bold rounded-md transition-colors",
+                              "px-2 py-1.5 text-[10px] sm:px-3 sm:text-xs font-bold rounded-md transition-colors whitespace-nowrap",
                               genderPreference === "couple" ? "bg-white text-brand-green shadow-sm" : "text-slate-500 hover:text-slate-700 cursor-pointer"
                             )}
                           >
@@ -2029,7 +2133,47 @@ export const ClientDashboard: React.FC = () => {
               ))}
             </div>
           ) : searchMode === "agencies" ? (
-            filteredAgencies.length === 0 ? (
+            selectedAgency ? (
+              /* Client-side inline view: this agency's properties, no page navigation */
+              <>
+                <div className="flex items-center justify-between mb-6">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedAgency(null)}
+                    className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-brand-green transition-colors cursor-pointer"
+                  >
+                    <ChevronLeft className="h-4 w-4" /> Back to agencies
+                  </button>
+                  <div className="text-sm font-medium text-slate-500">
+                    <span className="font-bold text-slate-900">{selectedAgency.display_name}</span>
+                    {" — "}
+                    {agencyPropertiesLoading ? "loading…" : `${agencyProperties.length} ${agencyProperties.length === 1 ? "property" : "properties"}`}
+                  </div>
+                </div>
+
+                {agencyPropertiesLoading ? (
+                  <div className="grid gap-6 grid-cols-1 md:grid-cols-3 lg:grid-cols-4">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div key={i} className="h-80 w-full rounded-2xl bg-slate-100 animate-pulse" />
+                    ))}
+                  </div>
+                ) : agencyProperties.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center border border-slate-100 bg-white rounded-[32px] p-16 text-center shadow-sm">
+                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-50 text-slate-400 mb-6">
+                      <Home className="h-10 w-10 text-brand-green" />
+                    </div>
+                    <h3 className="text-xl font-bold text-slate-900">No properties listed by {selectedAgency.display_name}</h3>
+                    <p className="text-slate-500 max-w-sm mt-1 text-sm">
+                      This agency hasn't published any listings yet.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid gap-6 grid-cols-1 md:grid-cols-3 lg:grid-cols-4">
+                    {agencyProperties.map(renderPropertyCard)}
+                  </div>
+                )}
+              </>
+            ) : filteredAgencies.length === 0 ? (
               /* Contextual Empty State for Agencies */
               <div className="flex flex-col items-center justify-center border border-slate-100 bg-white rounded-[32px] p-16 text-center shadow-sm">
                 <div className="flex h-20 w-20 items-center justify-center rounded-full bg-slate-50 text-slate-400 mb-6">
@@ -2082,7 +2226,7 @@ export const ClientDashboard: React.FC = () => {
                     return (
                       <div
                         key={agency.id}
-                        onClick={() => navigate(`/agencies/${agency.id}`)}
+                        onClick={() => setSelectedAgency(agency)}
                         className="border border-slate-200 bg-white hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col group rounded-xl text-left cursor-pointer"
                       >
                         {/* Banner */}
@@ -2313,85 +2457,7 @@ export const ClientDashboard: React.FC = () => {
             <>
               {/* Grid layout matching design */}
               <div className="grid gap-6 grid-cols-1 md:grid-cols-3 lg:grid-cols-4">
-                {filteredProperties.map((prop) => (
-                  <Card
-                    key={prop.id}
-                    className="border border-slate-100 bg-white hover:shadow-lg transition-all duration-300 overflow-hidden flex flex-col group p-3.5 rounded-xl"
-                  >
-                    {/* Aspect image box */}
-                    <div className="h-48 w-full rounded-lg overflow-hidden relative shrink-0">
-                      <img
-                        src={prop.photos && prop.photos.length > 0 ? prop.photos[0] : getCategoryFallbackImage(prop.category)}
-                        alt={prop.title}
-                        onClick={() => handleOpenDetails(prop)}
-                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                      />
-
-                      {/* Absolute tags matching Webflow theme */}
-                      <div className="absolute bottom-3 left-3 flex flex-col gap-1.5">
-                        <span className="inline-flex rounded-[6px] bg-white px-2.5 py-1 text-[10px] font-semibold text-slate-800 shadow-sm uppercase tracking-wider">
-                          For {prop.intent === "buy" ? "Sale" : prop.intent === "rent" ? "Rent" : "Lease"}
-                        </span>
-                      </div>
-
-                      <div className="absolute top-3 right-3">
-                        <span className="inline-flex rounded-[6px] bg-amber-600 px-2.5 py-1 text-[10px] font-semibold text-white shadow-sm uppercase tracking-wider">
-                          {prop.category.replace("_", " ")}
-                        </span>
-                      </div>
-
-                      <div className="absolute top-3 left-3">
-                        <span className="inline-flex items-center gap-1 rounded bg-brand-green text-white px-2.5 py-1 text-[9px] font-extrabold uppercase tracking-widest shadow-sm">
-                         <Shield size={12} /> verified
-                        </span>
-                      </div>
-                    </div>
-
-                    <CardHeader className="pb-1.5 flex-1 flex flex-col justify-between px-1 pt-3.5 space-y-0">
-                      <div className="space-y-1">
-                        {/* Location text top-aligned in Webflow design */}
-                        <div className="text-[11px] font-medium text-slate-500 flex items-center gap-1">
-                          <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                          {prop.location_area}, {prop.location_city}
-                        </div>
-
-                        <CardTitle className="text-base font-semibold text-slate-900 line-clamp-1 pt-1 group-hover:text-brand-green transition-colors leading-tight m-0">
-                          {prop.title}
-                        </CardTitle>
-
-                        {/* Specs Row with no border layout */}
-                        <div className="flex flex-wrap items-center gap-y-1.5 gap-x-3 text-[11px] text-slate-500 font-medium py-1.5 mt-1.5 mb-2.5">
-                          <div className="flex items-center gap-1 shrink-0">
-                            <Bed className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                            <span>{prop.bedrooms || 0} Bed Room</span>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <Bath className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                            <span>{prop.bathrooms || 0} Bath</span>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <Maximize className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                            <span>{prop.area && Number(prop.area) > 0 ? `${Number(prop.area).toLocaleString()} SQ FT` : "Not Specified"}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Bottom Row: Price & Details button */}
-                      <div className="flex items-center justify-between pt-2 w-full gap-1.5 border-t border-slate-50">
-                        <span className="font-extrabold text-sm sm:text-base text-slate-950 whitespace-nowrap">
-                          {formatPrice(prop.price, prop.price_unit)}
-                        </span>
-                        <button
-                          onClick={() => handleOpenDetails(prop)}
-                          className="bg-brand-green hover:bg-brand-green-hover text-white text-[11px] sm:text-xs font-semibold px-3 sm:px-4 py-2.5 rounded-lg transition-colors flex items-center gap-1 shadow-sm cursor-pointer shrink-0"
-                        >
-                          View Details <span className="font-mono text-xs leading-none">→</span>
-                        </button>
-                      </div>
-                    </CardHeader>
-                  </Card>
-                ))}
+                {filteredProperties.map(renderPropertyCard)}
               </div>
 
               {/* Pagination Controls */}

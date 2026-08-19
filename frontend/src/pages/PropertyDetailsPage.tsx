@@ -60,6 +60,7 @@ import {
   X,
   User,
   Flag,
+  Shield,
 } from "lucide-react";
 
 const REPORT_REASONS = [
@@ -848,6 +849,11 @@ export const PropertyDetailsPage: React.FC = () => {
                 <span className="bg-slate-900 text-white px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
                   For {property.intent === "buy" ? "Sale" : property.intent === "rent" ? "Rent" : "Lease"}
                 </span>
+                {property.is_verified && (
+                  <span className="flex items-center gap-1 bg-emerald-50 border border-emerald-200/60 text-[#0B6E4F] px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+                    <Shield className="h-3 w-3 fill-emerald-500 text-white shrink-0" /> Verified
+                  </span>
+                )}
                 {["pg", "hostel", "pg_hostel"].includes(property.category) && property.gender_preference && property.gender_preference !== "any" && (
                   <span className="bg-indigo-50 border border-indigo-200/50 text-indigo-700 px-3.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
                     {property.gender_preference === "ladies" ? "Ladies Only" : property.gender_preference === "men" ? "Men Only" : "Any Gender"}
@@ -860,13 +866,13 @@ export const PropertyDetailsPage: React.FC = () => {
                 )}
               </div>
 
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 leading-tight m-0 tracking-tight capitalize">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 leading-tight m-0 tracking-tight uppercase">
                 {property.title}
               </h1>
 
               <div className="text-sm font-semibold text-slate-500 flex flex-wrap items-start gap-1.5">
                 <MapPin className="h-4 w-4 text-rose-500 shrink-0 mt-0.5" />
-                <span className="capitalize">
+                <span className="uppercase">
                   {[
                     property.location_address,
                     property.location_area,
@@ -899,20 +905,20 @@ export const PropertyDetailsPage: React.FC = () => {
             {/* Inline Detailed Pricing (Mobile only) */}
             <div className="block lg:hidden my-4 space-y-4">
               {/* Total Calculation */}
-              <div className="space-y-2 bg-slate-50 p-3.5 rounded-2xl border border-slate-100 shadow-2xs">
-                <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
+              <div className="space-y-2.5 bg-white p-4 rounded-2xl border-2 border-slate-200 shadow-sm">
+                <div className="flex justify-between items-center text-sm font-semibold text-slate-600">
                   <span>Base Price:</span>
-                  <span className="font-bold text-slate-800">{formatPrice(property.price, property.price_unit)}</span>
+                  <span className="font-extrabold text-slate-900 text-base">{formatPrice(property.price, property.price_unit)}</span>
                 </div>
                 {property.deposit ? (
-                  <div className="flex justify-between items-center text-xs font-semibold text-slate-600">
+                  <div className="flex justify-between items-center text-sm font-semibold text-slate-600">
                     <span>Security Deposit:</span>
-                    <span className="font-bold text-slate-800">₹{property.deposit.toLocaleString()}</span>
+                    <span className="font-extrabold text-slate-900 text-base">₹{property.deposit.toLocaleString()}</span>
                   </div>
                 ) : null}
-                <div className="flex justify-between items-center pt-2 font-black text-sm text-slate-900 border-t border-slate-200/60">
-                  <span>Estimated Total:</span>
-                  <span className="text-base font-extrabold text-[#0B6E4F]">
+                <div className="flex justify-between items-center pt-3 mt-1 border-t border-dashed border-slate-200">
+                  <span className="font-bold text-sm text-slate-700">Estimated Total:</span>
+                  <span className="text-xl font-black text-[#0B6E4F]">
                     {formatPrice(property.price + (property.deposit || 0), property.price_unit)}
                   </span>
                 </div>
@@ -1409,8 +1415,8 @@ export const PropertyDetailsPage: React.FC = () => {
       <div className="block lg:hidden fixed bottom-0 left-0 right-0 z-45 bg-white border-t border-slate-200 shadow-[0_-4px_24px_rgba(0,0,0,0.08)] px-4 py-3">
         <div className="flex items-center justify-between gap-4">
           <div className="flex flex-col min-w-0">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Property Price</span>
-            <span className="text-xl font-black text-slate-900 leading-tight underline decoration-slate-300 underline-offset-2 truncate">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Property Price</span>
+            <span className="text-2xl font-black text-[#0B6E4F] leading-tight truncate">
               {formatPrice(property.price, property.price_unit)}
             </span>
           </div>
