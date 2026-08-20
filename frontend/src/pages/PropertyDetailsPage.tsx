@@ -501,12 +501,23 @@ export const PropertyDetailsPage: React.FC = () => {
       const isPgOrHostel = categoryLower.includes("pg") || categoryLower.includes("hostel");
 
       const botNumber = import.meta.env.VITE_WHATSAPP_BOT_NUMBER || "918137090018";
-      const salesNumber = import.meta.env.VITE_WHATSAPP_SALES_NUMBER || "918137090018";
+      const salesNumber = import.meta.env.VITE_WHATSAPP_SALES_NUMBER || "919745195718";
 
       const targetNumber = isPgOrHostel ? botNumber : salesNumber;
       const cleanNumber = targetNumber.replace(/[^0-9]/g, "");
 
-      const message = encodeURIComponent(`Hi, I'm interested in your property ${property.title} (Ref: ${property.ref})`);
+      let message: string;
+      if (isPgOrHostel) {
+        message = encodeURIComponent(`Hi, I'm interested in your property ${property.title} (Ref: ${property.ref})`);
+      } else {
+        const location = [
+          property.location_area,
+          property.location_city,
+          property.location_state
+        ].filter(Boolean).join(", ");
+        const budget = formatPrice(property.price, property.price_unit);
+        message = encodeURIComponent(`Hi, I'm interested in a property.\nProperty Code: ${property.ref}\nLocation: ${location}\nBudget: ${budget}`);
+      }
       window.open(`https://wa.me/${cleanNumber}?text=${message}`, "_blank");
     }
   };
