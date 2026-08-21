@@ -326,7 +326,7 @@ class PropertyService:
             .replace("-", "")
         )
         sales_num = (
-            getattr(settings, "WHATSAPP_SALES_NUMBER", "918137090018")
+            getattr(settings, "WHATSAPP_SALES_NUMBER", "919745195718")
             .replace("+", "")
             .replace(" ", "")
             .replace("-", "")
@@ -334,10 +334,32 @@ class PropertyService:
 
         phone = bot_num if is_pg_or_hostel else sales_num
 
-        message = (
-            f"Hi, I found your listing on Letsellr (Ref: {ref}) "
-            f"and I'm interested. Is it still available?"
-        )
+        if is_pg_or_hostel:
+            message = (
+                f"Hi, I found your listing on Letsellr (Ref: {ref}) "
+                f"and I'm interested. Is it still available?"
+            )
+        else:
+            location_parts = filter(None, [
+                prop.location_area,
+                prop.location_city,
+                prop.location_state,
+            ])
+            location = ", ".join(location_parts)
+            # Format price with Indian rupee notation
+            try:
+                price_val = int(prop.price or 0)
+                price_formatted = f"\u20b9{price_val:,}"
+                if getattr(prop, 'price_unit', None) == 'per_month':
+                    price_formatted += "/mo"
+            except (TypeError, ValueError):
+                price_formatted = str(prop.price or "N/A")
+            message = (
+                f"Hi, I'm interested in a property.\n"
+                f"Property Code: {ref}\n"
+                f"Location: {location}\n"
+                f"Budget: {price_formatted}"
+            )
         wa_link = f"https://wa.me/{phone}?text={urllib.parse.quote(message)}"
 
         enquirer_key = None
