@@ -242,12 +242,12 @@ export default function PropertyShowcase() {
               </h3>
 
               {/* Price & Location Line */}
-              <div className="flex items-center gap-2 text-sm truncate">
-                <span className="font-extrabold text-[#0B6E4F] shrink-0">
+              <div className="flex items-center gap-2 truncate mt-0.5">
+                <span className="font-black text-lg text-[#0B6E4F] shrink-0">
                   {prop.price}
                 </span>
                 <span className="text-zinc-400 font-bold">·</span>
-                <span className="text-xs text-zinc-500 font-normal truncate">
+                <span className="text-sm text-zinc-500 font-medium truncate">
                   {prop.location}
                 </span>
               </div>

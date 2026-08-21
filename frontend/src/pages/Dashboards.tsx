@@ -39,11 +39,15 @@ const formatExactPrice = (val: number) => val.toLocaleString("en-IN");
 const PRICE_RANGE_MAX = { sale: 10000000, rent: 200000 };
 const PRICE_RANGE_STEP = { sale: 1000, rent: 100 };
 
-const getPriceRangeMax = (intent: string) =>
-  intent === "rent" || intent === "lease" ? PRICE_RANGE_MAX.rent : PRICE_RANGE_MAX.sale;
+// The platform defaults to a rental context (₹2L cap) — the sale range (₹1Cr) only
+// applies once the user has explicitly filtered for "buy" listings.
+const isSaleRange = (intent: string) => intent === "buy";
 
-const getPriceRangeStep = (intent: string) =>
-  intent === "rent" || intent === "lease" ? PRICE_RANGE_STEP.rent : PRICE_RANGE_STEP.sale;
+const getPriceRangeMax = (intent: string, _category: string = "") =>
+  isSaleRange(intent) ? PRICE_RANGE_MAX.sale : PRICE_RANGE_MAX.rent;
+
+const getPriceRangeStep = (intent: string, _category: string = "") =>
+  isSaleRange(intent) ? PRICE_RANGE_STEP.sale : PRICE_RANGE_STEP.rent;
 
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -124,6 +128,15 @@ export const ClientDashboard: React.FC = () => {
   // Advanced Filter state variables
   const [minPrice, setMinPrice] = useState<string>("");
   const [maxPrice, setMaxPrice] = useState<string>("");
+
+  // Clamp any stale min/max price to the current intent/category's range so the
+  // slider never renders with a value outside its own max (e.g. leftover sale-range
+  // values after switching to a rent-only category like PG/Hostel).
+  useEffect(() => {
+    const rangeMax = getPriceRangeMax(intent, category);
+    setMinPrice((prev) => (Number(prev) > rangeMax ? "" : prev));
+    setMaxPrice((prev) => (Number(prev) > rangeMax ? "" : prev));
+  }, [intent, category]);
   const [genderPreference, setGenderPreference] = useState<string>(() => sessionStorage.getItem("dashboard_genderPreference") || "any");
   const [bhkFilter, setBhkFilter] = useState<string>(() => sessionStorage.getItem("dashboard_bhk") || "any");
   const [furnishingFilter, setFurnishingFilter] = useState<string>(() => sessionStorage.getItem("dashboard_furnishing") || "any");
@@ -460,11 +473,18 @@ export const ClientDashboard: React.FC = () => {
   // Close popovers and search suggestions when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // Select dropdowns (Type/Radius/Per Page) render into a portal on document.body,
+      // so their items aren't DOM descendants of popoverRef even though they're
+      // visually part of the filter sheet — without this check, picking an option
+      // gets misread as an outside click and slams the whole sheet shut.
+      const insidePortaledPopup = target.closest('[data-slot="select-content"]');
       if (
+        !insidePortaledPopup &&
         popoverRef.current &&
-        !popoverRef.current.contains(event.target as Node) &&
+        !popoverRef.current.contains(target) &&
         filterBtnRef.current &&
-        !filterBtnRef.current.contains(event.target as Node)
+        !filterBtnRef.current.contains(target)
       ) {
         setShowAdvancedPopover(false);
       }
@@ -1036,24 +1056,47 @@ export const ClientDashboard: React.FC = () => {
   };
 
   const SkeletonCard = () => (
-    <Card className="border-slate-100 bg-white overflow-hidden animate-pulse rounded-xl p-4">
-      <div className="h-48 w-full bg-slate-200 rounded-lg" />
-      <CardHeader className="space-y-3 pb-3 px-0">
-        <div className="flex items-center justify-between">
-          <div className="h-5 w-16 bg-slate-200 rounded-full" />
+    <Card className="relative border-0 bg-slate-50 overflow-hidden flex flex-col rounded-2xl p-0 gap-0 h-80 animate-pulse">
+      {/* Background skeleton image replacement */}
+      <div className="absolute inset-0 h-full w-full bg-slate-100" />
+      
+      {/* Top-left: category badge */}
+      <div className="absolute top-3 left-3 z-10">
+        <div className="h-6 w-20 rounded-full bg-slate-200" />
+      </div>
+
+      {/* Top-right: navigate-to-property button */}
+      <div className="absolute top-3 right-3 z-10 h-8 w-8 rounded-full bg-slate-200" />
+
+      {/* Bottom content overlay */}
+      <div className="relative z-10 mt-auto px-5 pb-5 pt-3 flex items-end justify-between gap-4">
+        <div className="min-w-0 flex-1 space-y-3">
+          {/* Location on top */}
+          <div className="h-3 w-3/4 bg-slate-200 rounded" />
+          
+          {/* Title */}
+          <div className="h-5 w-5/6 bg-slate-200 rounded" />
+          
+          {/* Specification row */}
+          <div className="flex gap-3">
+            <div className="h-3 w-12 bg-slate-200 rounded" />
+            <div className="h-3 w-12 bg-slate-200 rounded" />
+            <div className="h-3 w-12 bg-slate-200 rounded" />
+          </div>
+
+          {/* Badges */}
+          <div className="flex items-center gap-2 pt-1">
+            <div className="h-5 w-16 bg-slate-200 rounded-full" />
+            <div className="h-5 w-16 bg-slate-200 rounded-full" />
+          </div>
+        </div>
+
+        {/* Price + unit type, right-aligned */}
+        <div className="flex flex-col items-end gap-1.5 shrink-0">
           <div className="h-5 w-24 bg-slate-200 rounded" />
+          <div className="h-2.5 w-16 bg-slate-200 rounded" />
         </div>
-        <div className="h-6 w-3/4 bg-slate-200 rounded" />
-        <div className="h-4 w-1/2 bg-slate-200 rounded" />
-      </CardHeader>
-      <CardContent className="space-y-4 px-0 pb-0">
-        <div className="flex gap-4">
-          <div className="h-4 w-12 bg-slate-200 rounded" />
-          <div className="h-4 w-12 bg-slate-200 rounded" />
-          <div className="h-4 w-12 bg-slate-200 rounded" />
-        </div>
-        <div className="h-10 w-full bg-slate-200 rounded-lg" />
-      </CardContent>
+      </div>
     </Card>
   );
 
@@ -1241,18 +1284,18 @@ export const ClientDashboard: React.FC = () => {
                       <div className={cn("flex flex-col gap-2 text-left col-span-2 mt-2 mb-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
                         <span className="text-[9px] font-extrabold text-slate-400 uppercase tracking-[0.15em]">Price Range</span>
                         <span className="text-base font-bold text-slate-800 tabular-nums">
-                          ₹{formatExactPrice(Number(minPrice) || 0)} - ₹{maxPrice ? formatExactPrice(Number(maxPrice)) : `${formatExactPrice(getPriceRangeMax(intent))}+`}
+                          ₹{formatExactPrice(Number(minPrice) || 0)} - ₹{maxPrice ? formatExactPrice(Number(maxPrice)) : `${formatExactPrice(getPriceRangeMax(intent, category))}+`}
                         </span>
                         <div className="px-1.5 pb-1 pt-1">
                           <Slider
                             min={0}
-                            max={getPriceRangeMax(intent)}
-                            step={getPriceRangeStep(intent)}
-                            value={[Number(minPrice) || 0, Number(maxPrice) || getPriceRangeMax(intent)]}
+                            max={getPriceRangeMax(intent, category)}
+                            step={getPriceRangeStep(intent, category)}
+                            value={[Number(minPrice) || 0, Number(maxPrice) || getPriceRangeMax(intent, category)]}
                             onValueChange={(val) => {
                               const [lo, hi] = val as number[];
                               setMinPrice(lo === 0 ? "" : lo.toString());
-                              setMaxPrice(hi === getPriceRangeMax(intent) ? "" : hi.toString());
+                              setMaxPrice(hi === getPriceRangeMax(intent, category) ? "" : hi.toString());
                             }}
                             onValueCommitted={() => setPage(1)}
                             className="w-full [&_[data-slot=slider-track]]:h-1.5 [&_[data-slot=slider-range]]:bg-[#0B6E4F] [&_[data-slot=slider-thumb]]:size-4 [&_[data-slot=slider-thumb]]:border-2 [&_[data-slot=slider-thumb]]:border-[#0B6E4F]"
@@ -1832,18 +1875,18 @@ export const ClientDashboard: React.FC = () => {
                             <div className={cn("flex flex-col gap-2 lg:hidden mt-2 mb-1", searchMode === "agencies" && "opacity-30 pointer-events-none select-none relative")}>
                               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-[0.15em]">Price Range</span>
                               <span className="text-base font-bold text-slate-800 tabular-nums">
-                                ₹{formatExactPrice(Number(minPrice) || 0)} - ₹{maxPrice ? formatExactPrice(Number(maxPrice)) : `${formatExactPrice(getPriceRangeMax(intent))}+`}
+                                ₹{formatExactPrice(Number(minPrice) || 0)} - ₹{maxPrice ? formatExactPrice(Number(maxPrice)) : `${formatExactPrice(getPriceRangeMax(intent, category))}+`}
                               </span>
                               <div className="px-1.5 pb-1 pt-1">
                                 <Slider
                                   min={0}
-                                  max={getPriceRangeMax(intent)}
-                                  step={getPriceRangeStep(intent)}
-                                  value={[Number(minPrice) || 0, Number(maxPrice) || getPriceRangeMax(intent)]}
+                                  max={getPriceRangeMax(intent, category)}
+                                  step={getPriceRangeStep(intent, category)}
+                                  value={[Number(minPrice) || 0, Number(maxPrice) || getPriceRangeMax(intent, category)]}
                                   onValueChange={(val) => {
                                     const [lo, hi] = val as number[];
                                     setMinPrice(lo === 0 ? "" : lo.toString());
-                                    setMaxPrice(hi === getPriceRangeMax(intent) ? "" : hi.toString());
+                                    setMaxPrice(hi === getPriceRangeMax(intent, category) ? "" : hi.toString());
                                   }}
                                   onValueCommitted={() => setPage(1)}
                                   className="w-full [&_[data-slot=slider-track]]:h-1.5 [&_[data-slot=slider-range]]:bg-[#0B6E4F] [&_[data-slot=slider-thumb]]:size-4 [&_[data-slot=slider-thumb]]:border-2 [&_[data-slot=slider-thumb]]:border-[#0B6E4F]"
@@ -2003,8 +2046,8 @@ export const ClientDashboard: React.FC = () => {
           )}
 
           {/* Title Grid Section */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 mt-6 border-b border-slate-200/60 pb-4">
-            <div className="flex items-center justify-between w-full md:w-auto gap-4">
+          <div className="flex flex-col gap-3 mb-4 mt-6 border-b border-slate-200/60 pb-4">
+            <div className="flex items-center justify-between gap-3">
               <div className="text-left">
                 <h2 className="text-xl md:text-2xl font-black text-slate-900 tracking-tight capitalize">
                   {searchMode === "agencies" ? "Verified Agencies" : (category ? category.replace("_", " / ") : "Residence")}{city ? ` in ${city}` : ""}
@@ -2018,17 +2061,7 @@ export const ClientDashboard: React.FC = () => {
                 </p>
               </div>
 
-              {/* Removed redundant Mobile Gender Preference block here */}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end shrink-0 mt-3 md:mt-0">
-              {searchMode !== "agencies" && (
-                <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-between md:justify-end">
-                  <span className="text-[10px] text-brand-green px-2.5 py-1 rounded-full font-black uppercase tracking-wider shrink-0">
-                    PAGE {page}
-                  </span>
-                  {/* Gender Preference Filters */}
-                  {category && ["pg", "hostel", "pg_hostel", "villa_house", "apartment"].includes(category) && (
+              {searchMode !== "agencies" && category && ["pg", "hostel", "pg_hostel", "villa_house", "apartment"].includes(category) && (
                     <div className="flex bg-slate-100/80 border border-slate-200/50 p-1 rounded-lg shrink-0 overflow-x-auto scrollbar-none max-w-full">
                       <button
                         type="button"
@@ -2099,6 +2132,15 @@ export const ClientDashboard: React.FC = () => {
                       )}
                     </div>
                   )}
+                  </div>
+
+            <div className="flex items-center justify-between gap-3 w-full">
+              {searchMode !== "agencies" && (
+                <>
+                  <span className="text-[10px] text-brand-green px-2.5 py-1 rounded-full font-black uppercase tracking-wider shrink-0">
+                    PAGE {page}
+                  </span>
+                  <div className="flex items-center gap-3 flex-wrap justify-end min-w-0">
                   <div className="flex items-center gap-1 text-xs font-semibold text-slate-500 shrink-0 whitespace-nowrap ml-auto md:ml-0">
                     <span className="shrink-0">Sort By:</span>
                     <Select
@@ -2119,8 +2161,9 @@ export const ClientDashboard: React.FC = () => {
                       <SelectItem value="price_desc">High to Low</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-                </div>
+                  </div>
+                  </div>
+                </>
               )}
             </div>
           </div>
