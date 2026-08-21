@@ -114,6 +114,22 @@ class UserPublic(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class UsageIncrementResponse(BaseModel):
+    """
+    Result of an atomic, limit-guarded usage increment.
+
+    `allowed` is the only field callers should branch on: it is False when
+    the increment was refused because msg_usage was already at msg_limit,
+    distinguishing "refused" from "succeeded and landed exactly on the
+    limit" (both leave msg_usage == msg_limit in the response).
+    """
+
+    allowed: bool
+    msg_usage: int
+    msg_limit: int
+    phone: str
+
+
 class TokenResponse(BaseModel):
     """JWT tokens returned after successful OTP verification."""
 

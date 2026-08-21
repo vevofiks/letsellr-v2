@@ -94,8 +94,8 @@ export default function TestimonialsSection() {
     }
   };
 
-  // Fallback default testimonials if backend array is empty
-  const displayList = testimonials.length > 0 ? testimonials : [
+  // Fallback default testimonials if backend array doesn't have enough items
+  const fallbackTestimonials: Testimonial[] = [
     {
       id: "fallback-1",
       author_name: "Aarav Sharma",
@@ -124,6 +124,10 @@ export default function TestimonialsSection() {
       is_featured: true,
     },
   ];
+
+  const displayList = testimonials.length >= 3 
+    ? testimonials 
+    : [...testimonials, ...fallbackTestimonials].slice(0, 3);
 
   return (
     <section ref={containerRef} className="relative py-12 md:py-24 bg-[#014645] text-white overflow-hidden">

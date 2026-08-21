@@ -77,7 +77,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({ logoHref = "/" }) => {
   const getLandingUrl = () => {
     const envUrl = import.meta.env.VITE_LANDING_URL;
     if (envUrl) return envUrl;
-    if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    if (import.meta.env.DEV) {
       return "http://localhost:3000";
     }
     return "https://letsellr.in";

@@ -6,13 +6,13 @@
         "path": "whatsapp",
         "options": {}
       },
-      "id": "cf73fbd9-5e8c-4db7-8ee0-cea9d5792492",
+      "id": "fed1dde7-e20b-42e8-8921-37e317e154fe",
       "name": "WhatsApp Trigger",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
       "position": [
-        -6464,
-        6256
+        -9104,
+        8544
       ],
       "webhookId": "2d410fe3-c267-4719-833c-e6175d562ab0"
     },
@@ -20,13 +20,13 @@
       "parameters": {
         "jsCode": "// Extract phone number, message text, and property code from OpenWA webhook payload\nconst entry = $input.first().json;\n\n// OpenWA sends body.data for message.received events\nconst dataObj = entry.body?.data || entry.data || entry.payload || entry.message || entry;\nconst sessionId = entry.sessionId || 'e92af797-f78c-4ae5-ad10-eac6d2e10274';\n\n// Extract raw sender and text safely\nlet rawFrom = dataObj.from || dataObj.sender?.id || dataObj.chatId || entry.from || '';\nlet rawText = dataObj.body || dataObj.text || dataObj.content || (typeof dataObj.message === 'string' ? dataObj.message : '') || '';\n\n// Safely ensure text is a string\nlet text = typeof rawText === 'string' ? rawText : String(rawText || '');\n\n// Candidate fields that may contain the user's real phone number\nconst candidateFields = [\n  dataObj.sender?.phoneNumber,\n  dataObj.sender?.phone,\n  dataObj.sender?.user,\n  dataObj.chat?.contact?.phoneNumber,\n  dataObj.chat?.contact?.id,\n  dataObj.chat?.id,\n  dataObj.chatId,\n  dataObj.author,\n  dataObj.sender?.id,\n  dataObj.from,\n  entry.from\n];\n\nlet phone = '';\nlet lidJid = '';\n\n// 1. First pass: Find any candidate field that contains a valid 10 to 13-digit phone number (skipping @lid JIDs)\nfor (const cand of candidateFields) {\n  if (!cand) continue;\n  const str = String(cand).trim();\n  \n  if (str.includes('@lid') || (str.replace(/@.*$/, '').replace(/[^0-9]/g, '').length > 13)) {\n    if (!lidJid) lidJid = str;\n    continue;\n  }\n  \n  const digits = str.replace(/@.*$/, '').replace(/[^0-9]/g, '');\n  if (digits.length >= 10 && digits.length <= 13) {\n    phone = digits;\n    break;\n  }\n}\n\n// 2. If LID detected (isLidSender = true) and no direct phone found, resolve LID -> Phone via WhatsApp Gateway API\nif (!phone && lidJid) {\n  const cleanLid = lidJid.includes('@') ? lidJid : `${lidJid}@lid`;\n  try {\n    const res = await helpers.httpRequest({\n      method: 'GET',\n      url: `https://letsellr-wa.letsellr.in/api/sessions/${sessionId}/contacts/${cleanLid}`,\n      headers: {\n        'X-API-Key': 'owa_k1_b9e0d0c24b491af4c0a8c68d0af3b61b2aea76af6321df8ba4419c46eb8e6e7d'\n      },\n      json: true,\n      timeout: 5000\n    });\n    \n    if (res && res.id && res.id.includes('@c.us')) {\n      phone = res.id.replace(/@.*$/, '').replace(/[^0-9]/g, '');\n    }\n  } catch (err) {\n    try {\n      const res = await fetch(`https://letsellr-wa.letsellr.in/api/sessions/${sessionId}/contacts/${cleanLid}`, {\n        headers: {\n          'X-API-Key': 'owa_k1_b9e0d0c24b491af4c0a8c68d0af3b61b2aea76af6321df8ba4419c46eb8e6e7d'\n        }\n      });\n      const data = await res.json();\n      if (data && data.id && data.id.includes('@c.us')) {\n        phone = data.id.replace(/@.*$/, '').replace(/[^0-9]/g, '');\n      }\n    } catch (e) {}\n  }\n}\n\n// 3. Fallback: If still no phone found, clean rawFrom digits\nif (!phone) {\n  const rawDigits = rawFrom.replace(/@.*$/, '').replace(/[^0-9]/g, '');\n  phone = rawDigits.length > 13 ? rawDigits.slice(-10) : rawDigits;\n}\n\nlet propertyCode = null;\n\nconst refMatch = text.match(/(?:Ref|Reference|Code):?\\s*([A-Z0-9-]+)\\b/i);\nif (refMatch) {\n  propertyCode = refMatch[1].toUpperCase().replace(/[^A-Z0-9-]/g, '');\n} else {\n  const codeMatch = text.match(/\\b(PROP-[A-Z0-9-]+|[A-Z]{2,4}\\d{3,6})\\b/i);\n  if (codeMatch) {\n    propertyCode = codeMatch[1].toUpperCase();\n  }\n}\n\nreturn [{\n  json: {\n    phone_number: phone,\n    raw_chat_id: rawFrom.includes('@') ? rawFrom : `${phone}@c.us`,\n    message_text: text,\n    property_code: propertyCode,\n    session_id: `${phone}_${propertyCode || 'unknown'}`\n  }\n}];"
       },
-      "id": "59fd3fc8-2763-4b83-936f-6cf92f3cedb3",
+      "id": "7112c313-2eb7-41a2-86b0-d432c563a9af",
       "name": "Extract Property Code",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -6240,
-        6256
+        -8880,
+        8544
       ]
     },
     {
@@ -35,13 +35,13 @@
         "query": "SELECT property_code, session_id FROM chat_sessions WHERE (phone_number = '{{ $('Extract Property Code').first().json.phone_number }}' OR session_id LIKE '%{{ $('Extract Property Code').first().json.phone_number }}%') AND status = 'open' AND updated_at > now() - interval '24 hours' ORDER BY updated_at DESC LIMIT 1;",
         "options": {}
       },
-      "id": "5e221dce-349b-437f-abea-c63156fa1a08",
+      "id": "ff74197b-50e8-45e6-98d6-acb9dae7a764",
       "name": "Lookup Active Session",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -6016,
-        6256
+        -8656,
+        8544
       ],
       "alwaysOutputData": true,
       "credentials": {
@@ -55,13 +55,13 @@
       "parameters": {
         "jsCode": "// Recover property code from active session if message text did not contain one\nconst extracted = $('Extract Property Code').first().json;\nconst activeSession = $input.first().json;\n\nlet finalPropertyCode = extracted.property_code;\nlet finalSessionId = extracted.session_id;\nlet isNewEnquiry = false;\n\nconst activeCode = (activeSession?.property_code || '').trim().toUpperCase();\nconst newCode = (extracted?.property_code || '').trim().toUpperCase();\n\nif (newCode && (!activeCode || activeCode !== newCode)) {\n  isNewEnquiry = true;\n  finalPropertyCode = newCode;\n} else if (!finalPropertyCode && activeCode) {\n  finalPropertyCode = activeCode;\n  finalSessionId = activeSession.session_id || `${extracted.phone_number}_${activeCode}`;\n  isNewEnquiry = false;\n}\n\nreturn [{\n  json: {\n    phone_number: extracted.phone_number,\n    message_text: extracted.message_text,\n    property_code: finalPropertyCode || null,\n    session_id: finalSessionId,\n    is_new_enquiry: isNewEnquiry\n  }\n}];"
       },
-      "id": "72ec4c1a-7328-493a-bdd3-a583b37e2ef0",
+      "id": "2076dce0-a36d-4d86-9bc6-0765caf743c4",
       "name": "Resolve Property Code",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -5792,
-        6256
+        -8432,
+        8544
       ]
     },
     {
@@ -84,48 +84,15 @@
           "timeout": 8000
         }
       },
-      "id": "ef2c03ac-e4b4-441a-86d0-5b509eb010d2",
+      "id": "25090789-7dff-471d-bab4-6b4bb8a293d3",
       "name": "Fetch User Profile",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -5568,
-        6256
+        -8208,
+        8544
       ],
       "alwaysOutputData": true
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 1
-          },
-          "conditions": [
-            {
-              "id": "cond-limit-exceeded",
-              "leftValue": "={{ $('Resolve Property Code').first().json.is_new_enquiry === true && ($('Fetch User Profile').first().json.msg_usage || 0) >= ($('Fetch User Profile').first().json.msg_limit || 3) }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "true"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "8a98aca8-1518-426b-b047-75dbf691a602",
-      "name": "Check Limit Reached",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [
-        -5344,
-        6256
-      ]
     },
     {
       "parameters": {
@@ -149,13 +116,13 @@
         "jsonBody": "={{ JSON.stringify({ chatId: $('Extract Property Code').first().json.raw_chat_id, text: \"You have reached your property enquiry limit on *Letsellr*. To increase your limit and enquire about more properties, please contact our sales team on *+91 81369 90018* and they will assist you.\" }) }}",
         "options": {}
       },
-      "id": "11d75de6-0ce2-4e55-b12d-62112a613221",
+      "id": "ba51028b-03f9-417f-9fce-dc9a9a915ecc",
       "name": "Send Limit Exceeded Message",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -5120,
-        6352
+        -7760,
+        8640
       ]
     },
     {
@@ -182,13 +149,13 @@
         },
         "options": {}
       },
-      "id": "6b82d52b-19e0-47bf-8286-5b35d540c95f",
+      "id": "adf981fa-94b7-42e1-aeff-912319628104",
       "name": "Is New Enquiry?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        -4832,
-        5840
+        -7536,
+        8352
       ]
     },
     {
@@ -212,13 +179,13 @@
           "timeout": 8000
         }
       },
-      "id": "bf8e53aa-a7d7-47ff-945f-c2c2204e8754",
+      "id": "68c077f8-47c2-4df6-bc8e-cc752ce06f3d",
       "name": "Increment User Usage",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -4544,
-        5920
+        -7312,
+        8432
       ],
       "alwaysOutputData": true
     },
@@ -264,13 +231,13 @@
         },
         "options": {}
       },
-      "id": "a081ae86-3151-4e5d-87b8-4d08c3f18bfc",
+      "id": "ecf59515-c2ef-4f0b-9a45-b23b4b4b72e3",
       "name": "Has Property Code?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        -5120,
-        6160
+        -7760,
+        8448
       ]
     },
     {
@@ -293,13 +260,13 @@
           "timeout": 8000
         }
       },
-      "id": "cb0d9106-e0a3-4f1c-9ea1-bc10283b3245",
+      "id": "10cb782f-d23f-4ecd-8390-81f42e1c846b",
       "name": "Fetch Property Details",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -4320,
-        5840
+        -7088,
+        8352
       ],
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -310,13 +277,13 @@
         "query": "INSERT INTO chat_sessions (phone_number, property_code, session_id, status)\nVALUES ('{{ $('Resolve Property Code').first().json.phone_number }}', '{{ $('Resolve Property Code').first().json.property_code }}', '{{ $('Resolve Property Code').first().json.session_id }}', 'open')\nON CONFLICT (session_id) DO NOTHING\nRETURNING *;",
         "options": {}
       },
-      "id": "70b3e639-a49e-4c1d-9504-e351b334cafc",
+      "id": "596b0f9d-fcd4-4602-bcab-334c1adaef0d",
       "name": "Upsert Chat Session",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -4096,
-        5840
+        -6640,
+        8256
       ],
       "credentials": {
         "postgres": {
@@ -330,17 +297,17 @@
         "promptType": "define",
         "text": "={{ $('Resolve Property Code').first().json.message_text }}",
         "options": {
-          "systemMessage": "=You are the Letsellr leasing assistant on WhatsApp. A registered customer has enquired about one specific listing from https://letsellr.in. Your objective is to answer their questions about that listing and, if they are interested, hand them over to the owner in as few messages as possible.\n\nLISTING DATA (the only property facts you may use):\n{{ (() => { const p = $('Fetch Property Details').first().json || {}; return JSON.stringify({ code: p.ref, title: p.title, category: p.category, intent: p.intent, description: p.description, rent_per_month: p.price, price_unit: p.price_unit, deposit: p.deposit, bedrooms: p.bedrooms, bathrooms: p.bathrooms, area_sqft: p.area, furnishing: p.furnishing, amenities: p.amenities, extra_details: p.extra_details, locality: p.location_area, city: p.location_city, state: p.location_state, pincode: p.location_pincode, listing_status: p.status }); })() }}\n\nCUSTOMER:\n- Name: {{ $('Fetch User Profile').first().json.name }}\n- Phone: {{ $('Fetch User Profile').first().json.phone }}\n- Enquiry quota: {{ $('Fetch User Profile').first().json.msg_usage }} used of {{ $('Fetch User Profile').first().json.msg_limit }} allowed\n\nTONE AND FORMAT:\n- Formal, professional and concise. You are a leasing desk assistant, not a friend.\n- Do not use emojis. Do not use exclamation marks.\n- Keep every reply under 8 lines. Ask at most one question per message.\n- Bold uses SINGLE asterisks, for example *PROP-DL847R*. Never use double asterisks. Never begin a line with an asterisk; use a hyphen for list items.\n- Reply in English. Only if the customer writes in Malayalam, reply in simple Malayalam. Never send the same message in two languages.\n\nABSOLUTE RULES:\n1. Use only the listing data above. Never invent or estimate rent, deposit, amenities, availability dates, sharing type, food, house rules, addresses, owner names or phone numbers.\n2. If a detail is not present in the listing data, say plainly that the detail is not listed and that it can be raised with the owner once connected.\n3. Never say you will check with the owner and reply later, never promise a callback, and never say you are searching or making enquiries. You cannot take any action outside this chat and there is no human reading this conversation.\n4. Never reveal the owner name, phone number or address in your own message. The system sends the owner contact details automatically once the handoff is confirmed.\n5. Never ask for information the customer has already given.\n6. If listing_status is not live, tell the customer this listing is not currently active and offer to show other available PG and hostel options.\n7. This assistant handles PG and hostel enquiries only. If the customer asks about apartments, flats, houses, villas, land, commercial or coworking space, listing their own property, promotions, vlogging or any other service, reply that this WhatsApp assistant handles PG and hostel enquiries only and ask them to contact the sales team on *+91 81369 90018*.\n\nSALES TEAM NUMBER - USE SPARINGLY:\nOnly mention *+91 81369 90018* in these two situations:\n- The customer is asking about a property type other than a PG or hostel, or about any other service.\n- The customer asks to speak to the sales team, or asks for a contact number.\nNever add it to a normal reply, never add it at the end of a successful enquiry, and never repeat it once you have already given it in the conversation.\n8. IF LISTING DATA IS EMPTY OR HAS NO CODE: do not mention a listing, do not offer to connect them with an owner and never ask the consent question. Treat the message as a fresh search instead: use the Search PG Listings tool as described below.\n\nSEARCHING FOR OTHER LISTINGS:\nIf the customer asks about a different locality, a different budget, or other available options, use the Search PG Listings tool and present at most 3 results from it, each with title, code, rent per month and locality. Kozhikode and Calicut are the same city, so if a search returns nothing, search again using the other name, and if a small locality returns nothing, search the city name instead. If every location search still returns nothing, call the List All PG Listings tool and offer those as the nearest available options rather than ending with bad news. Never mention a property no tool returned.\n\nCONVERSATION FLOW (move the conversation forward with every message):\n1. First reply: confirm the listing with its title, code, rent per month, deposit if listed, locality, and one line covering the most relevant details. Then ask a single question: would they like the full details, or shall you connect them with the owner.\n2. If they ask for details: give the requested details from the listing data as a compact hyphen list, then ask whether to connect them with the owner.\n3. As soon as the customer shows intent to proceed, visit, book or be connected, including a plain yes, ok, interested or proceed in reply to your offer, ask exactly this consent question and nothing else: \"May we share your name and phone number with the property owner so that they can get in touch with you? We will also send you the owner's contact details and the property location.\"\n4. When they agree, reply with one short line thanking them and stating that their details are being shared with the owner and that the owner's contact details follow in the next message. End that message with the token [INTENT:CONFIRMED].\n5. Ask the consent question only once. Once it has been answered, never repeat it.\n6. End every other message with the token [INTENT:OPEN].\n7. The tokens are internal. Never mention, explain or acknowledge them.",
+          "systemMessage": "=You are the Letsellr leasing assistant on WhatsApp. A registered customer has enquired about one specific listing from https://letsellr.in. Your objective is to answer their questions about that listing and, if they are interested, hand them over to the owner in as few messages as possible.\n\nLISTING DATA (the only property facts you may use):\n{{ (() => { const p = $('Fetch Property Details').first().json || {}; return JSON.stringify({ code: p.ref, title: p.title, category: p.category, intent: p.intent, description: p.description, rent_per_month: p.price, price_unit: p.price_unit, deposit: p.deposit, bedrooms: p.bedrooms, bathrooms: p.bathrooms, area_sqft: p.area, furnishing: p.furnishing, amenities: p.amenities, extra_details: p.extra_details, locality: p.location_area, city: p.location_city, state: p.location_state, pincode: p.location_pincode, listing_status: p.status }); })() }}\n\nCUSTOMER:\n- Name: {{ $('Fetch User Profile').first().json.name }}\n- Phone: {{ $('Fetch User Profile').first().json.phone }}\n- Enquiry quota: {{ $('Fetch User Profile').first().json.msg_usage }} used of {{ $('Fetch User Profile').first().json.msg_limit }} allowed\n\nTONE AND FORMAT:\n- Formal, professional and polite. You are a leasing desk assistant, not a friend.\n- Do not use exclamation marks. Do not use decorative or reaction emojis (no \ud83d\ude0a, \ud83d\ude4f, \ud83c\udf89 and similar).\n- You may use ONLY these emojis, and only as a line label for a fact, never inside a sentence: \ud83d\udccd for locality or address, \ud83d\udcb0 for rent and deposit, \ud83d\udecf\ufe0f for vacancy or sharing, \ud83d\udecb\ufe0f for furnishing, \u2705 for amenities.\n- WHATSAPP LAYOUT IS MANDATORY, this is the most important formatting rule: never write a paragraph. Put exactly one blank line between the opening sentence, the block of property facts, and the closing question. One fact per line. Never merge a fact and a question into the same line.\n- Keep every reply under 10 lines counting blank lines. Ask at most one question per message.\n- Bold uses SINGLE asterisks, for example *PROP-DL847R*. Never use double asterisks. Never begin a line with an asterisk.\n- Reply in English. Only if the customer writes in Malayalam, reply in simple Malayalam. Never send the same message in two languages.\n\nABSOLUTE RULES:\n1. Use only the listing data above. Never invent or estimate rent, deposit, amenities, availability dates, sharing type, food, house rules, addresses, owner names or phone numbers.\n2. If a detail is not present in the listing data, say plainly that the detail is not listed and that it can be raised with the owner once connected.\n3. Never say you will check with the owner and reply later, never promise a callback, and never say you are searching or making enquiries. You cannot take any action outside this chat and there is no human reading this conversation.\n4. Never reveal the owner name, phone number or address in your own message. The system sends the owner contact details automatically once the handoff is confirmed.\n5. Never ask for information the customer has already given.\n6. If listing_status is not live, tell the customer this listing is not currently active and offer to show other available PG and hostel options.\n7. This assistant handles PG and hostel enquiries only. If the customer asks about apartments, flats, houses, villas, land, commercial or coworking space, listing their own property, promotions, vlogging or any other service, reply that this WhatsApp assistant handles PG and hostel enquiries only and ask them to contact the sales team on *+91 81369 90018*.\n\nSALES TEAM NUMBER - USE SPARINGLY:\nOnly mention *+91 81369 90018* in these two situations:\n- The customer is asking about a property type other than a PG or hostel, or about any other service.\n- The customer asks to speak to the sales team, or asks for a contact number.\nNever add it to a normal reply, never add it at the end of a successful enquiry, and never repeat it once you have already given it in the conversation.\n8. IF LISTING DATA IS EMPTY OR HAS NO CODE: do not mention a listing, do not offer to connect them with an owner and never ask the consent question. Treat the message as a fresh search instead: use the Search PG Listings tool as described below.\n\nSEARCHING FOR OTHER LISTINGS:\nIf the customer asks about a different locality, a different budget, or other available options, use the Search PG Listings tool and present at most 3 results from it, each with title, code, rent per month and locality. Kozhikode and Calicut are the same city, so if a search returns nothing, search again using the other name, and if a small locality returns nothing, search the city name instead. If every location search still returns nothing, call the List All PG Listings tool and offer those as the nearest available options rather than ending with bad news. Never mention a property no tool returned.\n\nCONVERSATION FLOW (move the conversation forward with every message):\n1. First reply: use this exact layout, one blank line between each block. Omit any fact line the listing data does not have; never invent one to fill the layout.\n\nThank you for your enquiry about *{title}* (Ref: *{code}*).\n\n\ud83d\udccd {locality}, {city}\n\ud83d\udcb0 Rent {rent}/month, plus deposit {deposit} if listed\n\ud83d\udecf\ufe0f {one line on vacancy, sharing or bedrooms, whichever the listing has}\n\nWould you like the full details, or shall we connect you with the owner?\n\n2. If they ask for details: use the same one-fact-per-line layout, covering every relevant field the listing data has (rent, deposit, locality, furnishing, amenities, vacancy), each on its own line with its emoji label. Leave one blank line before the closing question.\n\nHere are the full details for *{title}* ({code}):\n\n\ud83d\udcb0 Rent {rent}/month | Deposit {deposit}\n\ud83d\udccd Locality: {locality}, {city}\n\ud83d\udecb\ufe0f Furnishing: {furnishing}\n\ud83d\udecf\ufe0f Vacancy: {vacancy detail}\n\u2705 Amenities: {amenities}\n\nShall we connect you with the owner?\n3. As soon as the customer shows intent to proceed, visit, book or be connected, including a plain yes, ok, interested or proceed in reply to your offer, ask exactly this consent question and nothing else: \"May we share your name and phone number with the property owner so that they can get in touch with you? We will also send you the owner's contact details and the property location.\"\n4. When they agree, reply with one short line thanking them and stating that their details are being shared with the owner and that the owner's contact details follow in the next message. End that message with the token [INTENT:CONFIRMED].\n5. Ask the consent question only once. Once it has been answered, never repeat it.\n6. End every other message with the token [INTENT:OPEN].\n7. The tokens are internal. Never mention, explain or acknowledge them.",
           "maxIterations": 5
         }
       },
-      "id": "b65fbfa8-e510-4765-a8f3-0a531a6fdcf7",
+      "id": "a5b2386f-3daa-4f51-a342-06d3351cb24b",
       "name": "AI Leasing Assistant",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 1.7,
       "position": [
-        -3744,
-        5840
+        -6320,
+        8256
       ],
       "retryOnFail": true,
       "maxTries": 2,
@@ -354,13 +321,13 @@
         "tableName": "chat_sessions_memory",
         "contextWindowLength": 6
       },
-      "id": "8a023169-4274-4600-b5a8-456e09374d11",
+      "id": "ec2b49f9-847e-4213-91e9-632e9948d11a",
       "name": "Postgres Chat Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
       "typeVersion": 1.3,
       "position": [
-        -3744,
-        6080
+        -6272,
+        8480
       ],
       "credentials": {
         "postgres": {
@@ -373,13 +340,13 @@
       "parameters": {
         "jsCode": "// Strip intent token from reply, capture intent flag\n// Reasoning models sometimes wrap their thinking in <think> tags - never send that to the customer\nconst raw = ($input.first().json.output || '').replace(/<think>[\\s\\S]*?<\\/think>/gi, '').replace(/<\\/?think>/gi, '');\nconst confirmed = raw.includes('[INTENT:CONFIRMED]');\nlet cleanText = raw.replace(/\\[INTENT:(CONFIRMED|OPEN)\\]/g, '').trim();\n\n// The WhatsApp gateway rejects empty text with a 400, so never let the reply be blank\nif (!cleanText) {\n  cleanText = confirmed\n    ? 'Thank you. Your details are being shared with the property owner. The owner contact details will follow in the next message.'\n    : 'We are unable to prepare a reply at the moment. Please send your message again, or contact our team on *+91 81369 90018* for assistance.';\n}\n\nreturn [{\n  json: {\n    ...$('Resolve Property Code').first().json,\n    reply_text: cleanText,\n    intent_confirmed: confirmed\n  }\n}];"
       },
-      "id": "5f390af0-558a-4de9-ad13-75ddcdd27d07",
+      "id": "513c47bb-bc6a-41fa-af04-b968fdfef677",
       "name": "Parse Intent Token",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        -3280,
-        5792
+        -5824,
+        8160
       ]
     },
     {
@@ -404,13 +371,13 @@
         "jsonBody": "={{ JSON.stringify({ chatId: $('Extract Property Code').first().json.raw_chat_id, text: (($json.reply_text || $json.output || '').replace(/\\*\\*/g, '*').trim() || 'We are unable to prepare a reply at the moment. Please send your message again, or contact our team on *+91 81369 90018* for assistance.') }) }}",
         "options": {}
       },
-      "id": "26604df1-0523-4f2b-8b1d-70da1e2d1145",
+      "id": "7caf0b5c-590a-4795-b623-bcbf5bdc91f9",
       "name": "Send AI Reply",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -3056,
-        5792
+        -5600,
+        8160
       ],
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -439,13 +406,13 @@
         },
         "options": {}
       },
-      "id": "42107d5c-f1b4-4977-8732-731c8907357b",
+      "id": "4e5208ae-edb5-4fd9-9206-b49b335bb1d8",
       "name": "Enquiry Confirmed?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        -2832,
-        5792
+        -5376,
+        8160
       ]
     },
     {
@@ -454,13 +421,13 @@
         "query": "UPDATE chat_sessions\nSET status = 'closed', updated_at = now()\nWHERE session_id = '{{ $('Resolve Property Code').first().json.session_id }}';",
         "options": {}
       },
-      "id": "f2846d5d-5884-40b2-9ac8-9192136adae1",
+      "id": "87f8537e-8ef0-4fae-86d4-0957fdf17590",
       "name": "Update Session Status",
       "type": "n8n-nodes-base.postgres",
       "typeVersion": 2.5,
       "position": [
-        -1136,
-        5792
+        -4704,
+        8160
       ],
       "credentials": {
         "postgres": {
@@ -488,16 +455,16 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  chatId: (() => {\n    const d = $('Fetch Property Details').first().json || {};\n    let p = String(d.owner_phone || d.owner_whatsapp || d.owner?.phone || '').replace(/[^0-9]/g, '');\n    if (p.startsWith('0')) p = p.slice(1);\n    if (p.length === 10) p = '91' + p;\n    if (!p || p.length < 10) p = '918136990018';\n    return p.includes('@') ? p : p + '@c.us';\n  })(),\n  text: (() => {\n    const prop = $('Fetch Property Details').first().json || {};\n    const user = $('Fetch User Profile').first().json || {};\n    const extracted = $('Extract Property Code').first().json || {};\n    const ownerName = prop.owner?.name || prop.owner_name || 'Sir / Madam';\n    const tenantName = user.name || 'Customer';\n    const tenantPhone = user.phone || extracted.phone_number || '';\n    const propTitle = prop.title || $('Resolve Property Code').first().json.property_code || '';\n    const propRef = prop.ref || $('Resolve Property Code').first().json.property_code || '';\n    return `*New Tenant Enquiry - Letsellr*\n\nDear ${ownerName},\n\nA tenant has confirmed interest in your listing *${propTitle}* (Code: *${propRef}*).\n\nTenant details\n- Name: ${tenantName}\n- Phone: ${tenantPhone}\n\nPlease contact the tenant directly to arrange a visit or to answer their questions.\n\nTeam Letsellr`;\n  })()\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  chatId: (() => {\n    const d = $('Fetch Property Details').first().json || {};\n    let p = String(d.owner_phone || d.owner_whatsapp || d.owner?.phone || '').replace(/[^0-9]/g, '');\n    if (p.startsWith('0')) p = p.slice(1);\n    if (p.length === 10) p = '91' + p;\n    if (!p || p.length < 10) p = '918136990018';\n    return p.includes('@') ? p : p + '@c.us';\n  })(),\n  text: (() => {\n    const prop = $('Fetch Property Details').first().json || {};\n    const user = $('Fetch User Profile').first().json || {};\n    const extracted = $('Extract Property Code').first().json || {};\n    const ownerName = prop.owner?.name || prop.owner_name || 'Sir / Madam';\n    const tenantName = user.name || 'Customer';\n    const tenantPhone = user.phone || extracted.phone_number || '';\n    const propTitle = prop.title || $('Resolve Property Code').first().json.property_code || '';\n    const propRef = prop.ref || $('Resolve Property Code').first().json.property_code || '';\n    return `*New Tenant Enquiry - Letsellr*\n\nDear ${ownerName},\n\nA tenant has confirmed interest in your listing *${propTitle}* (Code: *${propRef}*).\n\n\\ud83d\\udc64 Name: ${tenantName}\n\\ud83d\\udcf1 Phone: ${tenantPhone}\n\nPlease contact the tenant directly to arrange a visit or to answer their questions.\n\nTeam Letsellr`;\n  })()\n}) }}",
         "options": {}
       },
-      "id": "368fd354-f498-4ff3-8f0b-367841a8944c",
+      "id": "cafacb62-c4df-4e86-8f0f-c6abbe1caa68",
       "name": "Send Owner Notification",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -2608,
-        5792
+        -5152,
+        8160
       ],
       "alwaysOutputData": true,
       "onError": "continueRegularOutput"
@@ -521,16 +488,16 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  chatId: $('Extract Property Code').first().json.raw_chat_id,\n  text: (() => {\n    const prop = $('Fetch Property Details').first().json || {};\n    const ownerName = prop.owner?.name || prop.owner_name || 'Property Owner';\n    const ownerPhone = prop.owner_phone || prop.owner?.phone || prop.owner_whatsapp || 'Available upon request';\n    const propTitle = prop.title || $('Resolve Property Code').first().json.property_code || '';\n    \n    let mapLink = '';\n    if (prop.latitude && prop.longitude) {\n      mapLink = `https://maps.google.com/?q=${prop.latitude},${prop.longitude}`;\n    } else if (prop.location_address || prop.location_city) {\n      const addr = [prop.location_address, prop.location_area, prop.location_city].filter(Boolean).join(', ');\n      mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`;\n    }\n    \n    let text = `*Enquiry Confirmed - Letsellr*\n\nYour name and phone number have been shared with the owner of *${propTitle}*.\n\nOwner details\n- Name: ${ownerName}\n- Phone: ${ownerPhone}`;\n    if (mapLink) {\n      text += `\n- Location: ${mapLink}`;\n    }\n    text += `\n\nYou may contact the owner directly to arrange a visit.`;\n    return text;\n  })()\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  chatId: $('Extract Property Code').first().json.raw_chat_id,\n  text: (() => {\n    const prop = $('Fetch Property Details').first().json || {};\n    const ownerName = prop.owner?.name || prop.owner_name || 'Property Owner';\n    const ownerPhone = prop.owner_phone || prop.owner?.phone || prop.owner_whatsapp || 'Available upon request';\n    const propTitle = prop.title || $('Resolve Property Code').first().json.property_code || '';\n\n    let mapLink = '';\n    if (prop.latitude && prop.longitude) {\n      mapLink = `https://maps.google.com/?q=${prop.latitude},${prop.longitude}`;\n    } else if (prop.location_address || prop.location_city) {\n      const addr = [prop.location_address, prop.location_area, prop.location_city].filter(Boolean).join(', ');\n      mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`;\n    }\n\n    let waLink = '';\n    const ownerDigits = String(ownerPhone).replace(/[^0-9]/g, '');\n    if (ownerDigits.length >= 10) {\n      waLink = `https://wa.me/${ownerDigits}`;\n    }\n\n    let text = `*Enquiry Confirmed - Letsellr*\n\nYour name and phone number have been shared with the owner of *${propTitle}*.\n\n\\ud83d\\udc64 Name: ${ownerName}\n\\ud83d\\udcf1 Phone: ${ownerPhone}`;\n    if (mapLink) {\n      text += `\n\\ud83d\\udccd Location: ${mapLink}`;\n    }\n    if (waLink) {\n      text += `\n\n\\ud83d\\udc49 Tap to message the owner directly: ${waLink}`;\n    }\n    text += `\n\nYou may also call the owner directly to arrange a visit.`;\n    return text;\n  })()\n}) }}",
         "options": {}
       },
-      "id": "7efbe28a-fb4d-42f2-94c3-e996c159c7c2",
+      "id": "fcc038d7-82ac-4f18-9da7-bfbb358407bb",
       "name": "Send User Confirmation",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -2384,
-        5792
+        -4928,
+        8160
       ]
     },
     {
@@ -555,13 +522,13 @@
         "jsonBody": "={{ JSON.stringify({ chatId: $('Extract Property Code').first().json.raw_chat_id, text: \"We are unable to process your message at the moment due to high volume. Please send your message again in a few minutes. For immediate assistance, please contact our team on *+91 81369 90018*.\" }) }}",
         "options": {}
       },
-      "id": "898ae634-49bb-4dee-a4c7-4d6831a4eb9b",
+      "id": "a3dd45a8-de3c-4e0a-a478-0a939cb76240",
       "name": "Send Service Notice",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -3280,
-        6064
+        -5824,
+        8352
       ],
       "onError": "continueRegularOutput"
     },
@@ -602,13 +569,13 @@
         "fieldsToInclude": "selected",
         "fields": "ref,title,category,price,price_unit,deposit,furnishing,bedrooms,amenities,extra_details,location_area,location_city"
       },
-      "id": "a7d4336f-e3cc-487f-a279-806c16ba1fb6",
+      "id": "296c9d2f-9b78-4175-844f-10217f92b204",
       "name": "Search PG Listings",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
       "position": [
-        -3616,
-        6080
+        -6144,
+        8480
       ]
     },
     {
@@ -640,13 +607,13 @@
         "fieldsToInclude": "selected",
         "fields": "ref,title,category,price,price_unit,deposit,furnishing,bedrooms,amenities,extra_details,location_area,location_city"
       },
-      "id": "8b3c36bc-545f-497d-8d66-46e232821e16",
+      "id": "a89308f1-c7fb-4e99-b1c5-38e53597a672",
       "name": "List All PG Listings",
       "type": "@n8n/n8n-nodes-langchain.toolHttpRequest",
       "typeVersion": 1.1,
       "position": [
-        -3488,
-        6080
+        -6016,
+        8480
       ]
     },
     {
@@ -657,10 +624,10 @@
       "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
       "typeVersion": 1,
       "position": [
-        -3872,
-        6080
+        -6400,
+        8480
       ],
-      "id": "085b8714-c0e7-4aee-b4de-79c40f802af7",
+      "id": "3b7749dd-4317-49c8-bf77-e15b0f53884c",
       "name": "Groq Chat Model1",
       "credentials": {
         "groqApi": {
@@ -693,13 +660,13 @@
         },
         "options": {}
       },
-      "id": "cd3f50dc-aecc-4c81-9d38-057d928e110e",
+      "id": "ac974b20-7c9d-496b-9a9b-2f16673a90f9",
       "name": "Is PG or Hostel?",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        -4208,
-        5952
+        -6864,
+        8352
       ]
     },
     {
@@ -724,13 +691,13 @@
         "jsonBody": "={{ JSON.stringify({ chatId: $('Extract Property Code').first().json.raw_chat_id, text: \"This WhatsApp assistant handles PG and hostel enquiries only. For any other property type, please contact our sales team on *+91 97451 95718* and they will assist you directly.\" }) }}",
         "options": {}
       },
-      "id": "36106f0a-c291-4bbc-8f8f-7e12f4a2c51b",
+      "id": "4a87063a-ff12-47ca-945d-74ecb1c0073f",
       "name": "Send Off-Scope Property Notice",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -4208,
-        6160
+        -6640,
+        8448
       ]
     },
     {
@@ -755,13 +722,134 @@
         "jsonBody": "={{ JSON.stringify({ chatId: $('Extract Property Code').first().json.raw_chat_id, text: \"Welcome to *Letsellr*. To enquire about a PG or hostel, please visit https://letsellr.in, choose a listing and reply here with its property code. For assistance, contact our sales team on *+91 97451 95718*.\" }) }}",
         "options": {}
       },
-      "id": "ac329784-09ba-4d1b-a55a-28b8cbb2d4ec",
+      "id": "cb0041bd-6d05-4c88-9012-b17b548bd2c5",
       "name": "Send General Info Message",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        -4896,
-        6304
+        -6864,
+        8720
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT 1 FROM chat_sessions\nWHERE session_id = '{{ $('Extract Property Code').first().json.phone_number }}_GENERAL'\nLIMIT 1;",
+        "options": {}
+      },
+      "id": "a88f8aaa-5467-4945-b73f-b484234d275c",
+      "name": "Check General Notice Sent",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -7536,
+        8720
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "VaFrzIHgGgVHF3uJ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// A SELECT that matches nothing returns zero output items, not one\n// item with empty fields, so check length rather than .first().json\nconst rows = $input.all();\nreturn [{ json: { already_sent: rows.length > 0 } }];"
+      },
+      "id": "059214b7-25dc-4797-917b-aaf75dea2ff2",
+      "name": "Evaluate General Notice Status",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -7312,
+        8720
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-general-notice-sent",
+              "leftValue": "={{ $json.already_sent }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "fd10e1a4-eda5-4c58-a9e6-59d38ad9082c",
+      "name": "General Notice Already Sent?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -7088,
+        8720
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO chat_sessions (phone_number, property_code, session_id, status)\nVALUES ('{{ $('Extract Property Code').first().json.phone_number }}', 'GENERAL', '{{ $('Extract Property Code').first().json.phone_number }}_GENERAL', 'sent')\nON CONFLICT (session_id) DO NOTHING;",
+        "options": {}
+      },
+      "id": "1fba1a7e-1afc-4ce2-8be8-51d91f867e51",
+      "name": "Mark General Notice Sent",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -6640,
+        8720
+      ],
+      "credentials": {
+        "postgres": {
+          "id": "VaFrzIHgGgVHF3uJ",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-usage-allowed",
+              "leftValue": "={{ $json.allowed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "50eff691-62a6-49b1-80ae-136b3a92d660",
+      "name": "Usage Allowed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -7312,
+        8560
       ]
     }
   ],
@@ -814,24 +902,6 @@
       "main": [
         [
           {
-            "node": "Check Limit Reached",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check Limit Reached": {
-      "main": [
-        [
-          {
-            "node": "Send Limit Exceeded Message",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
             "node": "Has Property Code?",
             "type": "main",
             "index": 0
@@ -861,7 +931,7 @@
       "main": [
         [
           {
-            "node": "Fetch Property Details",
+            "node": "Usage Allowed?",
             "type": "main",
             "index": 0
           }
@@ -879,7 +949,7 @@
         ],
         [
           {
-            "node": "Send General Info Message",
+            "node": "Check General Notice Sent",
             "type": "main",
             "index": 0
           }
@@ -1037,6 +1107,69 @@
         [
           {
             "node": "Send Off-Scope Property Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check General Notice Sent": {
+      "main": [
+        [
+          {
+            "node": "Evaluate General Notice Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate General Notice Status": {
+      "main": [
+        [
+          {
+            "node": "General Notice Already Sent?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "General Notice Already Sent?": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Send General Info Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send General Info Message": {
+      "main": [
+        [
+          {
+            "node": "Mark General Notice Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Usage Allowed?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Property Details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Limit Exceeded Message",
             "type": "main",
             "index": 0
           }

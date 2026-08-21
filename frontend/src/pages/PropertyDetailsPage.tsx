@@ -484,6 +484,11 @@ export const PropertyDetailsPage: React.FC = () => {
 
   const handleWhatsAppContact = async () => {
     if (!property) return;
+    if (!user) {
+      toast.error("Please sign in to contact via WhatsApp.");
+      setAuthModal({ open: true, mode: "register-client" });
+      return;
+    }
     let serverWaLink = "";
     try {
       const res = await api.get(`/api/properties/ref/${property.ref}/enquiry-link`);
@@ -945,8 +950,8 @@ export const PropertyDetailsPage: React.FC = () => {
 
 
             {/* Key Specs Cards Grid */}
-            {hasAnySpec && (
-              <div className="w-full sm:w-fit flex flex-wrap sm:flex-nowrap sm:items-center gap-y-3 sm:gap-y-0 bg-white border border-slate-200/80 rounded-2xl p-4 sm:px-5 sm:py-4 shadow-2xs text-left">
+            {hasAnySpec && !isPgOrHostelCategory && (
+              <div className="w-[92%] sm:w-fit flex flex-wrap sm:flex-nowrap sm:items-center gap-y-3 sm:gap-y-0 bg-white border border-slate-200/80 rounded-2xl p-4 sm:px-5 sm:py-4 shadow-2xs text-left">
                 {hasBed && (
                   <div className={specCardClass}>
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Bedroom</span>

@@ -133,12 +133,18 @@ export default function FeaturesGrid() {
     }
   };
 
-  const list = testimonials.length > 0 ? testimonials : fallbackReviews.map(f => ({
+  const fallbackReviewsMapped = fallbackReviews.map(f => ({
     id: f.id,
     author_name: f.author_name,
     author_role: f.author_role,
     content: f.content,
+    rating: f.rating,
   }));
+
+  // Pad with dummy data if we don't have enough to fill out the marquee grid nicely
+  const list = testimonials.length >= 6 
+    ? testimonials 
+    : [...testimonials, ...fallbackReviewsMapped].slice(0, 6);
 
   const halfLength = Math.ceil(list.length / 2);
   const firstRow = list.slice(0, halfLength);
