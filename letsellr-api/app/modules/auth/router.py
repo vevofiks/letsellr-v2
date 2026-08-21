@@ -36,6 +36,7 @@ from app.modules.auth.schemas import (
     RegisterResponse,
     ResendOTPRequest,
     TokenResponse,
+    UsageIncrementResponse,
     UserPublic,
     VerifyLoginRequest,
     VerifyRegistrationRequest,
@@ -244,19 +245,30 @@ async def get_me(
 
 @router.post(
     "/usage/increment",
-    response_model=UserPublic,
-    summary="Increment user message usage count",
+    response_model=UsageIncrementResponse,
+    summary="Atomically increment usage if under the limit, else refuse",
 )
 async def increment_usage(
     current_user: CurrentUser,
     db: DbSession,
     phone: str,
-) -> UserPublic:
-    """Increment msg_usage for a user by phone number (requires service key)."""
+) -> UsageIncrementResponse:
+    """
+    Increment msg_usage for a user by phone number (requires service key).
+
+    The increment and the limit check happen in one UPDATE ... WHERE
+    msg_usage < msg_limit statement, not a read-then-write, so two
+    concurrent enquiries from the same phone can't both read a stale
+    count and both slip past the limit (see get_next_ref in
+    properties/repository.py for the same pattern against the same class
+    of race).
+    """
     if current_user.role != "admin":
         from fastapi import HTTPException
 
         raise HTTPException(status_code=403, detail="Admin authorization required")
+
+    from sqlalchemy import update
 
     from app.modules.users.repository import UserRepository
     from app.modules.users.models import User
@@ -270,21 +282,52 @@ async def increment_usage(
         user = await repo.get_by_phone(clean_phone[-10:])
 
     if not user:
+        # First-ever enquiry from this phone: create them with usage
+        # already at 1, this call itself being their first.
         user = User(
             phone=clean_phone,
             name="Valued Customer",
             role="user",
             preference_type="buy",
+            location_city="",
+            location_area="",
             verification_status="none",
             status="active",
             msg_limit=3,
-            msg_usage=0,
+            msg_usage=1,
         )
         db.add(user)
         await db.commit()
         await db.refresh(user)
+        return UsageIncrementResponse(
+            allowed=True,
+            msg_usage=user.msg_usage,
+            msg_limit=user.msg_limit,
+            phone=user.phone,
+        )
 
-    user.msg_usage += 1
+    stmt = (
+        update(User)
+        .where(User.id == user.id, User.msg_usage < User.msg_limit)
+        .values(msg_usage=User.msg_usage + 1)
+        .returning(User.msg_usage, User.msg_limit)
+    )
+    result = await db.execute(stmt)
+    row = result.first()
     await db.commit()
-    await db.refresh(user)
-    return UserPublic.model_validate(user)
+
+    if row is None:
+        await db.refresh(user)
+        return UsageIncrementResponse(
+            allowed=False,
+            msg_usage=user.msg_usage,
+            msg_limit=user.msg_limit,
+            phone=user.phone,
+        )
+
+    return UsageIncrementResponse(
+        allowed=True,
+        msg_usage=row.msg_usage,
+        msg_limit=row.msg_limit,
+        phone=user.phone,
+    )

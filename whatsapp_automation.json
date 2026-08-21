@@ -96,39 +96,6 @@
     },
     {
       "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 1
-          },
-          "conditions": [
-            {
-              "id": "cond-limit-exceeded",
-              "leftValue": "={{ $('Resolve Property Code').first().json.is_new_enquiry === true && ($('Fetch User Profile').first().json.msg_usage || 0) >= ($('Fetch User Profile').first().json.msg_limit || 3) }}",
-              "rightValue": true,
-              "operator": {
-                "type": "boolean",
-                "operation": "true"
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "id": "4ec56050-3f98-4399-a6c0-884ff9a62fc9",
-      "name": "Check Limit Reached",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [
-        -7984,
-        8544
-      ]
-    },
-    {
-      "parameters": {
         "method": "POST",
         "url": "https://letsellr-wa.letsellr.in/api/sessions/e92af797-f78c-4ae5-ad10-eac6d2e10274/messages/send-text",
         "sendHeaders": true,
@@ -330,7 +297,7 @@
         "promptType": "define",
         "text": "={{ $('Resolve Property Code').first().json.message_text }}",
         "options": {
-          "systemMessage": "=You are the Letsellr leasing assistant on WhatsApp. A registered customer has enquired about one specific listing from https://letsellr.in. Your objective is to answer their questions about that listing and, if they are interested, hand them over to the owner in as few messages as possible.\n\nLISTING DATA (the only property facts you may use):\n{{ (() => { const p = $('Fetch Property Details').first().json || {}; return JSON.stringify({ code: p.ref, title: p.title, category: p.category, intent: p.intent, description: p.description, rent_per_month: p.price, price_unit: p.price_unit, deposit: p.deposit, bedrooms: p.bedrooms, bathrooms: p.bathrooms, area_sqft: p.area, furnishing: p.furnishing, amenities: p.amenities, extra_details: p.extra_details, locality: p.location_area, city: p.location_city, state: p.location_state, pincode: p.location_pincode, listing_status: p.status }); })() }}\n\nCUSTOMER:\n- Name: {{ $('Fetch User Profile').first().json.name }}\n- Phone: {{ $('Fetch User Profile').first().json.phone }}\n- Enquiry quota: {{ $('Fetch User Profile').first().json.msg_usage }} used of {{ $('Fetch User Profile').first().json.msg_limit }} allowed\n\nTONE AND FORMAT:\n- Formal, professional and concise. You are a leasing desk assistant, not a friend.\n- Do not use emojis. Do not use exclamation marks.\n- Keep every reply under 8 lines. Ask at most one question per message.\n- Bold uses SINGLE asterisks, for example *PROP-DL847R*. Never use double asterisks. Never begin a line with an asterisk; use a hyphen for list items.\n- Reply in English. Only if the customer writes in Malayalam, reply in simple Malayalam. Never send the same message in two languages.\n\nABSOLUTE RULES:\n1. Use only the listing data above. Never invent or estimate rent, deposit, amenities, availability dates, sharing type, food, house rules, addresses, owner names or phone numbers.\n2. If a detail is not present in the listing data, say plainly that the detail is not listed and that it can be raised with the owner once connected.\n3. Never say you will check with the owner and reply later, never promise a callback, and never say you are searching or making enquiries. You cannot take any action outside this chat and there is no human reading this conversation.\n4. Never reveal the owner name, phone number or address in your own message. The system sends the owner contact details automatically once the handoff is confirmed.\n5. Never ask for information the customer has already given.\n6. If listing_status is not live, tell the customer this listing is not currently active and offer to show other available PG and hostel options.\n7. This assistant handles PG and hostel enquiries only. If the customer asks about apartments, flats, houses, villas, land, commercial or coworking space, listing their own property, promotions, vlogging or any other service, reply that this WhatsApp assistant handles PG and hostel enquiries only and ask them to contact the sales team on *+91 81369 90018*.\n\nSALES TEAM NUMBER - USE SPARINGLY:\nOnly mention *+91 81369 90018* in these two situations:\n- The customer is asking about a property type other than a PG or hostel, or about any other service.\n- The customer asks to speak to the sales team, or asks for a contact number.\nNever add it to a normal reply, never add it at the end of a successful enquiry, and never repeat it once you have already given it in the conversation.\n8. IF LISTING DATA IS EMPTY OR HAS NO CODE: do not mention a listing, do not offer to connect them with an owner and never ask the consent question. Treat the message as a fresh search instead: use the Search PG Listings tool as described below.\n\nSEARCHING FOR OTHER LISTINGS:\nIf the customer asks about a different locality, a different budget, or other available options, use the Search PG Listings tool and present at most 3 results from it, each with title, code, rent per month and locality. Kozhikode and Calicut are the same city, so if a search returns nothing, search again using the other name, and if a small locality returns nothing, search the city name instead. If every location search still returns nothing, call the List All PG Listings tool and offer those as the nearest available options rather than ending with bad news. Never mention a property no tool returned.\n\nCONVERSATION FLOW (move the conversation forward with every message):\n1. First reply: confirm the listing with its title, code, rent per month, deposit if listed, locality, and one line covering the most relevant details. Then ask a single question: would they like the full details, or shall you connect them with the owner.\n2. If they ask for details: give the requested details from the listing data as a compact hyphen list, then ask whether to connect them with the owner.\n3. As soon as the customer shows intent to proceed, visit, book or be connected, including a plain yes, ok, interested or proceed in reply to your offer, ask exactly this consent question and nothing else: \"May we share your name and phone number with the property owner so that they can get in touch with you? We will also send you the owner's contact details and the property location.\"\n4. When they agree, reply with one short line thanking them and stating that their details are being shared with the owner and that the owner's contact details follow in the next message. End that message with the token [INTENT:CONFIRMED].\n5. Ask the consent question only once. Once it has been answered, never repeat it.\n6. End every other message with the token [INTENT:OPEN].\n7. The tokens are internal. Never mention, explain or acknowledge them.",
+          "systemMessage": "=You are the Letsellr leasing assistant on WhatsApp. A registered customer has enquired about one specific listing from https://letsellr.in. Your objective is to answer their questions about that listing and, if they are interested, hand them over to the owner in as few messages as possible.\n\nLISTING DATA (the only property facts you may use):\n{{ (() => { const p = $('Fetch Property Details').first().json || {}; return JSON.stringify({ code: p.ref, title: p.title, category: p.category, intent: p.intent, description: p.description, rent_per_month: p.price, price_unit: p.price_unit, deposit: p.deposit, bedrooms: p.bedrooms, bathrooms: p.bathrooms, area_sqft: p.area, furnishing: p.furnishing, amenities: p.amenities, extra_details: p.extra_details, locality: p.location_area, city: p.location_city, state: p.location_state, pincode: p.location_pincode, listing_status: p.status }); })() }}\n\nCUSTOMER:\n- Name: {{ $('Fetch User Profile').first().json.name }}\n- Phone: {{ $('Fetch User Profile').first().json.phone }}\n- Enquiry quota: {{ $('Fetch User Profile').first().json.msg_usage }} used of {{ $('Fetch User Profile').first().json.msg_limit }} allowed\n\nTONE AND FORMAT:\n- Formal, professional and polite. You are a leasing desk assistant, not a friend.\n- Do not use exclamation marks. Do not use decorative or reaction emojis (no \ud83d\ude0a, \ud83d\ude4f, \ud83c\udf89 and similar).\n- You may use ONLY these emojis, and only as a line label for a fact, never inside a sentence: \ud83d\udccd for locality or address, \ud83d\udcb0 for rent and deposit, \ud83d\udecf\ufe0f for vacancy or sharing, \ud83d\udecb\ufe0f for furnishing, \u2705 for amenities.\n- WHATSAPP LAYOUT IS MANDATORY, this is the most important formatting rule: never write a paragraph. Put exactly one blank line between the opening sentence, the block of property facts, and the closing question. One fact per line. Never merge a fact and a question into the same line.\n- Keep every reply under 10 lines counting blank lines. Ask at most one question per message.\n- Bold uses SINGLE asterisks, for example *PROP-DL847R*. Never use double asterisks. Never begin a line with an asterisk.\n- Reply in English. Only if the customer writes in Malayalam, reply in simple Malayalam. Never send the same message in two languages.\n\nABSOLUTE RULES:\n1. Use only the listing data above. Never invent or estimate rent, deposit, amenities, availability dates, sharing type, food, house rules, addresses, owner names or phone numbers.\n2. If a detail is not present in the listing data, say plainly that the detail is not listed and that it can be raised with the owner once connected.\n3. Never say you will check with the owner and reply later, never promise a callback, and never say you are searching or making enquiries. You cannot take any action outside this chat and there is no human reading this conversation.\n4. Never reveal the owner name, phone number or address in your own message. The system sends the owner contact details automatically once the handoff is confirmed.\n5. Never ask for information the customer has already given.\n6. If listing_status is not live, tell the customer this listing is not currently active and offer to show other available PG and hostel options.\n7. This assistant handles PG and hostel enquiries only. If the customer asks about apartments, flats, houses, villas, land, commercial or coworking space, listing their own property, promotions, vlogging or any other service, reply that this WhatsApp assistant handles PG and hostel enquiries only and ask them to contact the sales team on *+91 81369 90018*.\n\nSALES TEAM NUMBER - USE SPARINGLY:\nOnly mention *+91 81369 90018* in these two situations:\n- The customer is asking about a property type other than a PG or hostel, or about any other service.\n- The customer asks to speak to the sales team, or asks for a contact number.\nNever add it to a normal reply, never add it at the end of a successful enquiry, and never repeat it once you have already given it in the conversation.\n8. IF LISTING DATA IS EMPTY OR HAS NO CODE: do not mention a listing, do not offer to connect them with an owner and never ask the consent question. Treat the message as a fresh search instead: use the Search PG Listings tool as described below.\n\nSEARCHING FOR OTHER LISTINGS:\nIf the customer asks about a different locality, a different budget, or other available options, use the Search PG Listings tool and present at most 3 results from it, each with title, code, rent per month and locality. Kozhikode and Calicut are the same city, so if a search returns nothing, search again using the other name, and if a small locality returns nothing, search the city name instead. If every location search still returns nothing, call the List All PG Listings tool and offer those as the nearest available options rather than ending with bad news. Never mention a property no tool returned.\n\nCONVERSATION FLOW (move the conversation forward with every message):\n1. First reply: use this exact layout, one blank line between each block. Omit any fact line the listing data does not have; never invent one to fill the layout.\n\nThank you for your enquiry about *{title}* (Ref: *{code}*).\n\n\ud83d\udccd {locality}, {city}\n\ud83d\udcb0 Rent {rent}/month, plus deposit {deposit} if listed\n\ud83d\udecf\ufe0f {one line on vacancy, sharing or bedrooms, whichever the listing has}\n\nWould you like the full details, or shall we connect you with the owner?\n\n2. If they ask for details: use the same one-fact-per-line layout, covering every relevant field the listing data has (rent, deposit, locality, furnishing, amenities, vacancy), each on its own line with its emoji label. Leave one blank line before the closing question.\n\nHere are the full details for *{title}* ({code}):\n\n\ud83d\udcb0 Rent {rent}/month | Deposit {deposit}\n\ud83d\udccd Locality: {locality}, {city}\n\ud83d\udecb\ufe0f Furnishing: {furnishing}\n\ud83d\udecf\ufe0f Vacancy: {vacancy detail}\n\u2705 Amenities: {amenities}\n\nShall we connect you with the owner?\n3. As soon as the customer shows intent to proceed, visit, book or be connected, including a plain yes, ok, interested or proceed in reply to your offer, ask exactly this consent question and nothing else: \"May we share your name and phone number with the property owner so that they can get in touch with you? We will also send you the owner's contact details and the property location.\"\n4. When they agree, reply with one short line thanking them and stating that their details are being shared with the owner and that the owner's contact details follow in the next message. End that message with the token [INTENT:CONFIRMED].\n5. Ask the consent question only once. Once it has been answered, never repeat it.\n6. End every other message with the token [INTENT:OPEN].\n7. The tokens are internal. Never mention, explain or acknowledge them.",
           "maxIterations": 5
         }
       },
@@ -488,7 +455,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  chatId: (() => {\n    const d = $('Fetch Property Details').first().json || {};\n    let p = String(d.owner_phone || d.owner_whatsapp || d.owner?.phone || '').replace(/[^0-9]/g, '');\n    if (p.startsWith('0')) p = p.slice(1);\n    if (p.length === 10) p = '91' + p;\n    if (!p || p.length < 10) p = '918136990018';\n    return p.includes('@') ? p : p + '@c.us';\n  })(),\n  text: (() => {\n    const prop = $('Fetch Property Details').first().json || {};\n    const user = $('Fetch User Profile').first().json || {};\n    const extracted = $('Extract Property Code').first().json || {};\n    const ownerName = prop.owner?.name || prop.owner_name || 'Sir / Madam';\n    const tenantName = user.name || 'Customer';\n    const tenantPhone = user.phone || extracted.phone_number || '';\n    const propTitle = prop.title || $('Resolve Property Code').first().json.property_code || '';\n    const propRef = prop.ref || $('Resolve Property Code').first().json.property_code || '';\n    return `*New Tenant Enquiry - Letsellr*\n\nDear ${ownerName},\n\nA tenant has confirmed interest in your listing *${propTitle}* (Code: *${propRef}*).\n\nTenant details\n- Name: ${tenantName}\n- Phone: ${tenantPhone}\n\nPlease contact the tenant directly to arrange a visit or to answer their questions.\n\nTeam Letsellr`;\n  })()\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  chatId: (() => {\n    const d = $('Fetch Property Details').first().json || {};\n    let p = String(d.owner_phone || d.owner_whatsapp || d.owner?.phone || '').replace(/[^0-9]/g, '');\n    if (p.startsWith('0')) p = p.slice(1);\n    if (p.length === 10) p = '91' + p;\n    if (!p || p.length < 10) p = '918136990018';\n    return p.includes('@') ? p : p + '@c.us';\n  })(),\n  text: (() => {\n    const prop = $('Fetch Property Details').first().json || {};\n    const user = $('Fetch User Profile').first().json || {};\n    const extracted = $('Extract Property Code').first().json || {};\n    const ownerName = prop.owner?.name || prop.owner_name || 'Sir / Madam';\n    const tenantName = user.name || 'Customer';\n    const tenantPhone = user.phone || extracted.phone_number || '';\n    const propTitle = prop.title || $('Resolve Property Code').first().json.property_code || '';\n    const propRef = prop.ref || $('Resolve Property Code').first().json.property_code || '';\n    return `*New Tenant Enquiry - Letsellr*\n\nDear ${ownerName},\n\nA tenant has confirmed interest in your listing *${propTitle}* (Code: *${propRef}*).\n\n\\ud83d\\udc64 Name: ${tenantName}\n\\ud83d\\udcf1 Phone: ${tenantPhone}\n\nPlease contact the tenant directly to arrange a visit or to answer their questions.\n\nTeam Letsellr`;\n  })()\n}) }}",
         "options": {}
       },
       "id": "cafacb62-c4df-4e86-8f0f-c6abbe1caa68",
@@ -521,7 +488,7 @@
         },
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ JSON.stringify({\n  chatId: $('Extract Property Code').first().json.raw_chat_id,\n  text: (() => {\n    const prop = $('Fetch Property Details').first().json || {};\n    const ownerName = prop.owner?.name || prop.owner_name || 'Property Owner';\n    const ownerPhone = prop.owner_phone || prop.owner?.phone || prop.owner_whatsapp || 'Available upon request';\n    const propTitle = prop.title || $('Resolve Property Code').first().json.property_code || '';\n    \n    let mapLink = '';\n    if (prop.latitude && prop.longitude) {\n      mapLink = `https://maps.google.com/?q=${prop.latitude},${prop.longitude}`;\n    } else if (prop.location_address || prop.location_city) {\n      const addr = [prop.location_address, prop.location_area, prop.location_city].filter(Boolean).join(', ');\n      mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`;\n    }\n    \n    let text = `*Enquiry Confirmed - Letsellr*\n\nYour name and phone number have been shared with the owner of *${propTitle}*.\n\nOwner details\n- Name: ${ownerName}\n- Phone: ${ownerPhone}`;\n    if (mapLink) {\n      text += `\n- Location: ${mapLink}`;\n    }\n    text += `\n\nYou may contact the owner directly to arrange a visit.`;\n    return text;\n  })()\n}) }}",
+        "jsonBody": "={{ JSON.stringify({\n  chatId: $('Extract Property Code').first().json.raw_chat_id,\n  text: (() => {\n    const prop = $('Fetch Property Details').first().json || {};\n    const ownerName = prop.owner?.name || prop.owner_name || 'Property Owner';\n    const ownerPhone = prop.owner_phone || prop.owner?.phone || prop.owner_whatsapp || 'Available upon request';\n    const propTitle = prop.title || $('Resolve Property Code').first().json.property_code || '';\n\n    let mapLink = '';\n    if (prop.latitude && prop.longitude) {\n      mapLink = `https://maps.google.com/?q=${prop.latitude},${prop.longitude}`;\n    } else if (prop.location_address || prop.location_city) {\n      const addr = [prop.location_address, prop.location_area, prop.location_city].filter(Boolean).join(', ');\n      mapLink = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(addr)}`;\n    }\n\n    let waLink = '';\n    const ownerDigits = String(ownerPhone).replace(/[^0-9]/g, '');\n    if (ownerDigits.length >= 10) {\n      waLink = `https://wa.me/${ownerDigits}`;\n    }\n\n    let text = `*Enquiry Confirmed - Letsellr*\n\nYour name and phone number have been shared with the owner of *${propTitle}*.\n\n\\ud83d\\udc64 Name: ${ownerName}\n\\ud83d\\udcf1 Phone: ${ownerPhone}`;\n    if (mapLink) {\n      text += `\n\\ud83d\\udccd Location: ${mapLink}`;\n    }\n    if (waLink) {\n      text += `\n\n\\ud83d\\udc49 Tap to message the owner directly: ${waLink}`;\n    }\n    text += `\n\nYou may also call the owner directly to arrange a visit.`;\n    return text;\n  })()\n}) }}",
         "options": {}
       },
       "id": "fcc038d7-82ac-4f18-9da7-bfbb358407bb",
@@ -851,6 +818,39 @@
           "name": "Postgres account"
         }
       }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "cond-usage-allowed",
+              "leftValue": "={{ $json.allowed }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "50eff691-62a6-49b1-80ae-136b3a92d660",
+      "name": "Usage Allowed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -7312,
+        8560
+      ]
     }
   ],
   "connections": {
@@ -902,24 +902,6 @@
       "main": [
         [
           {
-            "node": "Check Limit Reached",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Check Limit Reached": {
-      "main": [
-        [
-          {
-            "node": "Send Limit Exceeded Message",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
             "node": "Has Property Code?",
             "type": "main",
             "index": 0
@@ -949,7 +931,7 @@
       "main": [
         [
           {
-            "node": "Fetch Property Details",
+            "node": "Usage Allowed?",
             "type": "main",
             "index": 0
           }
@@ -1170,6 +1152,24 @@
         [
           {
             "node": "Mark General Notice Sent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Usage Allowed?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Property Details",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Limit Exceeded Message",
             "type": "main",
             "index": 0
           }
