@@ -27,16 +27,25 @@ jobs:
           port: ${{ secrets.VPS_PORT }}
           script_stop: true
           script: |
+            set -euo pipefail
+            
             PROJECT_DIR="/root/letsellr-v2"
             BACKEND_DIR="$PROJECT_DIR/letsellr-api"
             
             echo "==> Navigating to repository..."
             cd "$PROJECT_DIR"
             
-            # 1. Pull the code safely
+            echo "==> Fetching origin/main..."
+            git fetch --prune origin +refs/heads/main:refs/remotes/origin/main
+            
+            echo "==> Pinning worktree to main..."
+            git checkout -f -B main origin/main
+            
+            echo "==> Restricting checkout to backend..."
+            git sparse-checkout init --cone
             git sparse-checkout set letsellr-api
-            git fetch origin main
-            git reset --hard origin/main
+            
+            echo "==> Deployed commit: $(git rev-parse --short HEAD)"
             
             echo "==> Navigating to backend directory..."
             cd "$BACKEND_DIR"
